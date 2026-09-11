@@ -10,8 +10,9 @@
     "preview": "vite preview",
     "gen:api": "node scripts/genApi.mjs",
     "format": "biome format --write .",
-    "lint": "biome check .",
+    "lint": "biome check . && node scripts/checkFileConventions.mjs",
     "lint:fix": "biome check --write .",
+    "check:conventions": "node scripts/checkFileConventions.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run"

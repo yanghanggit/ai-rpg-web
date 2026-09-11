@@ -88,7 +88,7 @@ describe("玩家入口页 /entry", () => {
     renderApp("/entry");
 
     // 玩家名带日期时间，且不是输入框
-    expect(await screen.findByText(/^player-\d{8}-\d{4}$/)).toBeInTheDocument();
+    expect(await screen.findByText(/^player-\d{8}-\d{6}-[0-9a-f]{8}$/)).toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 
     const select = await screen.findByLabelText("游戏名");
@@ -143,7 +143,7 @@ describe("玩家入口页 /entry", () => {
     expect(await screen.findByRole("heading", { name: "家园" })).toBeInTheDocument();
 
     const expectedBody = expect.objectContaining({
-      user_name: expect.stringMatching(/^player-\d{8}-\d{4}$/),
+      user_name: expect.stringMatching(/^player-\d{8}-\d{6}-[0-9a-f]{8}$/),
       game_name: "Game2",
     });
     expect(bodies).toEqual([

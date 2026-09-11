@@ -20,34 +20,12 @@
 
 ## 二、目录职责
 
-```text
-src/api/                 # 基础设施
-  schema.d.ts            # 生成物，只读
-  client.ts              # 传输层：openapi-fetch 客户端、middleware、unwrap、apiUrl
-  query.ts               # $api = openapi-react-query
-  types.ts               # 需要命名时使用的派生类型
-  serverInfo.ts          # 唯一一处契约缺口收窄（/ 缺 response_model）
-src/pages/               # 路由级页面组件（薄，负责组合）
-  LaunchPage.tsx         # 启动屏 /
-  EntryPage.tsx          # 玩家入口 /entry
-  HomePage.tsx           # 家园页 /game/:userName/:gameName/home
-  DevIndexPage.tsx       # 开发索引 /dev（仅 dev）
-src/features/<domain>/   # 领域逻辑：编排 hook、纯函数、子组件
-  entry/useStartGame.ts  # 登录 → 新游戏编排
-  entry/playerName.ts    # 玩家名生成（纯函数）
-  entry/BlueprintDetails.tsx  # 蓝图详情展示组件
-src/mocks/               # Mock：fixtures / handlers / browser / node
-  fixtures.ts            # 假数据（mock 模式与测试共用）
-  handlers.ts            # 默认 handlers（mock 模式与测试共用）
-  browser.ts             # setupWorker（pnpm dev:mock）
-  node.ts                # setupServer（Vitest）
-src/test/                # 测试基建（setup.ts）
-```
+完整的目录结构、组件归属、`.tsx` 位置与依赖方向见 **[conventions.md](conventions.md)**。与 API 直接相关的约束是：
 
-- `src/api/` 只放基础设施与跨领域的契约适配，不放具体业务功能。
-- 页面组件放 `src/pages/`（命名 `<Name>Page.tsx`），在 `src/App.tsx` 的路由表里注册；页面保持“薄”，只做组合与展示。
-- 领域逻辑与跨接口编排放 `src/features/<domain>/`（如 `entry`、`home`、`dungeon`、`combat`）。单接口查询可直接在页面里用 `$api`，不必包一层。
-- 路由用 react-router 声明式模式。Provider（`QueryClientProvider`、`BrowserRouter`）只在 `main.tsx` 装配，页面不自己创建；测试用 `MemoryRouter` 替换。
+- `src/api/` 只放基础设施与契约适配（`client.ts`、`query.ts`、`types.ts`、`serverInfo.ts`），不放具体业务功能。
+- **单接口查询**可直接在页面/组件里用 `$api`，不必包一层。
+- **跨接口编排**必须抽成 `src/features/<domain>/` 里的 hook（如 `entry/useStartGame.ts`），不写在 JSX 里。
+- `src/mocks/` 的 handlers / fixtures 由单元测试与 `pnpm dev:mock` **共用**，只维护一处。
 
 ## 三、工具链
 

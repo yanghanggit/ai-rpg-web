@@ -15,7 +15,7 @@ AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独�
 
 - 路由表在 `src/App.tsx`；Provider（`QueryClientProvider`、`BrowserRouter`）在 `src/main.tsx` 装配。
 - **游戏页一律带会话参数**（`/game/:userName/:gameName/...`），即“地址即状态”——可直接深链到任意一层。
-- 领域逻辑与跨接口编排放 `src/features/<domain>/`；详见 [`docs/api-layer.md`](docs/api-layer.md#二目录职责)。
+- 领域逻辑与跨接口编排放 `src/features/<domain>/`；组件放哪、依赖方向见 [`docs/conventions.md`](docs/conventions.md)。
 
 ## 快速开始
 
@@ -102,20 +102,17 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 | `pnpm preview` | 预览构建产物 |
 | `pnpm gen:api` | 从后端 `/openapi.json` 生成 TS 类型到 `src/api/schema.d.ts`（需后端已启动） |
 | `pnpm format` | Biome 格式化 |
-| `pnpm lint` / `pnpm lint:fix` | Biome 静态检查 / 自动修复 |
+| `pnpm lint` / `pnpm lint:fix` | Biome 静态检查（含文件命名校验）/ 自动修复 |
+| `pnpm check:conventions` | 单独跑文件命名校验（已包含在 `pnpm lint`） |
 | `pnpm typecheck` | TypeScript 严格类型检查 |
 | `pnpm test` / `pnpm test:run` | Vitest 测试（watch / 单次） |
 
 ## 约定
 
-- **文件命名（由 Biome `useFilenamingConvention` 强制）**：
-  - `.tsx` 组件（含页面）用 **PascalCase**：`LaunchPage.tsx`、`BlueprintDetails.tsx`。
-  - 其余 `.ts` 用 **camelCase**：hook 文件名 = hook 名（`useStartGame.ts`），普通模块同理（`serverInfo.ts`、`playerName.ts`）；测试文件跟随被测模块（`playerName.test.ts`）。
-  - 例外：`src/vite-env.d.ts`（Vite 约定名）、`.pi/**`（pi 工具扩展）。
-  - 理由：文件名与导出符号名对齐，跳转/搜索/fuzzy-find 才能对应上；这也是 React 生态（React docs、TanStack Query 自身）的做法。
-- **API 使用有强制规范，见 [`docs/api-layer.md`](docs/api-layer.md)（先读「基本原则」）。**
+- **开发规范（命名 / 目录结构 / 组件归属 / 依赖方向）见 [`docs/conventions.md`](docs/conventions.md)**，由 `pnpm lint`（Biome + `check:conventions`）强制。
+- **API 使用规范见 [`docs/api-layer.md`](docs/api-layer.md)（先读「基本原则」）。**
 - 核心：类型来自 `pnpm gen:api` 生成的 `src/api/schema.d.ts`（已 gitignore，开发期不提交）；不手写 API 类型；REST 走 `src/api/client.ts`（openapi-fetch），查询用 `src/api/query.ts` 的 `$api`。
-- 测试用 MSW（`src/test/`），未注册 handler 的请求会让测试失败。
+- 测试用 MSW：handlers / fixtures 在 `src/mocks/`，与 `pnpm dev:mock` 共用；未注册 handler 的请求会让测试失败。
 - 后端契约见 `ai-rpg` 仓库的 `docs/web-client-plan.md`。
 
 ## 最短的"检查 + 构建 + 启动"三连
