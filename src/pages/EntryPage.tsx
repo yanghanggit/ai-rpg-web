@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { $api } from "../api/query";
 import BlueprintDetails from "../features/entry/BlueprintDetails";
 import { generatePlayerName } from "../features/entry/playerName";
@@ -14,6 +14,7 @@ import { useStartGame } from "../features/entry/useStartGame";
  * 这是占位形态：后续角色选择、读档等会替换掉这里的表单。
  */
 export default function EntryPage() {
+  const navigate = useNavigate();
   const [playerName] = useState(generatePlayerName);
 
   // 游戏名候选来自后端，是唯一事实源，因此是选择型而非文本输入。
@@ -44,7 +45,11 @@ export default function EntryPage() {
         onSubmit={(event) => {
           event.preventDefault();
           if (canSubmit) {
-            start.mutate({ user_name: playerName, game_name: gameName });
+            start.mutate(
+              { user_name: playerName, game_name: gameName },
+              // 开局成功后直接进入家园页（地址即状态，可重访/收藏）
+              { onSuccess: () => navigate(`/game/${playerName}/${gameName}/home`) },
+            );
           }
         }}
       >
@@ -77,7 +82,6 @@ export default function EntryPage() {
       </form>
 
       {start.isError ? <p className="error">出错：{String(start.error)}</p> : null}
-      {start.isSuccess ? <p className="ok">开局成功 ✅ 蓝图：{start.data.blueprint.name}</p> : null}
 
       {current ? <BlueprintDetails blueprint={current} /> : null}
     </main>

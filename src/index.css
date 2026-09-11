@@ -155,3 +155,49 @@ ul.plain {
 ul.plain li {
   margin: 0.25rem 0;
 }
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+}
+
+.card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.mock-badge {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 10;
+  padding: 0.2rem 0.7rem;
+  border-bottom-left-radius: 8px;
+  background: #b45309;
+  color: #fff;
+  font-size: 0.75rem;
+}

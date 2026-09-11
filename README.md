@@ -2,7 +2,7 @@
 
 AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独立。
 
-技术栈：React + Vite + TypeScript（strict）+ React Router + TanStack Query + openapi-fetch / openapi-react-query + Biome + Vitest。
+技术栈：React + Vite + TypeScript（strict）+ React Router + TanStack Query + openapi-fetch / openapi-react-query + Biome + Vitest + MSW。
 
 ## 页面结构
 
@@ -10,8 +10,11 @@ AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独�
 | ------ | ------ | ------ |
 | `/` | `src/pages/LaunchPage.tsx` | 启动屏：展示服务器地址与连接状态，与玩家身份无关 |
 | `/entry` | `src/pages/EntryPage.tsx` | 玩家入口：玩家名自动生成（带日期），游戏名从 `/api/game/blueprint-list/v1/` 蓝图列表选择，并展示所选蓝图详情（玩家角色 / 战役设定 / 场景-角色映射 / 世界实体），登录 → 新游戏 |
+| `/game/:userName/:gameName/home` | `src/pages/HomePage.tsx` | 家园页：每个 stage 一张卡片，卡片内列出该 stage 的 actor |
+| `/dev` | `src/pages/DevIndexPage.tsx` | 开发索引（仅 dev 注册）：常用深链清单 |
 
 - 路由表在 `src/App.tsx`；Provider（`QueryClientProvider`、`BrowserRouter`）在 `src/main.tsx` 装配。
+- **游戏页一律带会话参数**（`/game/:userName/:gameName/...`），即“地址即状态”——可直接深链到任意一层。
 - 领域逻辑与跨接口编排放 `src/features/<domain>/`；详见 [`docs/api-layer.md`](docs/api-layer.md#二目录职责)。
 
 ## 快速开始
@@ -77,11 +80,24 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 - IP 由 DHCP 分配可能变化，变了要同步改 `.env`；建议在路由器上做 MAC 绑定。
 - 后端 CORS 已是 `allow_origins=["*"]`，换 IP 不会触发跨域问题。
 
+## 调试与 Mock 模式
+
+调试深层页面不必每次从启动屏一步步走完：
+
+1. **地址即状态**：游戏页带会话参数，直接改 URL 即可，例如
+   `http://localhost:5173/game/webdev/Game1/home`（真实数据，需该 user/game 已存在）。
+2. **Mock 模式**：`pnpm dev:mock`，浏览器端 MSW 拦截 API，完全不需要后端。
+   - 假数据在 `src/mocks/fixtures.ts`，指定接口的假响应在 `src/mocks/handlers.ts`；
+   - 这套 handlers **与单元测试共用**，不会两边漂移；
+   - 页面右上角会显示橙色 `MOCK 模式` 徽标，避免误以为在连真实后端。
+3. **开发索引**：`/dev` 列出常用深链，点一下就到（例：`http://localhost:5173/dev`）。
+
 ## 常用命令
 
 | 命令 | 说明 |
 | ------ | ------ |
-| `pnpm dev` | 启动开发服务器 |
+| `pnpm dev` | 启动开发服务器（连真实后端） |
+| `pnpm dev:mock` | 启动开发服务器 + 浏览器端 MSW，用 `src/mocks/fixtures.ts` 假数据调试页面 |
 | `pnpm build` | 类型检查 + 生产构建 |
 | `pnpm preview` | 预览构建产物 |
 | `pnpm gen:api` | 从后端 `/openapi.json` 生成 TS 类型到 `src/api/schema.d.ts`（需后端已启动） |

@@ -26,14 +26,22 @@ src/api/                 # 基础设施
   client.ts              # 传输层：openapi-fetch 客户端、middleware、unwrap、apiUrl
   query.ts               # $api = openapi-react-query
   types.ts               # 需要命名时使用的派生类型
-  serverInfo.ts         # 唯一一处契约缺口收窄（/ 缺 response_model）
+  serverInfo.ts          # 唯一一处契约缺口收窄（/ 缺 response_model）
 src/pages/               # 路由级页面组件（薄，负责组合）
   LaunchPage.tsx         # 启动屏 /
+  EntryPage.tsx          # 玩家入口 /entry
+  HomePage.tsx           # 家园页 /game/:userName/:gameName/home
+  DevIndexPage.tsx       # 开发索引 /dev（仅 dev）
 src/features/<domain>/   # 领域逻辑：编排 hook、纯函数、子组件
   entry/useStartGame.ts  # 登录 → 新游戏编排
   entry/playerName.ts    # 玩家名生成（纯函数）
   entry/BlueprintDetails.tsx  # 蓝图详情展示组件
-src/test/                # MSW 与测试基建
+src/mocks/               # Mock：fixtures / handlers / browser / node
+  fixtures.ts            # 假数据（mock 模式与测试共用）
+  handlers.ts            # 默认 handlers（mock 模式与测试共用）
+  browser.ts             # setupWorker（pnpm dev:mock）
+  node.ts                # setupServer（Vitest）
+src/test/                # 测试基建（setup.ts）
 ```
 
 - `src/api/` 只放基础设施与跨领域的契约适配，不放具体业务功能。
@@ -111,6 +119,7 @@ JWT 后端已预留，接入时只需登录后写入 token。
 ## 五、测试（MSW）
 
 - `src/test/setup.ts` 统一 `listen / resetHandlers / close`，`onUnhandledRequest: "error"`。
+- handlers 与 fixtures 在 `src/mocks/`，**mock 模式（pnpm dev:mock）与测试共用同一套**，用例内用 `server.use(...)` 覆盖特定接口。
 - 用例内用 `server.use(http.get(api("/path"), () => HttpResponse.json(...)))` 注册当次 handler。
 - 断言请求体：在 handler 里 `await request.json()` 收集后断言。
 - 测试真实走 `globalThis.fetch`，因此客户端必须**延迟解析** `globalThis.fetch`（`client.ts` 已处理）。
