@@ -1,21 +1,22 @@
 import { useNavigate } from "react-router";
 import { API_BASE_URL } from "../api/client";
 import { $api } from "../api/query";
-import { toServerInfo } from "../api/serverInfo";
 
 /**
  * 启动屏（首页）。
  *
  * 职责边界：只确认「这个客户端能连上哪台服务器、服务器是否正常」，与玩家身份无关。
  * 因此这里没有登录/开局，玩家身份流程从 /entry 开始。
+ *
+ * 后端根路由 `/` 已有 `response_model=ServerInfoResponse`，字段类型直接来自生成物，
+ * 因此不再需要手写的收窄层（原先的 src/api/serverInfo.ts 已删除）。
  */
 export default function LaunchPage() {
   const navigate = useNavigate();
 
   // 类型安全的 useQuery：路径、响应全部自动推导。
   const info = $api.useQuery("get", "/");
-  const serverInfo = info.data ? toServerInfo(info.data) : undefined;
-  const ready = info.isSuccess && serverInfo !== undefined;
+  const serverInfo = info.data;
 
   return (
     <main className="page">
@@ -42,13 +43,6 @@ export default function LaunchPage() {
             </span>
           ) : null}
 
-          {info.isSuccess && serverInfo === undefined ? (
-            <span className="status error">
-              <span className="dot error" />
-              响应格式不符合预期
-            </span>
-          ) : null}
-
           {serverInfo ? (
             <span className="status ok">
               <span className="dot ok" />
@@ -67,11 +61,11 @@ export default function LaunchPage() {
       ) : null}
 
       <p>
-        <button type="button" disabled={!ready} onClick={() => navigate("/entry")}>
+        <button type="button" disabled={!info.isSuccess} onClick={() => navigate("/entry")}>
           进入下一页 →
         </button>
       </p>
-      {ready ? null : <p className="muted">服务器可用后才能进入。</p>}
+      {info.isSuccess ? null : <p className="muted">服务器可用后才能进入。</p>}
     </main>
   );
 }

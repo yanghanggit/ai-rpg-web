@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { API_BASE_URL } from "./api/client";
 import type { Schemas } from "./api/types";
-import { blueprintFixture } from "./mocks/fixtures";
+import { blueprintFixture, serverInfoFixture } from "./mocks/fixtures";
 import { api } from "./mocks/handlers";
 import { server } from "./mocks/node";
 
@@ -23,9 +23,15 @@ function renderApp(initialPath = "/") {
   );
 }
 
-const serverInfoHandler = (fields: Record<string, unknown> = {}) =>
+const serverInfoHandler = (fields: Partial<Schemas["ServerInfoResponse"]> = {}) =>
   http.get(api("/"), () =>
-    HttpResponse.json({ service: "test", status: "healthy", version: "0", ...fields }),
+    HttpResponse.json({
+      ...serverInfoFixture,
+      service: "test",
+      status: "healthy",
+      version: "0",
+      ...fields,
+    }),
   );
 
 const blueprintWithName = (name: string): Schemas["Blueprint"] => ({

@@ -24,6 +24,7 @@ npm-debug.log*
 pnpm-debug.log*
 
 # 编辑器
+.VSCodeCounter
 .DS_Store
 .vscode/*
 !.vscode/extensions.json

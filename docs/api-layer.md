@@ -119,6 +119,7 @@ server.use(
 | 后端静态图片 | 直接渲染 URL（`apiUrl()` 拼接），不硬编码静态前缀 |
 | 后台任务（job 模式） | 绝大多数动作接口返回 `job_id` 而**非**新状态。统一用 `src/api/useTask.ts` 轮询 `GET /api/tasks/v1/status` 至终态，再刷新相关查询。**禁止把拿到 `job_id` 当作"操作已完成"。** |
 | 任务查询的两种边界 | `job_id` 必须是数字字符串（OpenAPI 里带 `pattern`），非法输入由后端返回 422；未知 id 返回 `{ tasks: [] }`——属**正常响应**不是失败，客户端按“仍未完成”处理，并保留超时兜底。 |
+| **生成类型的失真：数字判别字段** | Pydantic 为字面量联合生成的 `discriminator`，其 mapping 的键只能是字符串（JSON 限制），`openapi-typescript` 据此把判别字段**强制渲染成字符串枚举**，与运行时（整数）不一致——照类型写 `switch` 会全部落到 default。**不要在前端加 `String()` 之类的容错**，而是在生成前修正 spec：`scripts/genApi.mjs` 会删掉“判别字段不是 string”的 discriminator，于是类型如实（`type: 1`），判别联合仍能正常收窄。 |
 
 ## 七、后端侧要求（最高杠杆）
 

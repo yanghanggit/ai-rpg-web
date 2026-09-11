@@ -156,6 +156,22 @@ ul.plain li {
   margin: 0.25rem 0;
 }
 
+/* 会话消息（叙事）列表：sequence_id 递增，所以用有序列表 */
+ol.session {
+  margin: 1rem 0;
+  padding-left: 1.6rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+ol.session li {
+  line-height: 1.55;
+}
+
+ol.session .badge {
+  margin-right: 0.35rem;
+}
+
 .cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));

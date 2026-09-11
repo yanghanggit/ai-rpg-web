@@ -14,6 +14,7 @@ import {
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
+import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { createMockTask, readMockTasks } from "./tasks";
 
 /** 把后端相对路径补成完整 URL，供 MSW handler 匹配。 */
@@ -48,4 +49,27 @@ export const handlers = [
       message: "mock 后台任务已启动",
     }),
   ),
+
+  // 家园动作：与真实后端一致，只返回 job_id，结果要靠轮询任务状态获得
+  http.post(api("/api/home/advance/v1/"), () => {
+    // 真实后端里这些叙事由 NPC 行动产生；mock 里直接追一条，好让「推进 → 新叙事」可见
+    appendMockSessionMessage({
+      type: 3,
+      message: "（mock）家园推进：角色们各自行动了一轮。",
+      actor: "旁白",
+      stage: "场景.门厅",
+      content: "角色们各自行动了一轮。",
+    });
+    return HttpResponse.json({
+      job_id: createMockTask(),
+      status: "running",
+      message: "mock 推进任务已启动",
+    });
+  }),
+
+  // 增量拉取：只返回 sequence_id 更大的消息
+  http.get(api("/api/session_messages/v1/:userName/:gameName/since"), ({ request }) => {
+    const since = Number(new URL(request.url).searchParams.get("last_sequence_id") ?? 0);
+    return HttpResponse.json({ session_messages: readMockSessionMessages(since) });
+  }),
 ];
