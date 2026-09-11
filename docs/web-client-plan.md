@@ -55,7 +55,7 @@
 | 命令/动作（登录、出牌、合成、进副本） | REST POST |
 | 状态查询（场景/副本/战斗状态） | REST GET + TanStack Query |
 | 会话新消息 | SSE（EventSource） |
-| 后台任务完成 | SSE（`/api/tasks/v1/watch/{job_id}`） |
+| 后台任务完成 | 本期：轮询 `GET /api/tasks/v1/status?job_ids=[]`；后续可升级为 SSE `/api/tasks/v1/watch/{job_id}` |
 
 将来出现实时双向需求（聊天、多人同步）时再引入 WebSocket，当前不需要。
 
@@ -67,14 +67,33 @@
 
 ## 落地里程碑
 
-对齐 TUI 的命令流（登录 → 家园 → 副本 → 战斗）逐段推进：
+### 已完成
 
 1. 脚手架：独立仓库 + Vite 模板，接 `/` 展示服务信息，配好 base URL 与 CORS。
-2. 登录与开局：`login` → `new_game` → `stages_state`，搭出页面框架。
-3. 家园：home 系列接口，接后台任务 SSE（如生成副本）。
-4. 副本：dungeon opening / lifecycle 流程。
-5. 战斗：combat 出牌、回合、结算，接会话消息 SSE。
-6. 图片展示：直接渲染后端静态图片 URL。
+2. 登录与开局：`login` → `new_game` → `stages_state`，页面框架（`/` → `/entry` → `/game/:u/:g/home`）。
+
+### 本期范围：家园闭环
+
+目标：**家园能玩起来——能推进一步、能看到由此产生的叙事、能和角色说话。**
+
+| 阶段 | 内容 | 关键接口 |
+| ------ | ------ | ------ |
+| 1 | 任务等待机制（地基）：`job_id` → 轮询至终态 | `GET /api/tasks/v1/status` |
+| 2 | 家园「推进」：触发 → 等任务 → 重拉家园状态 | `POST /api/home/advance/v1/` |
+| 3 | 叙事面板：按 `sequence_id` 累积渲染会话消息 | `GET /api/session_messages/v1/{u}/{g}/since` |
+| 4 | 玩家动作：说话 / 换场景 | `POST /api/home/player_action/v1/` |
+
+**为什么先做任务等待**：绝大多数动作接口返回 `job_id` 而非新状态，真正的变化发生在后台任务里（参考 TUI `cmd_advance.py`：`home_advance()` → `watch_task_until_done()`）。不做这层，后面每加一个动作都要重踩。
+
+### 暂缓项（本期不做）
+
+| 暂缓 | 原因 |
+| ------ | ------ |
+| 副本全套（`dungeon-list` / `generate_dungeon` / `enter_dungeon` / `opening/*` / `dungeons/state` / `advance_stage` / `exit`） | 先跑通家园闭环；且会引入新路由与新的 union 渲染 |
+| 战斗全套（`dungeon/combat/*`） | 最复杂，且依赖副本 |
+| SSE（`tasks/v1/watch/{job_id}`、`session_messages/.../stream`） | 轮询已足够；SSE 是纯优化，可在不改调用方接口的前提下替换 |
+| 图片展示 | 依赖副本/外观事件，且需先定后端静态路由前缀 |
+| 家园次要动作（`roster/*`、`item/move_to_*`、`craft/*`、`costume/*`） | 不阻塞主闭环，按需再加 |
 
 ## 与 TUI 客户端的关系
 

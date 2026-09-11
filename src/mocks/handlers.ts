@@ -14,6 +14,7 @@ import {
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
+import { createMockTask, readMockTasks } from "./tasks";
 
 /** 把后端相对路径补成完整 URL，供 MSW handler 匹配。 */
 export function api(path: string): string {
@@ -31,5 +32,20 @@ export const handlers = [
 
   http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>
     HttpResponse.json(homeStagesFixture),
+  ),
+
+  // 后台任务：openapi-fetch 默认把数组 query 序列化成重复参数（job_ids=a&job_ids=b），
+  // 与 FastAPI 的 List[str] 一致。
+  http.get(api("/api/tasks/v1/status"), ({ request }) => {
+    const jobIds = new URL(request.url).searchParams.getAll("job_ids");
+    return HttpResponse.json({ tasks: readMockTasks(jobIds) });
+  }),
+
+  http.post(api("/api/tasks/v1/trigger"), () =>
+    HttpResponse.json({
+      job_id: createMockTask(),
+      status: "running",
+      message: "mock 后台任务已启动",
+    }),
   ),
 ];
