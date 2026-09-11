@@ -1,41 +1,23 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
-import { apiGet, apiPost } from "./api/client";
-
-interface ServerInfo {
-  service: string;
-  status: string;
-  version: string;
-}
-
-interface LoginResponse {
-  message: string;
-}
-
-interface NewGameResponse {
-  [key: string]: unknown;
-}
+import { client, unwrap } from "./api/client";
+import { $api } from "./api/query";
+import { toServerInfo } from "./api/server-info";
 
 export default function App() {
   const [userName, setUserName] = useState("tester");
   const [gameName, setGameName] = useState("demo");
 
-  const info = useQuery({
-    queryKey: ["server-info"],
-    queryFn: () => apiGet<ServerInfo>("/"),
-    retry: false,
-  });
+  // 类型安全的 useQuery：路径、响应全部自动推导。
+  const info = $api.useQuery("get", "/");
+  const serverInfo = info.data ? toServerInfo(info.data) : undefined;
 
+  // 跨多个接口的编排流程（登录 → 新游戏），用原生 useMutation + client.POST。
   const start = useMutation({
     mutationFn: async () => {
-      await apiPost<LoginResponse>("/api/login/v1/", {
-        user_name: userName,
-        game_name: gameName,
-      });
-      return apiPost<NewGameResponse>("/api/game/new/v1/", {
-        user_name: userName,
-        game_name: gameName,
-      });
+      const body = { user_name: userName, game_name: gameName };
+      unwrap(await client.POST("/api/login/v1/", { body }));
+      return unwrap(await client.POST("/api/game/new/v1/", { body }));
     },
   });
 
@@ -49,9 +31,12 @@ export default function App() {
         {info.isError ? (
           <p style={{ color: "crimson" }}>无法连接后端：{String(info.error)}</p>
         ) : null}
-        {info.data ? (
+        {info.isSuccess && serverInfo === undefined ? (
+          <p style={{ color: "crimson" }}>后端响应格式不符合预期</p>
+        ) : null}
+        {serverInfo ? (
           <p>
-            {info.data.service} · {info.data.status} · v{info.data.version}
+            {serverInfo.service} · {serverInfo.status} · v{serverInfo.version}
           </p>
         ) : null}
       </section>
@@ -68,7 +53,9 @@ export default function App() {
           {start.isPending ? "处理中…" : "登录 → 新游戏"}
         </button>
         {start.isError ? <p style={{ color: "crimson" }}>出错：{String(start.error)}</p> : null}
-        {start.isSuccess ? <p style={{ color: "green" }}>开局成功 ✅</p> : null}
+        {start.isSuccess ? (
+          <p style={{ color: "green" }}>开局成功 ✅ 蓝图：{start.data.blueprint.name}</p>
+        ) : null}
       </section>
     </main>
   );

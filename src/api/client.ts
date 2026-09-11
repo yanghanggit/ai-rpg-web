@@ -1,41 +1,73 @@
 /**
- * 后端 API 客户端封装。
- * 基础地址来自 VITE_API_BASE_URL，默认 http://localhost:8000。
+ * REST 请求的唯一入口：openapi-fetch 客户端。
+ *
+ * 类型全部由 `schema.d.ts` 推导——方法、路径、path/query 参数、请求体、响应
+ * 都由 openapi-fetch 自动推导，无需手写封装，也没有泛型/断言。
+ * 认证、日志等横切逻辑通过 middleware 统一处理。
  */
+import createClient, { type Middleware } from "openapi-fetch";
+import type { paths } from "./schema";
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(/\/$/, "");
+export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(
+  /\/$/,
+  "",
+);
 
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
-    message: string,
+    public readonly body: unknown,
   ) {
-    super(message);
+    super(`API ${status}`);
     this.name = "ApiError";
   }
 }
 
-export async function apiGet<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, init);
-  if (!res.ok) {
-    throw new ApiError(res.status, `GET ${path} → ${res.status}: ${await res.text()}`);
+/**
+ * 认证中间件：JWT 接入后 token 统一在此注入（后端 auth 依赖已预留），
+ * 业务代码不需要感知 Authorization 头。
+ */
+const authMiddleware: Middleware = {
+  async onRequest({ request }) {
+    const token = globalThis.localStorage?.getItem("ai-rpg-token");
+    if (token) {
+      request.headers.set("Authorization", `Bearer ${token}`);
+    }
+    return request;
+  },
+};
+
+/** 开发期请求日志。 */
+const loggerMiddleware: Middleware = {
+  async onResponse({ request, response }) {
+    if (import.meta.env.DEV) {
+      console.debug(`[api] ${request.method} ${request.url} → ${response.status}`);
+    }
+    return response;
+  },
+};
+
+export const client = createClient<paths>({
+  baseUrl: API_BASE_URL,
+  // 延迟解析 globalThis.fetch，而不是在模块加载时锁定它。
+  // 这样单测可用 vi.fn 注入，MSW 的 setupServer 也能正常拦截。
+  fetch: (input: Request) => globalThis.fetch(input),
+});
+client.use(authMiddleware);
+client.use(loggerMiddleware);
+
+/** 把 openapi-fetch 的 `{ data, error }` 结果转成 data，失败时抛 ApiError。 */
+export function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {
+  if (result.error !== undefined) {
+    throw new ApiError(result.response.status, result.error);
   }
-  return (await res.json()) as T;
+  if (result.data === undefined) {
+    throw new ApiError(result.response.status, "响应缺少 data");
+  }
+  return result.data;
 }
 
-export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  if (!res.ok) {
-    throw new ApiError(res.status, `POST ${path} → ${res.status}: ${await res.text()}`);
-  }
-  return (await res.json()) as T;
-}
-
-/** 拼接完整 URL（用于 SSE、图片等需要完整地址的场景）。 */
+/** 拼接完整 URL（SSE、后端静态图片等非 openapi-fetch 场景使用）。 */
 export function apiUrl(path: string): string {
-  return `${BASE_URL}${path}`;
+  return `${API_BASE_URL}${path}`;
 }
