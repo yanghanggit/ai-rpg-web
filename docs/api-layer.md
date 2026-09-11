@@ -26,7 +26,7 @@ src/api/                 # 基础设施
   client.ts              # 传输层：openapi-fetch 客户端、middleware、unwrap、apiUrl
   query.ts               # $api = openapi-react-query
   types.ts               # 需要命名时使用的派生类型
-  server-info.ts         # 唯一一处契约缺口收窄（/ 缺 response_model）
+  serverInfo.ts         # 唯一一处契约缺口收窄（/ 缺 response_model）
 src/pages/               # 路由级页面组件（薄，负责组合）
   LaunchPage.tsx         # 启动屏 /
 src/features/<domain>/   # 领域逻辑：编排 hook、纯函数、子组件

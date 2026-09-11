@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router";
 import { API_BASE_URL } from "../api/client";
 import { $api } from "../api/query";
-import { toServerInfo } from "../api/server-info";
+import { toServerInfo } from "../api/serverInfo";
 
 /**
  * 启动屏（首页）。

@@ -92,6 +92,11 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 
 ## 约定
 
+- **文件命名（由 Biome `useFilenamingConvention` 强制）**：
+  - `.tsx` 组件（含页面）用 **PascalCase**：`LaunchPage.tsx`、`BlueprintDetails.tsx`。
+  - 其余 `.ts` 用 **camelCase**：hook 文件名 = hook 名（`useStartGame.ts`），普通模块同理（`serverInfo.ts`、`playerName.ts`）；测试文件跟随被测模块（`playerName.test.ts`）。
+  - 例外：`src/vite-env.d.ts`（Vite 约定名）、`.pi/**`（pi 工具扩展）。
+  - 理由：文件名与导出符号名对齐，跳转/搜索/fuzzy-find 才能对应上；这也是 React 生态（React docs、TanStack Query 自身）的做法。
 - **API 使用有强制规范，见 [`docs/api-layer.md`](docs/api-layer.md)（先读「基本原则」）。**
 - 核心：类型来自 `pnpm gen:api` 生成的 `src/api/schema.d.ts`（已 gitignore，开发期不提交）；不手写 API 类型；REST 走 `src/api/client.ts`（openapi-fetch），查询用 `src/api/query.ts` 的 `$api`。
 - 测试用 MSW（`src/test/`），未注册 handler 的请求会让测试失败。

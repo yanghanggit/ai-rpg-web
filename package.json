@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "gen:api": "node scripts/gen-api.mjs",
+    "gen:api": "node scripts/genApi.mjs",
     "format": "biome format --write .",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
