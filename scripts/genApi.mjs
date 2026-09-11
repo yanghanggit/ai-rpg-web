@@ -13,7 +13,7 @@ import { loadEnv } from "vite";
  *   3. OpenAPI 缺省时取 `${VITE_API_BASE_URL}/openapi.json`
  *   4. 全部缺省时回退 http://localhost:8000
  *
- * 生成前会先修正 spec（见 normalizeDiscriminators），再交给 openapi-typescript。
+ * 生成前会先校验 spec（见 assertStringDiscriminators），再交给 openapi-typescript。
  *
  * 用法：pnpm gen:api（需后端已启动）
  */
@@ -28,29 +28,28 @@ const baseUrl = (
 const url = process.env.VITE_OPENAPI_URL ?? env.VITE_OPENAPI_URL ?? `${baseUrl}/openapi.json`;
 
 /**
- * 删除「判别字段不是 string」的 discriminator。
+ * 断言 spec 里没有「判别字段不是 string」的 discriminator，否则直接让生成失败。
  *
- * 背景：Pydantic 会为字面量联合（如 `AnyAgentEvent = Union[SpeakEvent, ...]`）生成
- * discriminator，而 discriminator 的 mapping 键只能是字符串（JSON 对象的键必为字符串）。
- * openapi-typescript 见到 discriminator 后会把判别字段**强制渲染成字符串枚举**，
- * 但后端用的是 IntEnum（`type: Literal[EventType.SPEAK]`，即整数 1），运行时是数字——
- * 于是生成类型与真实响应不一致：前端照类型写 `switch (event.type) { case "1": }`，
- * 真实数据却全部落到 default。
+ * 背景：discriminator 的 mapping 键只能是字符串（JSON 对象的键必为字符串），
+ * 所以 openapi-typescript 一见到 discriminator，就把判别字段渲染成**字符串枚举**。
+ * 若后端用 IntEnum（`type: Literal[EventType.SPEAK]`，运行时是数字 1），
+ * 生成类型会声称 `type: "1"`，而真实响应是 `1` —— 前端照类型写出的 switch
+ * 会全部落到 default，且**不会报任何错**。
  *
- * 删掉这类 discriminator 后，openapi-typescript 按属性真实的 `const` 生成数字字面量
- * （`type: 1`），判别联合在 TypeScript 里依然能正常收窄（`event.type === 1` → SpeakEvent）。
- * 字符串判别字段的 discriminator 保持不动。
+ * 这类失真靠自觉发现不了，所以这里选择报错而不是自动"修正"：自动删掉 discriminator
+ * 能救回类型，却也把"后端契约有异味"这件事悄悄吞掉了。让生成失败，问题就必须在源头解决。
  *
- * @returns 被删除的 discriminator 数量
+ * 修法：后端把判别字段改成字符串字面量（如 `type: Literal["speak"] = "speak"`）。
+ * 详见 docs/api-layer.md §六。
  */
-function normalizeDiscriminators(spec) {
+function assertStringDiscriminators(spec) {
   const schemas = spec?.components?.schemas ?? {};
-  let removed = 0;
+  const violations = [];
 
-  const visit = (node) => {
+  const visit = (node, path) => {
     if (Array.isArray(node)) {
-      for (const item of node) {
-        visit(item);
+      for (const [index, item] of node.entries()) {
+        visit(item, `${path}[${index}]`);
       }
       return;
     }
@@ -61,27 +60,35 @@ function normalizeDiscriminators(spec) {
     const discriminator = node.discriminator;
     if (discriminator && typeof discriminator === "object") {
       const propertyName = discriminator.propertyName;
-      const refs = Object.values(discriminator.mapping ?? {});
       const kinds = new Set(
-        refs
+        Object.values(discriminator.mapping ?? {})
           .map((ref) => String(ref).split("/").pop())
           .map((name) => schemas[name]?.properties?.[propertyName]?.type)
           .filter((kind) => kind !== undefined),
       );
       const isStringDiscriminator = kinds.size === 1 && kinds.has("string");
       if (kinds.size > 0 && !isStringDiscriminator) {
-        delete node.discriminator;
-        removed += 1;
+        violations.push(
+          `${path}（判别字段 "${propertyName}" 的实际类型是 ${[...kinds].join(" / ")}）`,
+        );
       }
     }
 
-    for (const value of Object.values(node)) {
-      visit(value);
+    for (const [key, value] of Object.entries(node)) {
+      visit(value, path ? `${path}.${key}` : key);
     }
   };
 
-  visit(spec);
-  return removed;
+  visit(spec, "");
+
+  if (violations.length > 0) {
+    throw new Error(
+      `spec 里有 ${violations.length} 个非字符串判别字段的 discriminator，` +
+        `生成的类型会是错的：\n` +
+        violations.map((violation) => `  - ${violation}`).join("\n") +
+        `\n请把后端对应的 Literal 改成字符串（见 docs/api-layer.md §六）。`,
+    );
+  }
 }
 
 console.log(`Fetching OpenAPI from ${url} ...`);
@@ -91,10 +98,7 @@ if (!response.ok) {
 }
 const spec = await response.json();
 
-const removed = normalizeDiscriminators(spec);
-if (removed > 0) {
-  console.log(`修正 spec：删除 ${removed} 个非字符串判别字段的 discriminator`);
-}
+assertStringDiscriminators(spec);
 
 const specDir = mkdtempSync(join(tmpdir(), "ai-rpg-openapi-"));
 const specPath = join(specDir, "openapi.json");

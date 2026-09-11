@@ -54,7 +54,7 @@ export const handlers = [
   http.post(api("/api/home/advance/v1/"), () => {
     // 真实后端里这些叙事由 NPC 行动产生；mock 里直接追一条，好让「推进 → 新叙事」可见
     appendMockSessionMessage({
-      type: 3,
+      type: "announce",
       message: "（mock）家园推进：角色们各自行动了一轮。",
       actor: "旁白",
       stage: "场景.门厅",

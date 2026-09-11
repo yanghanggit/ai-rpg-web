@@ -6,7 +6,7 @@ type SessionMessage = Schemas["SessionMessage"];
 
 const message = (sequenceId: number): SessionMessage => ({
   sequence_id: sequenceId,
-  agent_event: { type: 0, message: `第 ${sequenceId} 条` },
+  agent_event: { type: "none", message: `第 ${sequenceId} 条` },
 });
 
 describe("mergeSessionMessages", () => {

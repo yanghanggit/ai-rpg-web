@@ -98,14 +98,14 @@ export const newGameFixture: Schemas["NewGameResponse"] = {
 };
 
 /**
- * 会话消息（叙事）。覆盖多种 agent_event 类型（数字，与后端 IntEnum 一致），
- * 其中最后一条用未分类的 `AgentEvent`（`type` 为宽泛 number）测渲染兜底。
+ * 会话消息（叙事）。覆盖多种 agent_event 类型（字符串字面量，与后端 models/agent_event.py 一致），
+ * 其中最后一条用未分类的 `AgentEvent`（`type` 为 "none"）测渲染兜底。
  */
 export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   {
     sequence_id: 1,
     agent_event: {
-      type: 4,
+      type: "mind",
       message: "（mock）# 角色.顾知秋 内心活动: 门厅里静得反常。",
       actor: "角色.顾知秋",
       stage: "场景.门厅",
@@ -115,7 +115,7 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   {
     sequence_id: 2,
     agent_event: {
-      type: 1,
+      type: "speak",
       message: "（mock）# 角色.顾知秋 对 角色.无名 说: 这位先生，你到此几日哉？",
       actor: "角色.顾知秋",
       stage: "场景.门厅",
@@ -126,7 +126,7 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   {
     sequence_id: 3,
     agent_event: {
-      type: 3,
+      type: "announce",
       message: "（mock）宣布：堂中灯火忽地一暗。",
       actor: "旁白",
       stage: "场景.门厅",
@@ -136,7 +136,7 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   {
     sequence_id: 4,
     agent_event: {
-      type: 6,
+      type: "trans_stage",
       message: "（mock）角色.无名 由 场景.门厅 移至 场景.一楼客房。",
       actor: "角色.无名",
       stage: "场景.门厅",
@@ -146,7 +146,7 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   {
     sequence_id: 5,
     agent_event: {
-      type: 0,
+      type: "none",
       message: "（mock）未分类事件：引擎输出的兜底形态。",
     },
   },

@@ -126,7 +126,7 @@ describe("家园页", () => {
     const newMessage: Schemas["SessionMessage"] = {
       sequence_id: 1,
       agent_event: {
-        type: 1,
+        type: "speak",
         message: "角色.顾知秋 忽然开口。",
         actor: "角色.顾知秋",
         stage: "场景.门厅",

@@ -24,16 +24,16 @@ describe("mock 会话消息表", () => {
   it("追加的消息拿到递增的 sequence_id，且只被新增那一次捞到", () => {
     const lastSequenceId = sessionMessagesFixture.at(-1)?.sequence_id ?? 0;
 
-    const sequenceId = appendMockSessionMessage({ type: 0, message: "新事件" });
+    const sequenceId = appendMockSessionMessage({ type: "none", message: "新事件" });
 
     expect(sequenceId).toBe(lastSequenceId + 1);
     expect(readMockSessionMessages(lastSequenceId)).toEqual([
-      { sequence_id: lastSequenceId + 1, agent_event: { type: 0, message: "新事件" } },
+      { sequence_id: lastSequenceId + 1, agent_event: { type: "none", message: "新事件" } },
     ]);
   });
 
   it("reset 后回到初始 fixture（测试之间不互相污染）", () => {
-    appendMockSessionMessage({ type: 0, message: "临时" });
+    appendMockSessionMessage({ type: "none", message: "临时" });
     resetMockSessionMessages();
 
     expect(readMockSessionMessages(0)).toEqual(sessionMessagesFixture);

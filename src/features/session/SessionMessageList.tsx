@@ -5,37 +5,28 @@ type AgentEvent = NonNullable<Schemas["SessionMessage"]["agent_event"]>;
 /**
  * 事件类型 → 展示标签。
  *
- * `type` 是**数字**（后端用 `IntEnum`：1=说话、2=耳语、3=宣布、4=内心、5=疑问、
- * 6=转场、7..10=战斗相关）。`AgentEvent` 的 `type` 是宽泛的 `number`，会落到
- * default 分支——那正是后端"未分类事件"的兜底形态，所以 default 不是错误分支。
- * 本轮只做家园，战斗类事件（7..10）也给个标签，免得出现看不懂的原始文本。
- *
- * 注：这些数字字面量能正常收窄，靠的是 scripts/genApi.mjs 生成前删掉了
- * 非字符串的 discriminator（原因见那里与 docs/api-layer.md）。
+ * `type` 是后端定义的**字符串字面量**（见 ai-rpg 的 models/agent_event.py），
+ * 生成类型里是闭合联合，所以每个 case 都能收窄到具体事件类型。
+ * default 分支不是死代码：它在运行时兜住「后端新增了类型、前端还没跟上」的情况。
  */
 function describeEvent(event: AgentEvent): string {
   switch (event.type) {
-    case 1:
+    case "speak":
       return "说";
-    case 2:
+    case "whisper":
       return "私语";
-    case 3:
+    case "announce":
       return "宣布";
-    case 4:
+    case "mind":
       return "内心";
-    case 5:
-      return "疑问";
-    case 6:
+    case "trans_stage":
       return "转场";
-    case 7:
-      return "遭遇";
-    case 8:
+    case "combat_arbitration":
       return "战斗裁决";
-    case 9:
-      return "战斗结算";
-    case 10:
+    case "appearance_update":
       return "外观";
     default:
+      // "none"（后端未分类事件的兜底形态）与将来新增的类型
       return "事件";
   }
 }
