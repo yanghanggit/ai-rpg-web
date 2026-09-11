@@ -23,6 +23,9 @@ importers:
       react-dom:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
+      react-router:
+        specifier: ^8.3.1
+        version: 8.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.5.12
@@ -529,6 +532,9 @@ packages:
   colorette@1.4.0:
     resolution: {integrity: sha512-Y2oEozpomLn7Q3HFP7dpww7AtMJplbM9lGZP6RDfHqmbeRjiwRg4n6VM6j4KLmRke85uWEI7JqF17f3pqdRA0g==}
 
+  cookie-es@3.1.1:
+    resolution: {integrity: sha512-UaXxwISYJPTr9hwQxMFYZ7kNhSXboMXP+Z3TRX6f1/NyaGPfuNUZOWP1pUEb75B2HjfklIYLVRfWiFZJyC6Npg==}
+
   cookie@1.1.1:
     resolution: {integrity: sha512-ei8Aos7ja0weRpFzJnEA9UHJ/7XQmqglbRwnf2ATjcB9Wq874VKH9kfjjirM6UhU2/E5fFYadylyhFldcqSidQ==}
     engines: {node: '>=18'}
@@ -863,6 +869,16 @@ packages:
 
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
+
+  react-router@8.3.1:
+    resolution: {integrity: sha512-TEOpiO2g0TJHEOJeRVv4amUFun9v1npCKszvcquNvzETUtJ8udV86ah5eFoHT7g26bsBvT6EiIhqulR8eDF++A==}
+    engines: {node: '>=22.22.0'}
+    peerDependencies:
+      react: '>=19.2.7'
+      react-dom: '>=19.2.7'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
 
   react@19.3.0:
     resolution: {integrity: sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==}
@@ -1493,6 +1509,8 @@ snapshots:
 
   colorette@1.4.0: {}
 
+  cookie-es@3.1.1: {}
+
   cookie@1.1.1: {}
 
   css-tree@3.2.1:
@@ -1788,6 +1806,13 @@ snapshots:
       scheduler: 0.28.0
 
   react-is@17.0.2: {}
+
+  react-router@8.3.1(react-dom@19.3.0(react@19.3.0))(react@19.3.0):
+    dependencies:
+      cookie-es: 3.1.1
+      react: 19.3.0
+    optionalDependencies:
+      react-dom: 19.3.0(react@19.3.0)
 
   react@19.3.0: {}
 

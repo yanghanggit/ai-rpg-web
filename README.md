@@ -2,7 +2,17 @@
 
 AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独立。
 
-技术栈：React + Vite + TypeScript（strict）+ TanStack Query + openapi-fetch / openapi-react-query + Biome + Vitest。
+技术栈：React + Vite + TypeScript（strict）+ React Router + TanStack Query + openapi-fetch / openapi-react-query + Biome + Vitest。
+
+## 页面结构
+
+| 路由 | 页面 | 职责 |
+| ------ | ------ | ------ |
+| `/` | `src/pages/LaunchPage.tsx` | 启动屏：展示服务器地址与连接状态，与玩家身份无关 |
+| `/entry` | `src/pages/EntryPage.tsx` | 玩家入口：玩家名自动生成（带日期），游戏名从 `/api/game/blueprint-list/v1/` 蓝图列表选择，并展示所选蓝图详情（玩家角色 / 战役设定 / 场景-角色映射 / 世界实体），登录 → 新游戏 |
+
+- 路由表在 `src/App.tsx`；Provider（`QueryClientProvider`、`BrowserRouter`）在 `src/main.tsx` 装配。
+- 领域逻辑与跨接口编排放 `src/features/<domain>/`；详见 [`docs/api-layer.md`](docs/api-layer.md#二目录职责)。
 
 ## 快速开始
 

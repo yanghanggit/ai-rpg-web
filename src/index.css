@@ -1,0 +1,157 @@
+:root {
+  color-scheme: light dark;
+  --fg: #1a1a1a;
+  --muted: #6b7280;
+  --ok: #16a34a;
+  --err: #dc2626;
+  --border: #e5e7eb;
+  --bg: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fg: #e5e7eb;
+    --muted: #9ca3af;
+    --ok: #4ade80;
+    --err: #f87171;
+    --border: #374151;
+    --bg: #0b0f14;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif;
+  line-height: 1.6;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.error {
+  color: var(--err);
+}
+
+/* 名值对：左侧标签右对齐，右侧值左对齐 */
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.5rem 1.5rem;
+  margin: 2rem 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dot {
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+
+.dot.ok {
+  background: var(--ok);
+}
+
+.dot.error {
+  background: var(--err);
+}
+
+button {
+  font: inherit;
+  padding: 0.5rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: var(--fg);
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+input,
+select {
+  font: inherit;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+.blueprint h2 {
+  margin-top: 2.5rem;
+}
+
+details {
+  margin: 1rem 0;
+}
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  vertical-align: middle;
+}
+
+ul.plain {
+  margin: 0.5rem 0;
+  padding-left: 1.2rem;
+}
+
+ul.plain li {
+  margin: 0.25rem 0;
+}
