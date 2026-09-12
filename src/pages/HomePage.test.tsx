@@ -29,12 +29,12 @@ async function findReadyButton() {
   return button;
 }
 
-const advanceReturns = (jobId: string) =>
+const advanceReturns = (jobId: number) =>
   http.post(api("/api/home/advance/v1/"), () =>
-    HttpResponse.json({ job_id: jobId, status: "running", message: "ok" }),
+    HttpResponse.json({ job_id: jobId, message: "ok" }),
   );
 
-const taskWith = (jobId: string, status: string, error: string | null = null) =>
+const taskWith = (jobId: number, status: string, error: string | null = null) =>
   http.get(api("/api/tasks/v1/status"), () =>
     HttpResponse.json({ tasks: [{ job_id: jobId, status, error }] }),
   );
@@ -51,9 +51,9 @@ describe("家园页", () => {
       }),
       http.post(api("/api/home/advance/v1/"), async ({ request }) => {
         bodies.push(await request.json());
-        return HttpResponse.json({ job_id: "9", status: "running", message: "ok" });
+        return HttpResponse.json({ job_id: 9, message: "ok" });
       }),
-      taskWith("9", "completed"),
+      taskWith(9, "succeeded"),
     );
 
     renderHome();
@@ -87,8 +87,8 @@ describe("家园页", () => {
     expect(screen.getByRole("button", { name: "推进一步" })).toBeDisabled();
   });
 
-  it("后台任务失败时展示后端错误文本，且不显示完成", async () => {
-    server.use(advanceReturns("9"), taskWith("9", "failed", "LLM 调用超时"));
+  it("任务失败时展示后端错误文本，且不显示完成", async () => {
+    server.use(advanceReturns(9), taskWith(9, "failed", "LLM 调用超时"));
 
     renderHome();
     fireEvent.click(await findReadyButton());
@@ -138,9 +138,9 @@ describe("家园页", () => {
     server.use(
       http.post(api("/api/home/advance/v1/"), () => {
         advanced = true;
-        return HttpResponse.json({ job_id: "9", status: "running", message: "ok" });
+        return HttpResponse.json({ job_id: 9, message: "ok" });
       }),
-      taskWith("9", "completed"),
+      taskWith(9, "succeeded"),
       http.get(api("/api/session_messages/v1/:userName/:gameName/since"), ({ request }) => {
         const since = Number(new URL(request.url).searchParams.get("last_sequence_id") ?? 0);
         const all = advanced ? [newMessage] : [];

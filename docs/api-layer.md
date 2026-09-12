@@ -115,10 +115,10 @@ server.use(
 
 | 场景 | 处理 |
 | ------ | ------ |
-| SSE（会话消息、后台任务） | `EventSource` / 流式 `fetch` + `apiUrl()`；处理重连与序号去重 |
+| SSE（会话消息、任务） | `EventSource` / 流式 `fetch` + `apiUrl()`；处理重连与序号去重 |
 | 后端静态图片 | 直接渲染 URL（`apiUrl()` 拼接），不硬编码静态前缀 |
-| 后台任务（job 模式） | 绝大多数动作接口返回 `job_id` 而**非**新状态。统一用 `src/api/useTask.ts` 轮询 `GET /api/tasks/v1/status` 至终态，再刷新相关查询。**禁止把拿到 `job_id` 当作"操作已完成"。** |
-| 任务查询的两种边界 | `job_id` 必须是数字字符串（OpenAPI 里带 `pattern`），非法输入由后端返回 422；未知 id 返回 `{ tasks: [] }`——属**正常响应**不是失败，客户端按“仍未完成”处理，并保留超时兜底。 |
+| 任务（job 模式） | 绝大多数动作接口返回 `job_id` 而**非**新状态。统一用 `src/api/useTask.ts` 轮询 `GET /api/tasks/v1/status` 至终态，再刷新相关查询。**禁止把拿到 `job_id` 当作"操作已完成"。** |
+| 任务查询的两种边界 | `job_id` 是整数（OpenAPI 里为 `integer`），非法输入由后端返回 422；未知 id 返回 `{ tasks: [] }`——属**正常响应**不是失败，客户端按“仍未完成”处理，并保留超时兜底。 |
 | **判别字段必须是字符串** | Pydantic 为字面量联合生成的 `discriminator`，其 mapping 的键只能是字符串（JSON 限制），`openapi-typescript` 据此把判别字段渲染成**字符串枚举**。若判别字段实际是整数（`Literal[EventType.SPEAK]`），生成类型会声称 `type: "1"` 而运行时是 `1`——照类型写的 `switch` **全部落到 default，且不报任何错**。<br>这类失真靠自觉发现不了，所以 `scripts/genApi.mjs` 在生成前断言所有判别字段都是 `string`，否则**直接让生成失败**（原先的做法是自动删掉 discriminator，虽能救回类型，却把“契约有异味”这件事悄悄吞了）。后端修法：判别字段用字符串字面量，如 `type: Literal["speak"] = "speak"`。 |
 
 ## 七、后端侧要求（最高杠杆）

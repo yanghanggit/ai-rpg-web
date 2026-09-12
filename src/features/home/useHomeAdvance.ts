@@ -1,8 +1,8 @@
 /**
- * 家园「推进」：触发一轮推进 → 等待后台任务 → 刷新家园状态。
+ * 家园「推进」：触发一轮推进 → 等待任务 → 刷新家园状态。
  *
  * 这是「触发 → 等待 → 刷新」这一 API 范式的第一次完整落地（见 docs/api-layer.md 六）：
- * `POST /api/home/advance/v1/` 只返回 `job_id`，真正的状态变化发生在后台任务里，
+ * `POST /api/home/advance/v1/` 只返回 `job_id`，真正的状态变化发生在任务里，
  * 所以**拿到 job_id 不等于操作完成**，必须等任务进入终态，再刷新相关查询。
  *
  * 触发用 plain `useMutation` + `client.POST`（跨接口编排，见 api-layer.md 五），
@@ -21,7 +21,7 @@ function describeError(error: unknown): string {
 
 export function useHomeAdvance(userName: string, gameName: string, actors: readonly string[]) {
   const queryClient = useQueryClient();
-  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobId, setJobId] = useState<number | null>(null);
   const task = useTask(jobId);
 
   const advance = useMutation({
@@ -37,7 +37,7 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
 
   // 任务进入终态后刷新家园状态。同一个 job 只失效一次——
   // 否则 isCompleted 期间每次渲染都会再触发一轮请求。
-  const invalidatedJob = useRef<string | null>(null);
+  const invalidatedJob = useRef<number | null>(null);
   useEffect(() => {
     if (jobId === null || !task.isCompleted || invalidatedJob.current === jobId) {
       return;
@@ -58,9 +58,9 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
   if (advance.isError) {
     error = describeError(advance.error);
   } else if (task.isFailed) {
-    error = task.error ?? "后台任务失败（后端未提供错误信息）";
+    error = task.error ?? "任务失败（后端未提供错误信息）";
   } else if (task.isTimedOut) {
-    error = "等待后台任务超时，请检查服务器状态";
+    error = "等待任务超时，请检查服务器状态";
   } else if (task.pollError) {
     error = `轮询任务状态失败：${describeError(task.pollError)}`;
   }
@@ -73,7 +73,7 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
     },
     /** 正在提交请求（还没拿到 job_id）。 */
     isStarting: advance.isPending,
-    /** 后台任务进行中。 */
+    /** 任务进行中。 */
     isRunning: task.isRunning,
     /** 本轮推进已完成。 */
     isCompleted: task.isCompleted,

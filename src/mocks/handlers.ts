@@ -35,20 +35,12 @@ export const handlers = [
     HttpResponse.json(homeStagesFixture),
   ),
 
-  // 后台任务：openapi-fetch 默认把数组 query 序列化成重复参数（job_ids=a&job_ids=b），
-  // 与 FastAPI 的 List[str] 一致。
+  // 任务：openapi-fetch 默认把数组 query 序列化成重复参数（job_ids=a&job_ids=b），
+  // 与 FastAPI 的 List 一致；id 在契约上是整数，URL 里则是其十进制字符串形式。
   http.get(api("/api/tasks/v1/status"), ({ request }) => {
-    const jobIds = new URL(request.url).searchParams.getAll("job_ids");
+    const jobIds = new URL(request.url).searchParams.getAll("job_ids").map(Number);
     return HttpResponse.json({ tasks: readMockTasks(jobIds) });
   }),
-
-  http.post(api("/api/tasks/v1/trigger"), () =>
-    HttpResponse.json({
-      job_id: createMockTask(),
-      status: "running",
-      message: "mock 后台任务已启动",
-    }),
-  ),
 
   // 家园动作：与真实后端一致，只返回 job_id，结果要靠轮询任务状态获得
   http.post(api("/api/home/advance/v1/"), () => {
@@ -62,7 +54,6 @@ export const handlers = [
     });
     return HttpResponse.json({
       job_id: createMockTask(),
-      status: "running",
       message: "mock 推进任务已启动",
     });
   }),

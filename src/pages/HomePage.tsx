@@ -66,7 +66,7 @@ function HomeView({ userName, gameName }: { userName: string; gameName: string }
       </p>
 
       {state.isSuccess && hasActors ? (
-        <p className="muted">对全部 {actors.length} 个角色推进一步（后台任务，需要等待）</p>
+        <p className="muted">对全部 {actors.length} 个角色推进一步（任务，需要等待）</p>
       ) : null}
       {state.isSuccess && !hasActors ? <p className="muted">当前没有可推进的角色</p> : null}
 

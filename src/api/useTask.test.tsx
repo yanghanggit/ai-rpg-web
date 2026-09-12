@@ -27,7 +27,7 @@ function mockTasksByCall(build: (call: number) => { status: string; error?: stri
     http.get(api("/api/tasks/v1/status"), () => {
       const { status, error = null } = build(counter.calls);
       counter.calls += 1;
-      return HttpResponse.json({ tasks: [{ job_id: "job-1", status, error }] });
+      return HttpResponse.json({ tasks: [{ job_id: 1, status, error }] });
     }),
   );
   return () => counter.calls;
@@ -52,12 +52,12 @@ describe("useTask", () => {
     expect(result.current.status).toBeUndefined();
   });
 
-  it("轮询到 completed 后停止", async () => {
+  it("轮询到 succeeded 后停止", async () => {
     const calls = mockTasksByCall((call) => ({
-      status: call < 3 ? "running" : "completed",
+      status: call < 3 ? "doing" : "succeeded",
     }));
 
-    const { result } = renderHook(() => useTask("job-1", { pollIntervalMs: 10 }), {
+    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
       wrapper: createWrapper(),
     });
 
@@ -73,7 +73,7 @@ describe("useTask", () => {
   it("failed 时带出后端记录的错误文本", async () => {
     mockTasksByCall(() => ({ status: "failed", error: "数据库连接失败" }));
 
-    const { result } = renderHook(() => useTask("job-1", { pollIntervalMs: 10 }), {
+    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
       wrapper: createWrapper(),
     });
 
@@ -91,7 +91,7 @@ describe("useTask", () => {
       }),
     );
 
-    const { result } = renderHook(() => useTask("job-1", { pollIntervalMs: 10 }), {
+    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
       wrapper: createWrapper(),
     });
 
@@ -103,9 +103,9 @@ describe("useTask", () => {
   });
 
   it("超过 timeoutMs 仍未终态则停止轮询并置 isTimedOut", async () => {
-    const calls = mockTasksByCall(() => ({ status: "running" }));
+    const calls = mockTasksByCall(() => ({ status: "doing" }));
 
-    const { result } = renderHook(() => useTask("job-1", { pollIntervalMs: 10, timeoutMs: 40 }), {
+    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10, timeoutMs: 40 }), {
       wrapper: createWrapper(),
     });
 
@@ -126,8 +126,8 @@ describe("useTask", () => {
             detail: [
               {
                 loc: ["query", "job_ids"],
-                msg: "String should match pattern",
-                type: "string_pattern_mismatch",
+                msg: "Input should be a valid integer",
+                type: "int_parsing",
               },
             ],
           },
@@ -136,7 +136,7 @@ describe("useTask", () => {
       ),
     );
 
-    const { result } = renderHook(() => useTask("job-1", { pollIntervalMs: 10 }), {
+    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
       wrapper: createWrapper(),
     });
 

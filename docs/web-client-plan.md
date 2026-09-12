@@ -14,7 +14,7 @@
 | 能力 | 现状 |
 | ------ | ------ |
 | REST 路由 | login / new_game / home / dungeon / combat / stages / tasks 等已按领域拆分 |
-| 实时推送 | 会话新消息与后台任务完成均以 SSE 提供（GET + `text/event-stream`），浏览器原生 EventSource 可直接接入 |
+| 实时推送 | 会话新消息与任务完成均以 SSE 提供（GET + `text/event-stream`），浏览器原生 EventSource 可直接接入 |
 | 跨域 | CORS 已放开（`allow_origins=["*"]`） |
 | 图片 | 生成图片经 StaticFiles 挂载为静态 URL，前端直接渲染 |
 | 契约 | FastAPI 自动产出 OpenAPI（`/openapi.json`），根路由 `/` 列出全部路由 |
@@ -55,7 +55,7 @@
 | 命令/动作（登录、出牌、合成、进副本） | REST POST |
 | 状态查询（场景/副本/战斗状态） | REST GET + TanStack Query |
 | 会话新消息 | SSE（EventSource） |
-| 后台任务完成 | 本期：轮询 `GET /api/tasks/v1/status?job_ids=[]`；后续可升级为 SSE `/api/tasks/v1/watch/{job_id}` |
+| 任务完成 | 本期：轮询 `GET /api/tasks/v1/status?job_ids=[]`；后续可升级为 SSE `/api/tasks/v1/watch/{job_id}` |
 
 将来出现实时双向需求（聊天、多人同步）时再引入 WebSocket，当前不需要。
 
@@ -83,7 +83,7 @@
 | 3 | 叙事面板：按 `sequence_id` 累积渲染会话消息 | `GET /api/session_messages/v1/{u}/{g}/since` |
 | 4 | 玩家动作：说话 / 换场景 | `POST /api/home/player_action/v1/` |
 
-**为什么先做任务等待**：绝大多数动作接口返回 `job_id` 而非新状态，真正的变化发生在后台任务里（参考 TUI `cmd_advance.py`：`home_advance()` → `watch_task_until_done()`）。不做这层，后面每加一个动作都要重踩。
+**为什么先做任务等待**：绝大多数动作接口返回 `job_id` 而非新状态，真正的变化发生在任务里（参考 TUI `cmd_advance.py`：`home_advance()` → `watch_task_until_done()`）。不做这层，后面每加一个动作都要重踩。
 
 ### 暂缓项（本期不做）
 
