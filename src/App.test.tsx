@@ -89,6 +89,15 @@ describe("启动屏 /", () => {
   });
 });
 
+/** 取某个 <summary> 所属的 <details>，用来断言默认展开/折叠。 */
+function detailsFor(label: string | RegExp): HTMLElement {
+  const details = screen.getByText(label).closest("details");
+  if (!(details instanceof HTMLElement)) {
+    throw new Error(`找不到「${String(label)}」所属的 details`);
+  }
+  return details;
+}
+
 describe("玩家入口页 /entry", () => {
   it("展示自动生成的玩家名、蓝图下拉，以及所选蓝图详情", async () => {
     renderApp("/entry");
@@ -110,6 +119,35 @@ describe("玩家入口页 /entry", () => {
     expect(screen.getByText(/角色\.无名（NPC · 玩家角色）/)).toBeInTheDocument();
     expect(screen.getAllByText("无角色")).toHaveLength(1);
     expect(screen.getByText("世界储物箱")).toBeInTheDocument();
+  });
+
+  it("蓝图详情标题带当前蓝图名；世界实体默认折叠，其余展开", async () => {
+    renderApp("/entry");
+
+    expect(await screen.findByRole("heading", { name: "蓝图详情：Game1" })).toBeInTheDocument();
+
+    expect(detailsFor("战役设定")).toHaveAttribute("open");
+    expect(detailsFor(/^场景与角色（/)).toHaveAttribute("open");
+    expect(detailsFor(/^世界实体（/)).not.toHaveAttribute("open");
+  });
+
+  it("切换蓝图后，详情标题与内容跟着变（名字是动态读的）", async () => {
+    server.use(
+      http.get(api("/api/game/blueprint-list/v1/"), () =>
+        HttpResponse.json({
+          blueprints: [blueprintWithName("Game1"), blueprintWithName("Game2")],
+        }),
+      ),
+    );
+
+    renderApp("/entry");
+    expect(await screen.findByRole("heading", { name: "蓝图详情：Game1" })).toBeInTheDocument();
+    expect(screen.getByText("战役设定-Game1")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("游戏名"), { target: { value: "Game2" } });
+
+    expect(screen.getByRole("heading", { name: "蓝图详情：Game2" })).toBeInTheDocument();
+    expect(screen.getByText("战役设定-Game2")).toBeInTheDocument();
   });
 
   it("选中另一个蓝图提交后，跳到家园页，且两个请求都使用所选游戏名", async () => {
