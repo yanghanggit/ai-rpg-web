@@ -143,7 +143,7 @@ describe("家园概览页", () => {
     const items = within(dialog).getAllByRole("listitem");
 
     expect(items).toHaveLength(sessionMessagesFixture.length);
-    expect(items[1]?.textContent ?? "").toContain("对 角色.无名 说：");
+    expect(items[1]?.textContent ?? "").toContain("对 无名 说：");
     expect(within(dialog).getByText(`共 ${sessionMessagesFixture.length} 条`)).toBeInTheDocument();
   });
 

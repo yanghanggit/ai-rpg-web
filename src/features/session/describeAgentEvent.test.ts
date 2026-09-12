@@ -17,9 +17,9 @@ describe("describeAgentEvent", () => {
 
     expect(describeAgentEvent(event)).toEqual({
       label: "说",
-      who: "角色.顾知秋",
-      where: "场景.门厅",
-      what: "对 角色.无名 说：你到此几日哉？",
+      who: "顾知秋",
+      where: "门厅",
+      what: "对 无名 说：你到此几日哉？",
     });
   });
 
@@ -34,7 +34,7 @@ describe("describeAgentEvent", () => {
 
     const parts = describeAgentEvent(event);
 
-    expect(parts.where).toBe("场景.门厅");
+    expect(parts.where).toBe("门厅");
     expect(parts.what).toBe("门厅里静得反常。");
     // message 里没有 stage，这正是不能直接渲染 message 的原因
     expect(event.message).not.toContain("场景.门厅");
@@ -51,10 +51,27 @@ describe("describeAgentEvent", () => {
 
     expect(describeAgentEvent(event)).toEqual({
       label: "转场",
-      who: "角色.无名",
-      where: "场景.门厅 → 场景.一楼客房",
+      who: "无名",
+      where: "门厅 → 一楼客房",
       what: "",
     });
+  });
+
+  it("名字出口前都过了 displayName：actor / target / stage 只留最后一段", () => {
+    const event: AgentEvent = {
+      type: "whisper",
+      message: "（忽略）",
+      actor: "角色.顾知秋",
+      stage: "场景.二楼卧室",
+      target: "怪物.纸人",
+      content: "别出声。",
+    };
+
+    const parts = describeAgentEvent(event);
+
+    expect(parts.who).toBe("顾知秋");
+    expect(parts.where).toBe("二楼卧室");
+    expect(parts.what).toBe("对 纸人 耳语：别出声。");
   });
 
   it("战斗裁决：没有单一行动者，何事取 narrative 而非 combat_log", () => {
@@ -69,7 +86,7 @@ describe("describeAgentEvent", () => {
     expect(describeAgentEvent(event)).toEqual({
       label: "战斗裁决",
       who: "",
-      where: "场景.门厅",
+      where: "门厅",
       what: "两人错身而过，谁也没占到便宜。",
     });
   });

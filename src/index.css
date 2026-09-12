@@ -156,6 +156,17 @@ ul.plain li {
   margin: 0.25rem 0;
 }
 
+/* 道具：每件物品一条，描述再缩进一层 */
+ul.items li {
+  margin: 0.6rem 0;
+}
+
+.item-description {
+  margin: 0.2rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 /* 功能按钮条：页面的全部动作都在这里 */
 .toolbar {
   display: flex;

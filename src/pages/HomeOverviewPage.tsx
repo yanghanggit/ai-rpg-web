@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { $api } from "../api/query";
+import { displayName } from "../components/displayName";
 import Modal from "../components/Modal";
 import { collectActors } from "../features/home/collectActors";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
@@ -112,14 +113,14 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           <div className="cards">
             {stages.map(([stage, stageActors]) => (
               <article key={stage} className="card">
-                <h2 className="mono">{stage}</h2>
+                <h2 className="mono">{displayName(stage)}</h2>
                 {stageActors.length === 0 ? (
                   <p className="muted">无角色</p>
                 ) : (
                   <ul className="chips">
                     {stageActors.map((actorName) => (
                       <li key={actorName} className="chip mono">
-                        {actorName}
+                        {displayName(actorName)}
                       </li>
                     ))}
                   </ul>

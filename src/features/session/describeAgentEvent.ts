@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { displayName } from "../../components/displayName";
 
 type AgentEvent = NonNullable<Schemas["SessionMessage"]["agent_event"]>;
 
@@ -10,6 +11,9 @@ type AgentEvent = NonNullable<Schemas["SessionMessage"]["agent_event"]>;
  * 只有结构化字段里才有，所以这里按事件类型重新组装，不依赖 message。
  *
  * `what` 允许为空字符串（场景转换本身没有台词），由调用方决定是否渲染那一段。
+ *
+ * 事件里的 `actor` / `target` / `stage` 都是服务器名字，这里出口前一律过 `displayName`
+ * （`角色.无名` → `无名`）——本函数产出的就是给玩家看的文本，原始名字只在数据层用。
  *
  * 关于开头的 `"stage" in event`：事件联合的每个成员都带字面量 `type`（含兜底的
  * `NoneEvent`，type = "none"），但只有具体事件才有 `stage`。所以这一步用来先把
@@ -28,34 +32,54 @@ export function describeAgentEvent(event: AgentEvent) {
     case "speak":
       return {
         label: "说",
-        who: event.actor,
-        where: event.stage,
-        what: `对 ${event.target} 说：${event.content}`,
+        who: displayName(event.actor),
+        where: displayName(event.stage),
+        what: `对 ${displayName(event.target)} 说：${event.content}`,
       };
     case "whisper":
       return {
         label: "私语",
-        who: event.actor,
-        where: event.stage,
-        what: `对 ${event.target} 耳语：${event.content}`,
+        who: displayName(event.actor),
+        where: displayName(event.stage),
+        what: `对 ${displayName(event.target)} 耳语：${event.content}`,
       };
     case "announce":
-      return { label: "宣布", who: event.actor, where: event.stage, what: event.content };
+      return {
+        label: "宣布",
+        who: displayName(event.actor),
+        where: displayName(event.stage),
+        what: event.content,
+      };
     case "mind":
-      return { label: "内心", who: event.actor, where: event.stage, what: event.content };
+      return {
+        label: "内心",
+        who: displayName(event.actor),
+        where: displayName(event.stage),
+        what: event.content,
+      };
     case "trans_stage":
       // 场景转换的「何地」是"从哪到哪"，所以箭头放进 where 而不是 what
       return {
         label: "转场",
-        who: event.actor,
-        where: `${event.stage} → ${event.target}`,
+        who: displayName(event.actor),
+        where: `${displayName(event.stage)} → ${displayName(event.target)}`,
         what: "",
       };
     case "combat_arbitration":
       // 裁决是面向全体场景的，没有单一行动者；combat_log 是原始日志，这里只取叙述
-      return { label: "战斗裁决", who: "", where: event.stage, what: event.narrative };
+      return {
+        label: "战斗裁决",
+        who: "",
+        where: displayName(event.stage),
+        what: event.narrative,
+      };
     case "appearance_update":
-      return { label: "外观", who: event.actor, where: event.stage, what: event.appearance };
+      return {
+        label: "外观",
+        who: displayName(event.actor),
+        where: displayName(event.stage),
+        what: event.appearance,
+      };
     default:
       return fallback;
   }

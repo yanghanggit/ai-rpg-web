@@ -110,18 +110,18 @@ describe("玩家入口页 /entry", () => {
     expect(select).toHaveValue("Game1");
 
     // 蓝图详情（来自共享 fixture）：玩家角色 / 战役设定 / 场景-角色 / 世界实体
-    expect(screen.getByText("角色.无名")).toBeInTheDocument();
+    expect(screen.getByText("无名")).toBeInTheDocument();
     expect(
       screen.getByText("（mock）这是一个架空的、融合狩猎玩法的中式民俗志怪游戏世界。"),
     ).toBeInTheDocument();
-    expect(screen.getByText("场景.门厅")).toBeInTheDocument();
-    expect(screen.getByText(/角色\.顾知秋（NPC）/)).toBeInTheDocument();
-    expect(screen.getByText(/角色\.无名（NPC · 玩家角色）/)).toBeInTheDocument();
+    expect(screen.getByText("门厅")).toBeInTheDocument();
+    expect(screen.getByText(/顾知秋（NPC）/)).toBeInTheDocument();
+    expect(screen.getByText(/无名（NPC · 玩家角色）/)).toBeInTheDocument();
     expect(screen.getAllByText("无角色")).toHaveLength(1);
     expect(screen.getByText("世界储物箱")).toBeInTheDocument();
   });
 
-  it("蓝图详情标题带当前蓝图名；世界实体默认折叠，其余展开", async () => {
+  it("蓝图详情标题带当前蓝图名；世界实体与两个道具容器默认折叠", async () => {
     renderApp("/entry");
 
     expect(await screen.findByRole("heading", { name: "蓝图详情：Game1" })).toBeInTheDocument();
@@ -129,6 +129,24 @@ describe("玩家入口页 /entry", () => {
     expect(detailsFor("战役设定")).toHaveAttribute("open");
     expect(detailsFor(/^场景与角色（/)).toHaveAttribute("open");
     expect(detailsFor(/^世界实体（/)).not.toHaveAttribute("open");
+    // 道具没有外层嵌套，直接是「随身背包」「储物箱」两项
+    expect(detailsFor(/^随身背包（/)).not.toHaveAttribute("open");
+    expect(detailsFor(/^储物箱（/)).not.toHaveAttribute("open");
+  });
+
+  it("物品显示类型标签、名字与数量", async () => {
+    renderApp("/entry");
+
+    expect(await screen.findByText(/^随身背包（2）/)).toBeInTheDocument();
+    expect(screen.getByText(/^储物箱（1）/)).toBeInTheDocument();
+
+    // 折叠只是视觉上的，内容仍在 DOM 里
+    expect(screen.getByText("缠麻短刃")).toBeInTheDocument();
+    expect(screen.getByText("吗啡针剂")).toBeInTheDocument();
+    expect(screen.getByText("×2")).toBeInTheDocument();
+    expect(screen.getByText("（mock）由旧铁剪反复磨砺而成的短刃。")).toBeInTheDocument();
+    expect(screen.getByText("旧麻绳")).toBeInTheDocument();
+    expect(screen.getByText("×3")).toBeInTheDocument();
   });
 
   it("切换蓝图后，详情标题与内容跟着变（名字是动态读的）", async () => {
@@ -179,7 +197,7 @@ describe("玩家入口页 /entry", () => {
 
     renderApp("/entry");
     fireEvent.change(await screen.findByLabelText("游戏名"), { target: { value: "Game2" } });
-    expect(await screen.findByText(/角色\.主角-Game2/)).toBeInTheDocument();
+    expect(await screen.findByText(/主角-Game2/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "登录 → 新游戏" }));
 
@@ -231,14 +249,14 @@ describe("家园页 /game/:userName/:gameName/home", () => {
     renderApp("/game/webdev/Game1/home");
 
     expect(screen.getByText("webdev / Game1")).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "场景.门厅" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "门厅" })).toBeInTheDocument();
 
     // 断言限定在「场景」分区内：叙事分区也会出现角色名（谁/何地/何事）
     const stages = screen.getByRole("region", { name: "场景" });
     // 门厅卡片 2 个 actor，一楼客房 1 个，二楼卧室无角色
-    expect(within(stages).getByText("角色.顾知秋")).toBeInTheDocument();
-    expect(within(stages).getByText("角色.无名")).toBeInTheDocument();
-    expect(within(stages).getByText("角色.小厮")).toBeInTheDocument();
+    expect(within(stages).getByText("顾知秋")).toBeInTheDocument();
+    expect(within(stages).getByText("无名")).toBeInTheDocument();
+    expect(within(stages).getByText("小厮")).toBeInTheDocument();
     expect(within(stages).getAllByText("无角色")).toHaveLength(1);
   });
 

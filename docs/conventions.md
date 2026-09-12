@@ -20,7 +20,8 @@ src/pages/               # 路由级页面组件（每个 URL 一个）
   LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts  entry/BlueprintDetails.tsx
-src/components/          # 通用展示组件（不含领域知识；目前为空，用到再建）
+src/components/          # 通用展示逻辑（不含领域知识）
+  displayName.ts         #   服务器名字 → 显示名，名字显示的唯一规则入口
 src/mocks/               # mock fixtures / handlers / browser / node（测试与 dev 共用）
 src/test/                # 测试基建（setup.ts）
 src/App.tsx              # 路由壳
@@ -80,6 +81,7 @@ pages ──┬──▶ features ──┬──▶ components
 
 - **保留后端 snake_case**，不做 camelCase 转换（详见 [api-layer.md](api-layer.md) 基本原则）。
 - **不手写 API 类型**，不 `any`，不在 API 边界 `as`。
+- **服务器名字一律经 `displayName` 显示**（`src/components/displayName.ts`）：只保留最后一段，`角色.无名` → `无名`。**取身份的地方一律用原始名字**——比较、URL、API 参数、React key 都用原值（显示名会撞：`角色.无名` / `怪物.无名`）。要改"名字怎么显示"只改这一个函数，不在组件里各写一份。
 - **Provider 只在 `main.tsx` 装配**（`QueryClientProvider`、`BrowserRouter`），页面不自己创建，便于测试用 `MemoryRouter` 替换。
 
 ## 五、强制手段（谁保证）
@@ -90,6 +92,7 @@ pages ──┬──▶ features ──┬──▶ components
 | 格式 / 大小写 / lint | Biome | `pnpm lint` |
 | 文件名 = 导出符号；`.tsx` 位置 | `scripts/checkFileConventions.mjs` | `pnpm lint` / `pnpm check:conventions` |
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
+| 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
 | 行为正确 | Vitest + MSW | `pnpm test:run` |
 | 构建可用 | `tsc --noEmit && vite build` | `pnpm build` |
 

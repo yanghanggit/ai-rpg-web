@@ -20,7 +20,11 @@ export const serverInfoFixture: Schemas["ServerInfoResponse"] = {
   routes: [],
 };
 
-function actor(name: string, type: Schemas["ActorType"]): Schemas["Actor"] {
+function actor(
+  name: string,
+  type: Schemas["ActorType"],
+  components: Schemas["ComponentSerialization"][] = [],
+): Schemas["Actor"] {
   return {
     name,
     type,
@@ -28,7 +32,7 @@ function actor(name: string, type: Schemas["ActorType"]): Schemas["Actor"] {
     base_body: "（mock）基础身体",
     system_message: "（mock）角色系统提示",
     character_stats: { hp: 15, max_hp: 15, attack: 3, defense: 1 },
-    components: [],
+    components,
   };
 }
 
@@ -45,7 +49,38 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       type: "Home",
       profile: "（mock）门厅",
       system_message: "（mock）",
-      actors: [actor("角色.顾知秋", "NPC"), actor("角色.无名", "NPC")],
+      actors: [
+        actor("角色.顾知秋", "NPC"),
+        // 玩家角色的随身背包：字段形状照抄真实后端的 Item（含 uuid / count / 逐类型的额外字段）
+        actor("角色.无名", "NPC", [
+          {
+            name: "InventoryComponent",
+            data: {
+              name: "角色.无名",
+              items: [
+                {
+                  name: "装备.缠麻短刃",
+                  uuid: "00000000-0000-0000-0000-000000000001",
+                  type: "GearItem",
+                  description: "（mock）由旧铁剪反复磨砺而成的短刃。",
+                  count: 1,
+                  resources: [],
+                  cards: [],
+                },
+                {
+                  name: "消耗品.吗啡针剂",
+                  uuid: "00000000-0000-0000-0000-000000000002",
+                  type: "ConsumableItem",
+                  description: "（mock）淡琥珀色的玻璃针剂。",
+                  count: 2,
+                  on_use_prompt: ["（mock）恢复 4 点 HP。"],
+                  resources: [],
+                },
+              ],
+            },
+          },
+        ]),
+      ],
       components: [],
     },
     {
@@ -68,7 +103,28 @@ export const blueprintFixture: Schemas["Blueprint"] = {
   world_entities: [
     { name: "世界.玩家行动审计系统", system_message: "（mock）", components: [] },
     { name: "世界.副本生成系统", system_message: "（mock）", components: [] },
-    { name: "世界储物箱", system_message: "（mock）", components: [] },
+    {
+      name: "世界储物箱",
+      system_message: "（mock）",
+      components: [
+        {
+          name: "StorageComponent",
+          data: {
+            name: "世界储物箱",
+            items: [
+              {
+                name: "材料.旧麻绳",
+                uuid: "00000000-0000-0000-0000-000000000003",
+                type: "MaterialItem",
+                description: "（mock）已泛黄，但韧劲仍在。",
+                count: 3,
+                resources: [],
+              },
+            ],
+          },
+        },
+      ],
+    },
   ],
 };
 
