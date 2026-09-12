@@ -99,7 +99,7 @@ export const newGameFixture: Schemas["NewGameResponse"] = {
 
 /**
  * 会话消息（叙事）。覆盖多种 agent_event 类型（字符串字面量，与后端 models/agent_event.py 一致），
- * 其中最后一条用未分类的 `AgentEvent`（`type` 为 "none"）测渲染兜底。
+ * 其中最后一条用未分类的 `NoneEvent`（`type` 为 "none"）测渲染兜底。
  */
 export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   {

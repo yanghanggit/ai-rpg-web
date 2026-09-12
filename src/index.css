@@ -156,32 +156,29 @@ ul.plain li {
   margin: 0.25rem 0;
 }
 
-/* 页头：标题在左，操作在右 */
-.page-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.page-head h1 {
-  margin: 0;
-}
-
-.page-head p {
-  margin: 0.2rem 0 0;
-}
-
-.head-actions {
+/* 功能按钮条：页面的全部动作都在这里 */
+.toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  gap: 0.6rem;
+  margin: 1.75rem 0 0.5rem;
 }
 
-/* 小节标题行：标题在左，附带的操作（如「全部叙事」）在右 */
+/* 叙事未读通知按钮 */
+.count-button {
+  color: var(--muted);
+}
+
+/* 有新事件未看时转绿。这就是「推进完成、有新内容可看」的信号——
+   页面上不再用一句文字重复表达。 */
+.count-button--unread {
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 600;
+}
+
+/* 小节标题行 */
 .section-head {
   display: flex;
   flex-wrap: wrap;
@@ -194,20 +191,15 @@ ul.plain li {
   margin: 0;
 }
 
-.count-link {
-  padding: 0.1rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--muted);
-  font-size: 0.85rem;
+/* 浮层内的操作按钮行 */
+.modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1.25rem;
 }
 
-.count-link:hover:not(:disabled) {
-  border-color: var(--fg);
-  color: var(--fg);
-}
-
-/* 「全部叙事」浮层 */
+/* 浮层 */
 .overlay {
   position: fixed;
   inset: 0;
@@ -264,7 +256,11 @@ ul.plain li {
 
 .overlay-body {
   overflow-y: auto;
-  padding: 0 1.25rem 1.25rem;
+  padding: 1rem 1.25rem 1.25rem;
+}
+
+.overlay-body p {
+  margin-top: 0;
 }
 
 /* 会话消息（叙事）列表：sequence_id 递增，所以用有序列表 */
@@ -304,38 +300,39 @@ ol.session .what {
   margin: 0.15rem 0 0;
 }
 
+/* 场景卡片：本页的主要信息，给足尺寸 */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 1rem;
-  margin-top: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.25rem;
 }
 
 .card {
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
+  border-radius: 14px;
+  padding: 1.5rem;
 }
 
 .card h2 {
-  margin: 0 0 0.75rem;
-  font-size: 1rem;
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
 }
 
 .chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.4rem;
+  gap: 0.5rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .chip {
-  padding: 0.15rem 0.6rem;
+  padding: 0.25rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
 .mock-badge {

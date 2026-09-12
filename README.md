@@ -10,7 +10,7 @@ AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独�
 | ------ | ------ | ------ |
 | `/` | `src/pages/LaunchPage.tsx` | 启动屏：展示服务器地址与连接状态，与玩家身份无关 |
 | `/entry` | `src/pages/EntryPage.tsx` | 玩家入口：玩家名自动生成（带日期），游戏名从 `/api/game/blueprint-list/v1/` 蓝图列表选择，并展示所选蓝图详情（玩家角色 / 战役设定 / 场景-角色映射 / 世界实体），登录 → 新游戏 |
-| `/game/:userName/:gameName/home` | `src/pages/HomeOverviewPage.tsx` | 家园概览：一屏看全局（推进按钮、最近几条叙事、每个 stage 一张卡片列出其 actor），提供「登出并返回上一级」，并可弹出「全部叙事」浮层 |
+| `/game/:userName/:gameName/home` | `src/pages/HomeOverviewPage.tsx` | 家园概览：只有**功能按钮**与**场景卡片**两块。按钮条：`推进一步 · N 个角色`（人数直接写在按钮上）、`叙事 已看/总共`（右边大于左边即有新事件未看，点击弹出「全部叙事」浮层）、`← 返回上一级`（浮窗确认后登出）。卡片：每个 stage 一张，列出其中的 actor |
 | `/dev` | `src/pages/DevIndexPage.tsx` | 开发索引（仅 dev 注册）：常用深链清单 |
 
 - 路由表在 `src/App.tsx`；Provider（`QueryClientProvider`、`BrowserRouter`）在 `src/main.tsx` 装配。

@@ -75,8 +75,6 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
     isStarting: advance.isPending,
     /** 任务进行中。 */
     isRunning: task.isRunning,
-    /** 本轮推进已完成。 */
-    isCompleted: task.isCompleted,
     error,
   };
 }

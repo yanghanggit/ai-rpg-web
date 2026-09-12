@@ -1,25 +1,26 @@
 import { useState } from "react";
 import { useParams } from "react-router";
 import { $api } from "../api/query";
+import Modal from "../components/Modal";
 import { collectActors } from "../features/home/collectActors";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
 import { useLogout } from "../features/home/useLogout";
 import NarrativeOverlay from "../features/session/NarrativeOverlay";
-import SessionMessageList from "../features/session/SessionMessageList";
 import { useSessionMessages } from "../features/session/useSessionMessages";
-
-/** 本页只内联最近这些条；完整历史在「全部叙事」浮层里。 */
-const INLINE_MESSAGE_LIMIT = 3;
+import { useUnreadCount } from "../features/session/useUnreadCount";
 
 /**
- * 家园概览页：一屏看全局——全部场景与其中的角色、最近几条叙事、推进按钮。
+ * 家园概览页：一屏看全局。
  *
- * 叫 Overview 是因为它展示的是**宏观**信息（所有 stage、所有 actor 的汇总视图），
- * 而不是某个具体场景的内部；单条消息的完整历史另有一页。
+ * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
- * 会话来自 URL（/game/:userName/:gameName/home），所以本页可被直接深链——
- * 不必每次从启动屏、玩家入口走一遍。
- * 数据源：GET /api/stages/v1/{user_name}/{game_name}/state
+ * - 顶部按钮：推进 / 叙事未读 / 返回上一级
+ * - 下方卡片：每个 stage 一张，列出其中的 actor
+ *
+ * 叙事不在这里展开（历史事件在浮层里看），所以页面上只留一个带「已看 / 总共」数字的
+ * 通知按钮：右边大于左边就说明有新事件没看。
+ *
+ * 会话来自 URL（/game/:userName/:gameName/home），本页可被直接深链。
  */
 export default function HomeOverviewPage() {
   const { userName, gameName } = useParams();
@@ -51,16 +52,16 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const logout = useLogout(userName, gameName);
   const hasActors = actors.length > 0;
 
-  // 登出会销毁房间，属于不可逆操作，所以先问一句再执行
-  const [isConfirmingLogout, setIsConfirmingLogout] = useState(false);
-  // 「全部叙事」浮层
   const [isNarrativeOpen, setIsNarrativeOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
 
-  // 内联只展示最近几条；总数即"服务器上已有的全部事件"
+  // 通知按钮上的两个数字：已看 / 总共。右大于左即"有新事件没看"
   const total = session.messages.length;
-  const recent = session.messages.slice(-INLINE_MESSAGE_LIMIT);
+  const unread = useUnreadCount(total, session.hasLoaded, isNarrativeOpen);
+  const seen = total - unread;
 
-  let buttonLabel = "推进一步";
+  // 人数直接写在按钮上，页面上就不再需要那句解释文案
+  let buttonLabel = `推进一步 · ${actors.length} 个角色`;
   if (advance.isStarting) {
     buttonLabel = "提交中…";
   } else if (advance.isRunning) {
@@ -69,40 +70,12 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
   return (
     <main className="page">
-      <header className="page-head">
-        <div>
-          <h1>家园概览</h1>
-          <p className="muted mono">
-            {userName} / {gameName}
-          </p>
-        </div>
+      <h1>家园概览</h1>
+      <p className="muted mono">
+        {userName} / {gameName}
+      </p>
 
-        <div className="head-actions">
-          {isConfirmingLogout ? (
-            <>
-              <span className="muted">登出会结束当前对局，确定？</span>
-              <button type="button" disabled={logout.isPending} onClick={() => logout.mutate()}>
-                {logout.isPending ? "登出中…" : "确定登出"}
-              </button>
-              <button
-                type="button"
-                disabled={logout.isPending}
-                onClick={() => setIsConfirmingLogout(false)}
-              >
-                取消
-              </button>
-            </>
-          ) : (
-            <button type="button" onClick={() => setIsConfirmingLogout(true)}>
-              ← 返回上一级
-            </button>
-          )}
-        </div>
-      </header>
-
-      {logout.isError ? <p className="error">登出失败：{String(logout.error)}</p> : null}
-
-      <p>
+      <div className="toolbar">
         <button
           type="button"
           disabled={!hasActors || advance.isStarting || advance.isRunning}
@@ -110,38 +83,28 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
         >
           {buttonLabel}
         </button>
-      </p>
 
-      {state.isSuccess && hasActors ? (
-        <p className="muted">对全部 {actors.length} 个角色推进一步（任务，需要等待）</p>
-      ) : null}
-      {state.isSuccess && !hasActors ? <p className="muted">当前没有可推进的角色</p> : null}
+        <button
+          type="button"
+          className={unread > 0 ? "count-button count-button--unread" : "count-button"}
+          title={unread > 0 ? `有 ${unread} 条新事件未查看` : "没有新事件"}
+          aria-label={`查看叙事事件（已看 ${seen} 条，共 ${total} 条）`}
+          onClick={() => setIsNarrativeOpen(true)}
+        >
+          叙事 {seen} / {total}
+        </button>
+        <button type="button" onClick={() => setIsLogoutOpen(true)}>
+          ← 返回上一级
+        </button>
+      </div>
 
-      {advance.isCompleted ? <p className="ok">推进完成，家园状态已刷新。</p> : null}
       {advance.error ? <p className="error">推进失败：{advance.error}</p> : null}
-
-      <section aria-labelledby="narrative-heading">
-        <div className="section-head">
-          <h2 id="narrative-heading">叙事</h2>
-          <button
-            type="button"
-            className="count-link"
-            title={`查看全部 ${total} 条事件`}
-            aria-label={`查看全部事件：当前显示最近 ${recent.length} 条，共 ${total} 条`}
-            onClick={() => setIsNarrativeOpen(true)}
-          >
-            显示 {recent.length} / 共 {total} 条 →
-          </button>
-        </div>
-        {session.isPending ? <p className="muted">加载中…</p> : null}
-        {session.error ? <p className="error">无法获取会话消息：{String(session.error)}</p> : null}
-        <SessionMessageList messages={recent} />
-      </section>
 
       <section aria-labelledby="stages-heading">
         <div className="section-head">
           <h2 id="stages-heading">场景</h2>
         </div>
+
         {state.isPending ? <p className="muted">加载中…</p> : null}
         {state.isError ? <p className="error">无法获取家园状态：{String(state.error)}</p> : null}
 
@@ -169,6 +132,28 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
       {isNarrativeOpen ? (
         <NarrativeOverlay messages={session.messages} onClose={() => setIsNarrativeOpen(false)} />
+      ) : null}
+
+      {isLogoutOpen ? (
+        <Modal title="确认登出" onClose={() => setIsLogoutOpen(false)}>
+          <p>
+            登出会结束当前对局（<span className="mono">{userName}</span> /{" "}
+            <span className="mono">{gameName}</span>），房间随即销毁，无法恢复。
+          </p>
+          <div className="modal-actions">
+            <button type="button" disabled={logout.isPending} onClick={() => logout.mutate()}>
+              {logout.isPending ? "登出中…" : "确定登出"}
+            </button>
+            <button
+              type="button"
+              disabled={logout.isPending}
+              onClick={() => setIsLogoutOpen(false)}
+            >
+              取消
+            </button>
+          </div>
+          {logout.isError ? <p className="error">登出失败：{String(logout.error)}</p> : null}
+        </Modal>
       ) : null}
     </main>
   );

@@ -11,10 +11,10 @@ type AgentEvent = NonNullable<Schemas["SessionMessage"]["agent_event"]>;
  *
  * `what` 允许为空字符串（场景转换本身没有台词），由调用方决定是否渲染那一段。
  *
- * 关于开头的 `"stage" in event`：这不是运行时兜底，而是**类型收窄的必要步骤**。
- * 后端事件基类 `AgentEvent`（未分类事件的兜底形态）的 `type` 是宽泛的 `str`，
- * 与所有字面量都兼容，因此它会一直留在每个 `case` 分支里；不先把它排除掉，
- * 就取不到具体事件的专有字段（actor / stage / content …）。
+ * 关于开头的 `"stage" in event`：事件联合的每个成员都带字面量 `type`（含兜底的
+ * `NoneEvent`，type = "none"），但只有具体事件才有 `stage`。所以这一步用来先把
+ * `NoneEvent`（以及任何不带 stage 的事件）排除掉，后面的 `case` 才能安全取用
+ * `actor` / `stage` / `content` 等专有字段。
  */
 export function describeAgentEvent(event: AgentEvent) {
   // 最后一道防线：后端将来新增了事件类型而前端还没跟上时，至少还能显示原始文本

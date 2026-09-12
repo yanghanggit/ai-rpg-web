@@ -23,12 +23,14 @@ function renderHome() {
   );
 }
 
-/** 拿到已可点击的推进按钮（首屏数据到位前是禁用的）。 */
-async function findReadyButton() {
-  const button = await screen.findByRole("button", { name: "推进一步" });
+/** 推进按钮的文案带人数，所以用正则匹配。 */
+async function findReadyAdvanceButton() {
+  const button = await screen.findByRole("button", { name: /^推进一步/ });
   await waitFor(() => expect(button).toBeEnabled());
   return button;
 }
+
+const findNarrativeButton = () => screen.findByRole("button", { name: /查看叙事事件/ });
 
 const advanceReturns = (jobId: number) =>
   http.post(api("/api/home/advance/v1/"), () =>
@@ -58,9 +60,11 @@ describe("家园概览页", () => {
     );
 
     renderHome();
-    fireEvent.click(await findReadyButton());
+    fireEvent.click(await findReadyAdvanceButton());
 
-    expect(await screen.findByText(/推进完成/)).toBeInTheDocument();
+    // 推进完成后按钮恢复可用（不再有「推进完成」文字，成功与否由叙事按钮颜色表达）
+    await waitFor(() => expect(screen.getByRole("button", { name: /^推进一步/ })).toBeEnabled());
+    expect(screen.queryByText(/推进完成/)).not.toBeInTheDocument();
 
     expect(bodies).toEqual([
       {
@@ -75,7 +79,15 @@ describe("家园概览页", () => {
     await waitFor(() => expect(stagesCalls).toBeGreaterThanOrEqual(2));
   });
 
-  it("没有可推进的角色时按钮禁用，并给出提示", async () => {
+  it("人数直接写在推进按钮上，页面上没有额外的解释文案", async () => {
+    renderHome();
+
+    expect(await screen.findByRole("button", { name: "推进一步 · 3 个角色" })).toBeInTheDocument();
+    expect(screen.queryByText(/需要等待/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/对全部/)).not.toBeInTheDocument();
+  });
+
+  it("没有可推进的角色时按钮禁用，人数显示为 0", async () => {
     server.use(
       http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>
         HttpResponse.json({ mapping: { "场景.空屋": [] } }),
@@ -84,18 +96,18 @@ describe("家园概览页", () => {
 
     renderHome();
 
-    expect(await screen.findByText("当前没有可推进的角色")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "推进一步" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "推进一步 · 0 个角色" })).toBeDisabled();
   });
 
-  it("任务失败时展示后端错误文本，且不显示完成", async () => {
+  it("任务失败时展示后端错误文本，且叙事按钮不变绿", async () => {
     server.use(advanceReturns(9), taskWith(9, "failed", "LLM 调用超时"));
 
     renderHome();
-    fireEvent.click(await findReadyButton());
+    fireEvent.click(await findReadyAdvanceButton());
 
     expect(await screen.findByText(/LLM 调用超时/)).toBeInTheDocument();
-    expect(screen.queryByText(/推进完成/)).not.toBeInTheDocument();
+    // 失败不是「有新内容」，不该亮绿
+    expect(await findNarrativeButton()).not.toHaveClass("count-button--unread");
   });
 
   it("触发请求失败时展示 HTTP 错误", async () => {
@@ -106,42 +118,32 @@ describe("家园概览页", () => {
     );
 
     renderHome();
-    fireEvent.click(await findReadyButton());
+    fireEvent.click(await findReadyAdvanceButton());
 
     expect(await screen.findByText(/推进失败：API 500/)).toBeInTheDocument();
   });
 
-  it("叙事内联最近 3 条，入口显示「已显示 / 总数」", async () => {
+  it("叙事不在页面上展开，只留一个通知按钮", async () => {
     renderHome();
 
-    const list = await screen.findByRole("list", { name: "会话消息" });
-    const items = within(list).getAllByRole("listitem");
+    await findNarrativeButton();
+    // 首屏 5 条历史全部计为「已看」，所以是 5 / 5 而不是 0 / 5
+    await waitFor(() => expect(findNarrativeButtonValue()).toBe("叙事 5 / 5"));
 
-    // fixture 共 5 条，内联只取最近 3 条（sequence_id 3、4、5）
-    expect(items).toHaveLength(3);
-    expect(items[0]?.textContent ?? "").toContain("宣布");
-    expect(items[1]?.textContent ?? "").toContain("场景.门厅 → 场景.一楼客房");
-    expect(items[2]?.textContent ?? "").toContain("引擎输出的兜底形态");
-
-    const entry = screen.getByRole("button", {
-      name: "查看全部事件：当前显示最近 3 条，共 5 条",
-    });
-    expect(entry).toHaveTextContent("显示 3 / 共 5 条");
+    // 页面上没有内联的消息列表
+    expect(screen.queryByRole("list", { name: "会话消息" })).not.toBeInTheDocument();
   });
 
-  it("点计数按钮打开浮层，浮层内列出全部事件（不截断）", async () => {
+  it("点通知按钮打开浮层，浮层内列出全部事件", async () => {
     renderHome();
 
-    fireEvent.click(
-      await screen.findByRole("button", { name: /查看全部事件：当前显示最近 3 条，共 5 条/ }),
-    );
+    fireEvent.click(await findNarrativeButton());
 
     const dialog = await screen.findByRole("dialog", { name: "全部叙事" });
     const items = within(dialog).getAllByRole("listitem");
 
-    // 浮层里是全部 5 条（内联只有 3 条）
     expect(items).toHaveLength(sessionMessagesFixture.length);
-    expect(items[0]?.textContent ?? "").toContain("内心");
+    expect(items[1]?.textContent ?? "").toContain("对 角色.无名 说：");
     expect(within(dialog).getByText(`共 ${sessionMessagesFixture.length} 条`)).toBeInTheDocument();
   });
 
@@ -149,9 +151,7 @@ describe("家园概览页", () => {
     renderHome();
 
     const open = async () => {
-      fireEvent.click(
-        await screen.findByRole("button", { name: /查看全部事件：当前显示最近 3 条，共 5 条/ }),
-      );
+      fireEvent.click(await findNarrativeButton());
       return screen.findByRole("dialog", { name: "全部叙事" });
     };
 
@@ -168,20 +168,7 @@ describe("家园概览页", () => {
     expect(screen.queryByRole("dialog", { name: "全部叙事" })).not.toBeInTheDocument();
   });
 
-  it("每条消息按「谁 / 何地 / 什么事」展示（stage 来自结构化字段，message 里没有）", async () => {
-    renderHome();
-
-    const list = await screen.findByRole("list", { name: "会话消息" });
-    const items = within(list).getAllByRole("listitem");
-    const announce = items[0]?.textContent ?? "";
-
-    expect(announce).toContain("宣布"); // 标签
-    expect(announce).toContain("旁白"); // 谁
-    expect(announce).toContain("@ 场景.门厅"); // 何地
-    expect(announce).toContain("堂中灯火忽地一暗。"); // 什么事
-  });
-
-  it("推进完成后立刻能看到新产生的会话消息（NPC 行动的结果）", async () => {
+  it("推进产生新事件后，叙事按钮变绿（用颜色代替「推进完成」文案）", async () => {
     let advanced = false;
     const newMessage: Schemas["SessionMessage"] = {
       sequence_id: 1,
@@ -211,15 +198,26 @@ describe("家园概览页", () => {
     );
 
     renderHome();
-    // 推进前面板是空的
-    expect(await screen.findByText(/还没有会话消息/)).toBeInTheDocument();
+    // 开局没有事件：0 / 0，没有未读
+    expect(await findNarrativeButton()).toHaveTextContent("叙事 0 / 0");
+    expect(await findNarrativeButton()).not.toHaveClass("count-button--unread");
 
-    fireEvent.click(await findReadyButton());
+    fireEvent.click(await findReadyAdvanceButton());
 
-    expect(await screen.findByText("对 角色.无名 说：忽然开口。")).toBeInTheDocument();
+    // 新事件到达：0 / 1，右大于左 + 高亮
+    await waitFor(() => expect(findNarrativeButtonValue()).toBe("叙事 0 / 1"));
+    expect(await findNarrativeButton()).toHaveClass("count-button--unread");
+
+    // 打开浮层即视为已读
+    fireEvent.click(await findNarrativeButton());
+    await screen.findByRole("dialog", { name: "全部叙事" });
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+
+    await waitFor(() => expect(findNarrativeButtonValue()).toBe("叙事 1 / 1"));
+    expect(await findNarrativeButton()).not.toHaveClass("count-button--unread");
   });
 
-  it("「返回上一级」先二次确认；确认后登出并跳回玩家入口页", async () => {
+  it("「返回上一级」用浮窗确认；确认后登出并跳回玩家入口页", async () => {
     const bodies: unknown[] = [];
     server.use(
       http.post(api("/api/logout/v1/"), async ({ request }) => {
@@ -230,18 +228,20 @@ describe("家园概览页", () => {
 
     renderHome();
 
-    // 第一次点击只是展开确认，不该发请求——登出会销毁房间，不可逆
     fireEvent.click(await screen.findByRole("button", { name: "← 返回上一级" }));
-    expect(await screen.findByText(/登出会结束当前对局/)).toBeInTheDocument();
+
+    // 第一次点击只是打开确认浮窗，不该发请求——登出会销毁房间，不可逆
+    const dialog = await screen.findByRole("dialog", { name: "确认登出" });
+    expect(dialog).toBeInTheDocument();
     expect(bodies).toHaveLength(0);
 
-    fireEvent.click(screen.getByRole("button", { name: "确定登出" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "确定登出" }));
 
     expect(await screen.findByText("玩家入口页占位")).toBeInTheDocument();
     expect(bodies).toEqual([{ user_name: "webdev", game_name: "Game1" }]);
   });
 
-  it("二次确认时选择取消，则退回初始状态且不发登出请求", async () => {
+  it("登出确认浮窗可以取消，且不发请求", async () => {
     const bodies: unknown[] = [];
     server.use(
       http.post(api("/api/logout/v1/"), async ({ request }) => {
@@ -253,10 +253,15 @@ describe("家园概览页", () => {
     renderHome();
 
     fireEvent.click(await screen.findByRole("button", { name: "← 返回上一级" }));
-    fireEvent.click(await screen.findByRole("button", { name: "取消" }));
+    const dialog = await screen.findByRole("dialog", { name: "确认登出" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "取消" }));
 
-    expect(await screen.findByRole("button", { name: "← 返回上一级" })).toBeInTheDocument();
-    expect(screen.queryByText(/登出会结束当前对局/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "确认登出" })).not.toBeInTheDocument();
     expect(bodies).toHaveLength(0);
   });
 });
+
+/** 读取通知按钮的当前文案（waitFor 里用，避免重复查询）。 */
+function findNarrativeButtonValue(): string {
+  return screen.getByRole("button", { name: /查看叙事事件/ }).textContent ?? "";
+}

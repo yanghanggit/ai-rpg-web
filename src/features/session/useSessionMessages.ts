@@ -31,12 +31,23 @@ export function useSessionMessages(
 ) {
   // 累积的消息连同"属于哪个会话"一起存：切换会话时下面的 messages 自动回到空数组，
   // 于是游标归零、重新拉全量历史——不需要额外 effect 去清空（渲染期派生，React 推荐写法）。
+  //
+  // `hasLoaded` 表示"当前会话的累积已经吸收过至少一次响应"。不能拿 `isPending` 代替：
+  // 合并是在下面的 effect 里完成的，所以 `isPending` 变 false 的那一帧 messages 还是空的，
+  // 调用方（如未读计数）会据此把基线记错。
   const session = `${userName}\u0000${gameName}`;
-  const [accumulated, setAccumulated] = useState<{ session: string; messages: SessionMessage[] }>({
+  const [accumulated, setAccumulated] = useState<{
+    session: string;
+    messages: SessionMessage[];
+    hasLoaded: boolean;
+  }>({
     session,
     messages: [],
+    hasLoaded: false,
   });
-  const messages = accumulated.session === session ? accumulated.messages : [];
+  const isCurrentSession = accumulated.session === session;
+  const messages = isCurrentSession ? accumulated.messages : [];
+  const hasLoaded = isCurrentSession && accumulated.hasLoaded;
 
   const cursor = messages.at(-1)?.sequence_id ?? 0;
 
@@ -61,15 +72,18 @@ export function useSessionMessages(
       const base = previous.session === session ? previous.messages : [];
       const merged = mergeSessionMessages(base, incoming);
       // 没有变化时复用旧对象，避免每轮轮询都重渲染
-      return merged === base && previous.session === session
-        ? previous
-        : { session, messages: merged };
+      if (merged === base && previous.session === session && previous.hasLoaded) {
+        return previous;
+      }
+      return { session, messages: merged, hasLoaded: true };
     });
   }, [query.data, session]);
 
   return {
     /** 已累积的消息，按 sequence_id 升序、无重复。 */
     messages,
+    /** 当前会话是否已经吸收过至少一次响应（包含空响应）。 */
+    hasLoaded,
     /** 首屏尚未拿到任何数据。 */
     isPending: query.isPending,
     error: query.error,

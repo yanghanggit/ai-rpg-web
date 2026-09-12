@@ -74,7 +74,7 @@ export function useTask(jobId: number | null | undefined, options: UseTaskOption
    * 重置；任务一旦到达终态它就翻转，effect 重跑并清掉定时器、不再起新的。
    *
    * 少了这一步就会出 bug：任务 15 秒成功、轮询早已停止，但定时器仍在，120 秒后凭空
-   * 置 isTimedOut，页面在「推进完成」旁边多出一条「等待任务超时」。
+   * 置 isTimedOut，调用方于是报出一个假的「等待任务超时」。
    */
   useEffect(() => {
     setIsTimedOut(false);
