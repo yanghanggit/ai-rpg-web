@@ -20,7 +20,6 @@ describe("displayName", () => {
   it("没有分隔符的名字原样返回", () => {
     // 蓝图名 / 玩家名不是「类型.名字」体系，不该被切
     expect(displayName("Game1")).toBe("Game1");
-    expect(displayName("世界储物箱")).toBe("世界储物箱");
     expect(displayName("player-20260912-170000-abcd1234")).toBe("player-20260912-170000-abcd1234");
   });
 

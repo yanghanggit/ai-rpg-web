@@ -15,18 +15,16 @@ type AgentEvent = NonNullable<Schemas["SessionMessage"]["agent_event"]>;
  * 事件里的 `actor` / `target` / `stage` 都是服务器名字，这里出口前一律过 `displayName`
  * （`角色.无名` → `无名`）——本函数产出的就是给玩家看的文本，原始名字只在数据层用。
  *
- * 关于开头的 `"stage" in event`：事件联合的每个成员都带字面量 `type`（含兜底的
- * `NoneEvent`，type = "none"），但只有具体事件才有 `stage`。所以这一步用来先把
- * `NoneEvent`（以及任何不带 stage 的事件）排除掉，后面的 `case` 才能安全取用
- * `actor` / `stage` / `content` 等专有字段。
+ * 事件联合是**按 `type` 判别**的（8 个字面量成员，含兜底的 `NoneEvent`），所以
+ * `switch (event.type)` 能直接收窄到具体类型，取 `actor` / `stage` / `content` 都安全。
  */
 export function describeAgentEvent(event: AgentEvent) {
-  // 最后一道防线：后端将来新增了事件类型而前端还没跟上时，至少还能显示原始文本
+  // 兑底：后端将来新增了事件类型而前端还没跟上时，至少还能显示原始文本。
+  // `message` 在每个联合成员上都有，所以在收窄之前取——这样 default 分支不需要
+  // 再访问 event 的任何专有字段（那些字段只有在收窄后才能拿到）。
+  // 注：`NoneEvent`（`# ` 开头的系统日志行，如角色进出场景的通知）走的就是这条分支；
+  // 计划后续在叙事面板里整体隐藏（见 docs/web-client-plan.md 暂缓项）。
   const fallback = { label: "事件", who: "", where: "", what: event.message };
-
-  if (!("stage" in event)) {
-    return fallback;
-  }
 
   switch (event.type) {
     case "speak":

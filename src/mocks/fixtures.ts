@@ -104,13 +104,13 @@ export const blueprintFixture: Schemas["Blueprint"] = {
     { name: "世界.玩家行动审计系统", system_message: "（mock）", components: [] },
     { name: "世界.副本生成系统", system_message: "（mock）", components: [] },
     {
-      name: "世界储物箱",
+      name: "世界.储物箱",
       system_message: "（mock）",
       components: [
         {
           name: "StorageComponent",
           data: {
-            name: "世界储物箱",
+            name: "世界.储物箱",
             items: [
               {
                 name: "材料.旧麻绳",

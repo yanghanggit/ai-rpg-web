@@ -81,7 +81,7 @@
 | 1 | 任务等待机制（地基）：`job_id` → 轮询至终态 | `GET /api/tasks/v1/status` |
 | 2 | 家园「推进」：触发 → 等任务 → 重拉家园状态 | `POST /api/home/advance/v1/` |
 | 3 | 叙事面板：按 `sequence_id` 累积渲染会话消息 | `GET /api/session_messages/v1/{u}/{g}/since` |
-| 4 | 玩家动作：说话 / 换场景 | `POST /api/home/player_action/v1/` |
+| 4 | 玩家动作：说话 / 换场景 | `POST /api/home/player/speak/v1/`、`POST /api/home/player/switch_stage/v1/` |
 
 **为什么先做任务等待**：绝大多数动作接口返回 `job_id` 而非新状态，真正的变化发生在任务里（参考 TUI `cmd_advance.py`：`home_advance()` → `watch_task_until_done()`）。不做这层，后面每加一个动作都要重踩。
 
@@ -94,6 +94,7 @@
 | SSE（`tasks/v1/watch/{job_id}`、`session_messages/.../stream`） | 轮询已足够；SSE 是纯优化，可在不改调用方接口的前提下替换 |
 | 图片展示 | 依赖副本/外观事件，且需先定后端静态路由前缀 |
 | 家园次要动作（`roster/*`、`item/move_to_*`、`craft/*`、`costume/*`） | 不阻塞主闭环，按需再加 |
+| 隐藏 `NoneEvent` | 它本是引擎给 LLM 的提示语（角色进出场景的通知广播，见 `rpg_stage_transition.py`），不是给玩家的叙事。目标是叙事面板里**完全不显示**；本期先原样渲染（与 TUI 兜底行为一致），不纠结格式。 |
 
 ## 与 TUI 客户端的关系
 

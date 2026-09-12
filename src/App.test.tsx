@@ -118,7 +118,7 @@ describe("玩家入口页 /entry", () => {
     expect(screen.getByText(/顾知秋（NPC）/)).toBeInTheDocument();
     expect(screen.getByText(/无名（NPC · 玩家角色）/)).toBeInTheDocument();
     expect(screen.getAllByText("无角色")).toHaveLength(1);
-    expect(screen.getByText("世界储物箱")).toBeInTheDocument();
+    expect(screen.getByText("储物箱")).toBeInTheDocument();
   });
 
   it("蓝图详情标题带当前蓝图名；世界实体与两个道具容器默认折叠", async () => {
