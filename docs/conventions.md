@@ -17,7 +17,7 @@ src/api/                 # 基础设施：传输层与契约适配，无业务�
   schema.d.ts            #   生成物，只读
   client.ts  query.ts  types.ts  serverInfo.ts
 src/pages/               # 路由级页面组件（每个 URL 一个）
-  LaunchPage.tsx  EntryPage.tsx  HomePage.tsx  DevIndexPage.tsx
+  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts  entry/BlueprintDetails.tsx
 src/components/          # 通用展示组件（不含领域知识；目前为空，用到再建）

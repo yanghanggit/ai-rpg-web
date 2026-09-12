@@ -7,7 +7,7 @@ import type { Schemas } from "../api/types";
 import { homeStagesFixture, sessionMessagesFixture } from "../mocks/fixtures";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
-import HomePage from "./HomePage";
+import HomeOverviewPage from "./HomeOverviewPage";
 
 function renderHome() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -15,7 +15,8 @@ function renderHome() {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/game/webdev/Game1/home"]}>
         <Routes>
-          <Route path="/game/:userName/:gameName/home" element={<HomePage />} />
+          <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
+          <Route path="/entry" element={<p>玩家入口页占位</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
@@ -39,7 +40,7 @@ const taskWith = (jobId: number, status: string, error: string | null = null) =>
     HttpResponse.json({ tasks: [{ job_id: jobId, status, error }] }),
   );
 
-describe("家园页", () => {
+describe("家园概览页", () => {
   it("点「推进一步」：用全部角色触发任务，任务完成后重新拉取家园状态", async () => {
     let stagesCalls = 0;
     const bodies: unknown[] = [];
@@ -110,15 +111,74 @@ describe("家园页", () => {
     expect(await screen.findByText(/推进失败：API 500/)).toBeInTheDocument();
   });
 
-  it("叙事面板按 sequence_id 顺序展示会话消息", async () => {
+  it("叙事内联最近 3 条，入口显示「已显示 / 总数」", async () => {
     renderHome();
 
     const list = await screen.findByRole("list", { name: "会话消息" });
     const items = within(list).getAllByRole("listitem");
 
+    // fixture 共 5 条，内联只取最近 3 条（sequence_id 3、4、5）
+    expect(items).toHaveLength(3);
+    expect(items[0]?.textContent ?? "").toContain("宣布");
+    expect(items[1]?.textContent ?? "").toContain("场景.门厅 → 场景.一楼客房");
+    expect(items[2]?.textContent ?? "").toContain("引擎输出的兜底形态");
+
+    const entry = screen.getByRole("button", {
+      name: "查看全部事件：当前显示最近 3 条，共 5 条",
+    });
+    expect(entry).toHaveTextContent("显示 3 / 共 5 条");
+  });
+
+  it("点计数按钮打开浮层，浮层内列出全部事件（不截断）", async () => {
+    renderHome();
+
+    fireEvent.click(
+      await screen.findByRole("button", { name: /查看全部事件：当前显示最近 3 条，共 5 条/ }),
+    );
+
+    const dialog = await screen.findByRole("dialog", { name: "全部叙事" });
+    const items = within(dialog).getAllByRole("listitem");
+
+    // 浮层里是全部 5 条（内联只有 3 条）
     expect(items).toHaveLength(sessionMessagesFixture.length);
-    expect(items[0]?.textContent ?? "").toContain("内心活动");
-    expect(items[1]?.textContent ?? "").toContain("说");
+    expect(items[0]?.textContent ?? "").toContain("内心");
+    expect(within(dialog).getByText(`共 ${sessionMessagesFixture.length} 条`)).toBeInTheDocument();
+  });
+
+  it("浮层可以关闭：关闭按钮、遮罩、ESC 都可以", async () => {
+    renderHome();
+
+    const open = async () => {
+      fireEvent.click(
+        await screen.findByRole("button", { name: /查看全部事件：当前显示最近 3 条，共 5 条/ }),
+      );
+      return screen.findByRole("dialog", { name: "全部叙事" });
+    };
+
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+    expect(screen.queryByRole("dialog", { name: "全部叙事" })).not.toBeInTheDocument();
+
+    await open();
+    fireEvent.click(screen.getByRole("button", { name: "关闭浮层" }));
+    expect(screen.queryByRole("dialog", { name: "全部叙事" })).not.toBeInTheDocument();
+
+    await open();
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog", { name: "全部叙事" })).not.toBeInTheDocument();
+  });
+
+  it("每条消息按「谁 / 何地 / 什么事」展示（stage 来自结构化字段，message 里没有）", async () => {
+    renderHome();
+
+    const list = await screen.findByRole("list", { name: "会话消息" });
+    const items = within(list).getAllByRole("listitem");
+    const announce = items[0]?.textContent ?? "";
+
+    expect(announce).toContain("宣布"); // 标签
+    expect(announce).toContain("旁白"); // 谁
+    expect(announce).toContain("@ 场景.门厅"); // 何地
+    expect(announce).toContain("堂中灯火忽地一暗。"); // 什么事
   });
 
   it("推进完成后立刻能看到新产生的会话消息（NPC 行动的结果）", async () => {
@@ -156,6 +216,47 @@ describe("家园页", () => {
 
     fireEvent.click(await findReadyButton());
 
-    expect(await screen.findByText("角色.顾知秋 忽然开口。")).toBeInTheDocument();
+    expect(await screen.findByText("对 角色.无名 说：忽然开口。")).toBeInTheDocument();
+  });
+
+  it("「返回上一级」先二次确认；确认后登出并跳回玩家入口页", async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      http.post(api("/api/logout/v1/"), async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ message: "ok" });
+      }),
+    );
+
+    renderHome();
+
+    // 第一次点击只是展开确认，不该发请求——登出会销毁房间，不可逆
+    fireEvent.click(await screen.findByRole("button", { name: "← 返回上一级" }));
+    expect(await screen.findByText(/登出会结束当前对局/)).toBeInTheDocument();
+    expect(bodies).toHaveLength(0);
+
+    fireEvent.click(screen.getByRole("button", { name: "确定登出" }));
+
+    expect(await screen.findByText("玩家入口页占位")).toBeInTheDocument();
+    expect(bodies).toEqual([{ user_name: "webdev", game_name: "Game1" }]);
+  });
+
+  it("二次确认时选择取消，则退回初始状态且不发登出请求", async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      http.post(api("/api/logout/v1/"), async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ message: "ok" });
+      }),
+    );
+
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: "← 返回上一级" }));
+    fireEvent.click(await screen.findByRole("button", { name: "取消" }));
+
+    expect(await screen.findByRole("button", { name: "← 返回上一级" })).toBeInTheDocument();
+    expect(screen.queryByText(/登出会结束当前对局/)).not.toBeInTheDocument();
+    expect(bodies).toHaveLength(0);
   });
 });

@@ -9,7 +9,7 @@ import { Link } from "react-router";
 const links = [
   { to: "/", label: "启动屏 LaunchPage" },
   { to: "/entry", label: "玩家入口 EntryPage" },
-  { to: "/game/webdev/Game1/home", label: "家园 HomePage" },
+  { to: "/game/webdev/Game1/home", label: "家园概览 HomeOverviewPage" },
 ];
 
 export default function DevIndexPage() {

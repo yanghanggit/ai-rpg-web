@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter } from "react-router";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -145,8 +145,8 @@ describe("玩家入口页 /entry", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "登录 → 新游戏" }));
 
-    // 开局成功后自动进入家园页
-    expect(await screen.findByRole("heading", { name: "家园" })).toBeInTheDocument();
+    // 开局成功后自动进入家园概览页
+    expect(await screen.findByRole("heading", { name: "家园概览" })).toBeInTheDocument();
 
     const expectedBody = expect.objectContaining({
       user_name: expect.stringMatching(/^player-\d{8}-\d{6}-[0-9a-f]{8}$/),
@@ -195,11 +195,13 @@ describe("家园页 /game/:userName/:gameName/home", () => {
     expect(screen.getByText("webdev / Game1")).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "场景.门厅" })).toBeInTheDocument();
 
+    // 断言限定在「场景」分区内：叙事分区也会出现角色名（谁/何地/何事）
+    const stages = screen.getByRole("region", { name: "场景" });
     // 门厅卡片 2 个 actor，一楼客房 1 个，二楼卧室无角色
-    expect(screen.getByText("角色.顾知秋")).toBeInTheDocument();
-    expect(screen.getByText("角色.无名")).toBeInTheDocument();
-    expect(screen.getByText("角色.小厮")).toBeInTheDocument();
-    expect(screen.getAllByText("无角色")).toHaveLength(1);
+    expect(within(stages).getByText("角色.顾知秋")).toBeInTheDocument();
+    expect(within(stages).getByText("角色.无名")).toBeInTheDocument();
+    expect(within(stages).getByText("角色.小厮")).toBeInTheDocument();
+    expect(within(stages).getAllByText("无角色")).toHaveLength(1);
   });
 
   it("接口失败时展示错误", async () => {

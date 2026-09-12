@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router";
 import DevIndexPage from "./pages/DevIndexPage";
 import EntryPage from "./pages/EntryPage";
-import HomePage from "./pages/HomePage";
+import HomeOverviewPage from "./pages/HomeOverviewPage";
 import LaunchPage from "./pages/LaunchPage";
 
 /**
@@ -20,7 +20,7 @@ import LaunchPage from "./pages/LaunchPage";
       <Routes>
         <Route path="/" element={<LaunchPage />} />
         <Route path="/entry" element={<EntryPage />} />
-        <Route path="/game/:userName/:gameName/home" element={<HomePage />} />
+        <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
         {import.meta.env.DEV ? <Route path="/dev" element={<DevIndexPage />} /> : null}
       </Routes>
     </>

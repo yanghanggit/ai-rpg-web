@@ -49,23 +49,13 @@ export function useTask(jobId: number | null | undefined, options: UseTaskOption
   const { pollIntervalMs = DEFAULT_POLL_INTERVAL_MS, timeoutMs = DEFAULT_TIMEOUT_MS } = options;
   const [isTimedOut, setIsTimedOut] = useState(false);
 
-  // jobId 变化时重新计时；到点后置 isTimedOut，下面的 enabled 随之停止轮询。
-  useEffect(() => {
-    setIsTimedOut(false);
-    if (jobId == null) {
-      return;
-    }
-    const timer = setTimeout(() => setIsTimedOut(true), timeoutMs);
-    return () => clearTimeout(timer);
-  }, [jobId, timeoutMs]);
-
   const query = $api.useQuery(
     "get",
     "/api/tasks/v1/status",
     { params: { query: { job_ids: jobId == null ? [] : [jobId] } } },
     {
       enabled: jobId != null && !isTimedOut,
-      // 到达终态就停；超时由上面的 enabled 停（两者都要，否则超时后会继续轮询）。
+      // 到达终态就停；超时由下面的 enabled 停（两者都要，否则超时后会继续轮询）。
       refetchInterval: (current) => {
         const found = current.state.data?.tasks.find((item) => item.job_id === jobId);
         return isTerminal(found?.status) ? false : pollIntervalMs;
@@ -75,6 +65,25 @@ export function useTask(jobId: number | null | undefined, options: UseTaskOption
 
   const task = query.data?.tasks.find((item) => item.job_id === jobId);
   const status = task?.status;
+  const terminal = isTerminal(status);
+
+  /**
+   * jobId 变化时重新计时；**到点仍未终态**才置 isTimedOut，随后 enabled 停止轮询。
+   *
+   * 依赖 terminal 这个**布尔值**而非 status：轮询期间它稳定为 false，定时器不会被反复
+   * 重置；任务一旦到达终态它就翻转，effect 重跑并清掉定时器、不再起新的。
+   *
+   * 少了这一步就会出 bug：任务 15 秒成功、轮询早已停止，但定时器仍在，120 秒后凭空
+   * 置 isTimedOut，页面在「推进完成」旁边多出一条「等待任务超时」。
+   */
+  useEffect(() => {
+    setIsTimedOut(false);
+    if (jobId == null || terminal) {
+      return;
+    }
+    const timer = setTimeout(() => setIsTimedOut(true), timeoutMs);
+    return () => clearTimeout(timer);
+  }, [jobId, timeoutMs, terminal]);
 
   return {
     /** 后端返回的任务状态；`undefined` 表示尚未查到该任务（含未知 id）。 */

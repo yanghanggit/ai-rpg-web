@@ -70,6 +70,21 @@ describe("useTask", () => {
     expect(calls()).toBe(settled);
   });
 
+  it("任务已进入终态后，过了 timeoutMs 也不该冒出超时", async () => {
+    mockTasksByCall((call) => ({ status: call < 2 ? "doing" : "succeeded" }));
+
+    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10, timeoutMs: 40 }), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isCompleted).toBe(true));
+
+    // 任务早已完成，又在 timeoutMs 之后干等一段：定时器不该再补一个「超时」
+    await sleep(80);
+    expect(result.current.isTimedOut).toBe(false);
+    expect(result.current.isCompleted).toBe(true);
+  });
+
   it("failed 时带出后端记录的错误文本", async () => {
     mockTasksByCall(() => ({ status: "failed", error: "数据库连接失败" }));
 

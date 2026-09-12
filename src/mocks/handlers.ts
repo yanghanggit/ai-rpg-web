@@ -29,6 +29,8 @@ export const handlers = [
 
   http.post(api("/api/login/v1/"), () => HttpResponse.json({ message: "mock 登录成功" })),
 
+  http.post(api("/api/logout/v1/"), () => HttpResponse.json({ message: "mock 登出成功" })),
+
   http.post(api("/api/game/new/v1/"), () => HttpResponse.json(newGameFixture)),
 
   http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>

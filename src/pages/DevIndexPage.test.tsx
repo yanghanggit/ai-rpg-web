@@ -18,6 +18,6 @@ function renderPage() {
 describe("开发索引页 /dev", () => {
   it("列出可点深链", () => {
     renderPage();
-    expect(screen.getByRole("link", { name: /家园 HomePage/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /家园概览 HomeOverviewPage/ })).toBeInTheDocument();
   });
 });

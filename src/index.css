@@ -156,6 +156,117 @@ ul.plain li {
   margin: 0.25rem 0;
 }
 
+/* 页头：标题在左，操作在右 */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+.page-head p {
+  margin: 0.2rem 0 0;
+}
+
+.head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* 小节标题行：标题在左，附带的操作（如「全部叙事」）在右 */
+.section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-top: 2.5rem;
+}
+
+.section-head h2 {
+  margin: 0;
+}
+
+.count-link {
+  padding: 0.1rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.count-link:hover:not(:disabled) {
+  border-color: var(--fg);
+  color: var(--fg);
+}
+
+/* 「全部叙事」浮层 */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+/* 遮罩就是一个铺满屏幕的按钮：点它即关闭 */
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: rgb(0 0 0 / 55%);
+}
+
+.overlay-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 680px);
+  max-height: min(85vh, 900px);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
+}
+
+.overlay-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.overlay-head h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.overlay-head span {
+  font-size: 0.85rem;
+}
+
+.overlay-head button {
+  margin-left: auto;
+  padding: 0.1rem 0.6rem;
+}
+
+.overlay-body {
+  overflow-y: auto;
+  padding: 0 1.25rem 1.25rem;
+}
+
 /* 会话消息（叙事）列表：sequence_id 递增，所以用有序列表 */
 ol.session {
   margin: 1rem 0;
@@ -168,8 +279,29 @@ ol.session li {
   line-height: 1.55;
 }
 
+/* 每条消息的「谁 / 何地」行 */
+ol.session .session-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
 ol.session .badge {
-  margin-right: 0.35rem;
+  margin-right: 0.1rem;
+}
+
+ol.session .who {
+  font-weight: 600;
+}
+
+ol.session .where {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+ol.session .what {
+  margin: 0.15rem 0 0;
 }
 
 .cards {
