@@ -24,14 +24,24 @@ export class ApiError extends Error {
 }
 
 /**
- * 认证中间件：JWT 接入后 token 统一在此注入（后端 auth 依赖已预留），
+ * 认证头：JWT 接入后由登录流程写入 localStorage。
+ *
+ * REST 走下面的 middleware；SSE 不走 openapi-fetch（见 `src/api/sse.ts`），
+ * 复用同一份实现，避免两处各写一遍导致漂移。
+ */
+export function authHeaders(): Record<string, string> {
+  const token = globalThis.localStorage?.getItem("ai-rpg-token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/**
+ * 认证中间件：token 统一在此注入（后端 auth 依赖已预留），
  * 业务代码不需要感知 Authorization 头。
  */
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    const token = globalThis.localStorage?.getItem("ai-rpg-token");
-    if (token) {
-      request.headers.set("Authorization", `Bearer ${token}`);
+    for (const [name, value] of Object.entries(authHeaders())) {
+      request.headers.set(name, value);
     }
     return request;
   },

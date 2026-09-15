@@ -7,6 +7,7 @@ import type { Schemas } from "../api/types";
 import { homeStagesFixture, sessionMessagesFixture } from "../mocks/fixtures";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
+import { sseResponse } from "../mocks/sseResponse";
 import HomeOverviewPage from "./HomeOverviewPage";
 
 function renderHome() {
@@ -38,8 +39,8 @@ const advanceReturns = (jobId: number) =>
   );
 
 const taskWith = (jobId: number, status: string, error: string | null = null) =>
-  http.get(api("/api/tasks/v1/status"), () =>
-    HttpResponse.json({ tasks: [{ job_id: jobId, status, error }] }),
+  http.get(api("/api/tasks/v1/watch/:jobId"), () =>
+    sseResponse([JSON.stringify({ job_id: jobId, status, error })]),
   );
 
 describe("家园概览页", () => {

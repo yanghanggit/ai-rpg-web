@@ -15,7 +15,8 @@ import {
   serverInfoFixture,
 } from "./fixtures";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
-import { createMockTask, readMockTasks } from "./tasks";
+import { sseResponse } from "./sseResponse";
+import { createMockTask, watchMockTask } from "./tasks";
 
 /** 把后端相对路径补成完整 URL，供 MSW handler 匹配。 */
 export function api(path: string): string {
@@ -37,14 +38,15 @@ export const handlers = [
     HttpResponse.json(homeStagesFixture),
   ),
 
-  // 任务：openapi-fetch 默认把数组 query 序列化成重复参数（job_ids=a&job_ids=b），
-  // 与 FastAPI 的 List 一致；id 在契约上是整数，URL 里则是其十进制字符串形式。
-  http.get(api("/api/tasks/v1/status"), ({ request }) => {
-    const jobIds = new URL(request.url).searchParams.getAll("job_ids").map(Number);
-    return HttpResponse.json({ tasks: readMockTasks(jobIds) });
+  // 任务：SSE 监听单个任务至终态，与真实后端 /api/tasks/v1/watch/{job_id} 一致。
+  // 真实后端只在终态/超时/任务不存在时结束推送，这里用 watchMockTask 模拟同一条时间线。
+  http.get(api("/api/tasks/v1/watch/:jobId"), ({ params, request }) => {
+    const jobId = Number(params.jobId);
+    const timeoutSeconds = Number(new URL(request.url).searchParams.get("timeout_seconds") ?? 120);
+    return sseResponse(watchMockTask(jobId, { timeoutSeconds }));
   }),
 
-  // 家园动作：与真实后端一致，只返回 job_id，结果要靠轮询任务状态获得
+  // 家园动作：与真实后端一致，只返回 job_id，结果要靠监听任务状态获得
   http.post(api("/api/home/advance/v1/"), () => {
     // 真实后端里这些叙事由 NPC 行动产生；mock 里直接追一条，好让「推进 → 新叙事」可见
     appendMockSessionMessage({

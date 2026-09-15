@@ -61,8 +61,8 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
     error = task.error ?? "任务失败（后端未提供错误信息）";
   } else if (task.isTimedOut) {
     error = "等待任务超时，请检查服务器状态";
-  } else if (task.pollError) {
-    error = `轮询任务状态失败：${describeError(task.pollError)}`;
+  } else if (task.streamError) {
+    error = `监听任务状态失败：${describeError(task.streamError)}`;
   }
 
   return {

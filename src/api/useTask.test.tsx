@@ -1,146 +1,129 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
-import type { ReactNode } from "react";
 import { describe, expect, it } from "vitest";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
+import { sseResponse } from "../mocks/sseResponse";
 import { useTask } from "./useTask";
-
-/**
- * QueryClient 必须跨渲染稳定，否则每次渲染都新建、缓存被重置。
- * 故在工厂里建一次，再让 wrapper 闭包引用它。
- */
-function createWrapper() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
-  };
-}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-/** 收集「按调用次数变化」的 tasks 响应，返回调用计数读取函数。 */
-function mockTasksByCall(build: (call: number) => { status: string; error?: string | null }) {
+/** 逐条推送、每条之间留出间隔，用来观察「流进行中」的中间态。 */
+async function* delayed(events: string[], gapMs: number): AsyncGenerator<string> {
+  for (const event of events) {
+    yield event;
+    await sleep(gapMs);
+  }
+}
+
+/** 一条 `TaskSnapshot` 事件载荷（后端 SSE 的 `data:` 内容）。 */
+const taskEvent = (jobId: number, status: string, error: string | null = null) =>
+  JSON.stringify({ job_id: jobId, status, error });
+
+/**
+ * 覆盖 watch 端点，按顺序推送给定事件（推完即关流）。
+ * 返回调用计数读取函数：用于断言「jobId 为空不连接」「只建立一条流」。
+ */
+function mockWatch(build: (call: number) => Iterable<string> | AsyncIterable<string>) {
   const counter = { calls: 0 };
   server.use(
-    http.get(api("/api/tasks/v1/status"), () => {
-      const { status, error = null } = build(counter.calls);
+    http.get(api("/api/tasks/v1/watch/:jobId"), () => {
+      const events = build(counter.calls);
       counter.calls += 1;
-      return HttpResponse.json({ tasks: [{ job_id: 1, status, error }] });
+      return sseResponse(events);
     }),
   );
   return () => counter.calls;
 }
 
 describe("useTask", () => {
-  it("jobId 为空时不发请求，也不进入运行态", async () => {
-    let calls = 0;
-    server.use(
-      http.get(api("/api/tasks/v1/status"), () => {
-        calls += 1;
-        return HttpResponse.json({ tasks: [] });
-      }),
-    );
+  it("jobId 为空时不建立连接，也不进入运行态", async () => {
+    const calls = mockWatch(() => []);
 
-    const { result } = renderHook(() => useTask(null), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useTask(null));
     await sleep(40);
 
-    expect(calls).toBe(0);
+    expect(calls()).toBe(0);
     expect(result.current.isRunning).toBe(false);
     expect(result.current.isCompleted).toBe(false);
     expect(result.current.status).toBeUndefined();
   });
 
-  it("轮询到 succeeded 后停止", async () => {
-    const calls = mockTasksByCall((call) => ({
-      status: call < 3 ? "doing" : "succeeded",
-    }));
+  it("读到 succeeded 后进入完成态，且只建立一条流", async () => {
+    const calls = mockWatch(() => [
+      taskEvent(1, "doing"),
+      taskEvent(1, "doing"),
+      taskEvent(1, "succeeded"),
+    ]);
 
-    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(() => useTask(1));
 
     await waitFor(() => expect(result.current.isCompleted).toBe(true));
-    expect(calls()).toBeGreaterThanOrEqual(3);
-
-    // 终态后不再发请求
-    const settled = calls();
-    await sleep(80);
-    expect(calls()).toBe(settled);
+    expect(result.current.isRunning).toBe(false);
+    // 终态即断开，不会像轮询那样反复建连
+    expect(calls()).toBe(1);
   });
 
-  it("任务已进入终态后，过了 timeoutMs 也不该冒出超时", async () => {
-    mockTasksByCall((call) => ({ status: call < 2 ? "doing" : "succeeded" }));
+  it("流进行中时保持 isRunning，并暴露中间状态", async () => {
+    mockWatch(() => delayed([taskEvent(1, "doing"), taskEvent(1, "succeeded")], 300));
 
-    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10, timeoutMs: 40 }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(() => useTask(1));
+
+    await waitFor(() => expect(result.current.status).toBe("doing"));
+    expect(result.current.isRunning).toBe(true);
 
     await waitFor(() => expect(result.current.isCompleted).toBe(true));
-
-    // 任务早已完成，又在 timeoutMs 之后干等一段：定时器不该再补一个「超时」
-    await sleep(80);
-    expect(result.current.isTimedOut).toBe(false);
-    expect(result.current.isCompleted).toBe(true);
+    expect(result.current.isRunning).toBe(false);
   });
 
   it("failed 时带出后端记录的错误文本", async () => {
-    mockTasksByCall(() => ({ status: "failed", error: "数据库连接失败" }));
+    mockWatch(() => [taskEvent(1, "doing"), taskEvent(1, "failed", "数据库连接失败")]);
 
-    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(() => useTask(1));
 
     await waitFor(() => expect(result.current.isFailed).toBe(true));
     expect(result.current.error).toBe("数据库连接失败");
     expect(result.current.isCompleted).toBe(false);
   });
 
-  it("查不到任务（tasks 为空）不算失败，继续轮询", async () => {
-    let calls = 0;
-    server.use(
-      http.get(api("/api/tasks/v1/status"), () => {
-        calls += 1;
-        return HttpResponse.json({ tasks: [] });
-      }),
-    );
+  it("收到服务端 timeout 事件时置 isTimedOut（超时由服务端判定）", async () => {
+    mockWatch(() => [taskEvent(1, "doing"), JSON.stringify({ error: "timeout", job_id: 1 })]);
 
-    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(calls).toBeGreaterThanOrEqual(3));
-    expect(result.current.isFailed).toBe(false);
-    expect(result.current.isCompleted).toBe(false);
-    expect(result.current.isRunning).toBe(true);
-    expect(result.current.status).toBeUndefined();
-  });
-
-  it("超过 timeoutMs 仍未终态则停止轮询并置 isTimedOut", async () => {
-    const calls = mockTasksByCall(() => ({ status: "doing" }));
-
-    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10, timeoutMs: 40 }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(() => useTask(1, { timeoutSeconds: 1 }));
 
     await waitFor(() => expect(result.current.isTimedOut).toBe(true));
     expect(result.current.isRunning).toBe(false);
-
-    const settled = calls();
-    await sleep(80);
-    expect(calls()).toBe(settled);
   });
 
-  it("轮询请求失败时暴露 pollError，但不把任务误判为失败", async () => {
+  it("流在终态前结束视为超时（与 TUI 的 TimeoutError 一致）", async () => {
+    mockWatch(() => [taskEvent(1, "doing")]);
+
+    const { result } = renderHook(() => useTask(1));
+
+    await waitFor(() => expect(result.current.isTimedOut).toBe(true));
+    expect(result.current.isRunning).toBe(false);
+  });
+
+  it("任务不存在时暴露 streamError，但不把任务误判为失败", async () => {
+    mockWatch(() => [JSON.stringify({ error: "task_not_found", job_id: 1 })]);
+
+    const { result } = renderHook(() => useTask(1));
+
+    await waitFor(() => expect(result.current.streamError).toBeTruthy());
+    expect(result.current.isFailed).toBe(false);
+    expect(result.current.isCompleted).toBe(false);
+    expect(result.current.isRunning).toBe(false);
+  });
+
+  it("连接失败（HTTP 错误）时暴露 streamError，但不把任务误判为失败", async () => {
     // 模拟后端对非法 job_id 的契约校验拒绝（422）
     server.use(
-      http.get(api("/api/tasks/v1/status"), () =>
+      http.get(api("/api/tasks/v1/watch/:jobId"), () =>
         HttpResponse.json(
           {
             detail: [
               {
-                loc: ["query", "job_ids"],
+                loc: ["path", "job_id"],
                 msg: "Input should be a valid integer",
                 type: "int_parsing",
               },
@@ -151,12 +134,10 @@ describe("useTask", () => {
       ),
     );
 
-    const { result } = renderHook(() => useTask(1, { pollIntervalMs: 10 }), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(() => useTask(1));
 
-    await waitFor(() => expect(result.current.pollError).toBeTruthy());
-    // 轮询失败 ≠ 任务失败，两者不能混为一谈
+    await waitFor(() => expect(result.current.streamError).toBeTruthy());
+    // 连接失败 ≠ 任务失败，两者不能混为一谈
     expect(result.current.isFailed).toBe(false);
     expect(result.current.isCompleted).toBe(false);
   });

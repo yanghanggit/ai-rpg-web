@@ -14,7 +14,7 @@
 | 能力 | 现状 |
 | ------ | ------ |
 | REST 路由 | login / new_game / home / dungeon / combat / stages / tasks 等已按领域拆分 |
-| 实时推送 | 会话新消息与任务完成均以 SSE 提供（GET + `text/event-stream`），浏览器原生 EventSource 可直接接入 |
+| 实时推送 | 会话新消息与任务完成均以 SSE 提供（GET + `text/event-stream`） |
 | 跨域 | CORS 已放开（`allow_origins=["*"]`） |
 | 图片 | 生成图片经 StaticFiles 挂载为静态 URL，前端直接渲染 |
 | 契约 | FastAPI 自动产出 OpenAPI（`/openapi.json`），根路由 `/` 列出全部路由 |
@@ -35,7 +35,7 @@
 | 构建 | Vite + React + TypeScript（或 SvelteKit） | 生态成熟、开发体验好 |
 | 服务端状态 | TanStack Query | 天然适配"命令 → 轮询/SSE → 状态刷新"模式 |
 | 客户端状态 | Zustand（可选） | 仅存纯 UI 状态（选中卡牌、弹窗），游戏数据一律交给 Query |
-| 实时推送 | 原生 EventSource | 后端 SSE 已是 GET 形式，开箱即用 |
+| 实时推送 | 流式 `fetch`（`src/api/sse.ts`） | 与 TUI 一致；不用 `EventSource`，因其无法带鉴权头，且自带重连语义与后端一次性流冲突 |
 | 后端地址 | 环境变量 `VITE_API_BASE_URL` | 区分本地/联调/生产 |
 
 不建议一开始引入 Next.js、复杂状态机或 WebSocket——先顺着后端既有的 REST + SSE 走。
@@ -54,8 +54,8 @@
 | ------ | ------ |
 | 命令/动作（登录、出牌、合成、进副本） | REST POST |
 | 状态查询（场景/副本/战斗状态） | REST GET + TanStack Query |
-| 会话新消息 | SSE（EventSource） |
-| 任务完成 | 本期：轮询 `GET /api/tasks/v1/status?job_ids=[]`；后续可升级为 SSE `/api/tasks/v1/watch/{job_id}` |
+| 会话新消息 | 本期：轮询 `GET /api/session_messages/v1/{u}/{g}/since`；后续可升级为 SSE `/stream` |
+| 任务完成 | SSE `GET /api/tasks/v1/watch/{job_id}`（与 TUI `watch_task_until_done` 一致） |
 
 将来出现实时双向需求（聊天、多人同步）时再引入 WebSocket，当前不需要。
 
@@ -78,7 +78,7 @@
 
 | 阶段 | 内容 | 关键接口 |
 | ------ | ------ | ------ |
-| 1 | 任务等待机制（地基）：`job_id` → 轮询至终态 | `GET /api/tasks/v1/status` |
+| 1 | 任务等待机制（地基）：`job_id` → SSE 监听至终态 | `GET /api/tasks/v1/watch/{job_id}` |
 | 2 | 家园「推进」：触发 → 等任务 → 重拉家园状态 | `POST /api/home/advance/v1/` |
 | 3 | 叙事面板：按 `sequence_id` 累积渲染会话消息 | `GET /api/session_messages/v1/{u}/{g}/since` |
 | 4 | 玩家动作：说话 / 换场景 | `POST /api/home/player/speak/v1/`、`POST /api/home/player/switch_stage/v1/` |
@@ -91,7 +91,7 @@
 | ------ | ------ |
 | 副本全套（`dungeon-list` / `generate_dungeon` / `enter_dungeon` / `opening/*` / `dungeons/state` / `advance_stage` / `exit`） | 先跑通家园闭环；且会引入新路由与新的 union 渲染 |
 | 战斗全套（`dungeon/combat/*`） | 最复杂，且依赖副本 |
-| SSE（`tasks/v1/watch/{job_id}`、`session_messages/.../stream`） | 轮询已足够；SSE 是纯优化，可在不改调用方接口的前提下替换 |
+| 会话消息 SSE（`session_messages/.../stream`） | 会话消息仍用轮询（已足够）；任务 `/watch` 已改用 SSE |
 | 图片展示 | 依赖副本/外观事件，且需先定后端静态路由前缀 |
 | 家园次要动作（`roster/*`、`item/move_to_*`、`craft/*`、`costume/*`） | 不阻塞主闭环，按需再加 |
 | 隐藏 `NoneEvent` | 它本是引擎给 LLM 的提示语（角色进出场景的通知广播，见 `rpg_stage_transition.py`），不是给玩家的叙事。目标是叙事面板里**完全不显示**；本期先原样渲染（与 TUI 兜底行为一致），不纠结格式。 |
