@@ -143,6 +143,26 @@ export const homeStagesFixture: Schemas["StagesStateResponse"] = {
 };
 
 /**
+ * 场景实体（家园运行期）：StageComponent + EnvironmentComponent。
+ * 环境叙述在真实后端由 `EnvironmentInitializationSystem` 用 LLM 生成；mock 里给固定文本。
+ */
+export const stageEntityFixtures: Schemas["EntitySerialization"][] = blueprintFixture.stages.map(
+  (stage) => ({
+    name: stage.name,
+    components: [
+      { name: "StageComponent", data: { name: stage.name } },
+      {
+        name: "EnvironmentComponent",
+        data: {
+          name: stage.name,
+          narrative: `（mock）${stage.name} 的环境叙述：梁柱森然，灯火幽微。`,
+        },
+      },
+    ],
+  }),
+);
+
+/**
  * 玩家实体的序列化数据（家园运行期）。
  *
  * 玩家实体在 Identity / Appearance / CharacterStats 之外额外挂 PlayerComponent，

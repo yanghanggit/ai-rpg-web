@@ -6,7 +6,7 @@
  * 行为对齐后端：玩家只出现在一个场景，`readMockStages` 返回当前快照。
  */
 import type { Schemas } from "../api/types";
-import { blueprintFixture, homeStagesFixture } from "./fixtures";
+import { blueprintFixture, homeStagesFixture, stageEntityFixtures } from "./fixtures";
 
 type Mapping = Schemas["StagesStateResponse"]["mapping"];
 
@@ -43,4 +43,10 @@ export function moveMockPlayerToStage(targetStage: string): string | null {
 /** 复位成初始 fixture（测试之间隔离）。 */
 export function resetMockStages(): void {
   mapping = cloneMapping(homeStagesFixture.mapping);
+}
+
+/** 场景实体快照（深拷贝）；未知场景名返回 `null`。 */
+export function readMockStageEntity(name: string): Schemas["EntitySerialization"] | null {
+  const fixture = stageEntityFixtures.find((entity) => entity.name === name);
+  return fixture === undefined ? null : structuredClone(fixture);
 }

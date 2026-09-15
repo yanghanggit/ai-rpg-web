@@ -393,6 +393,18 @@ ol.session .what {
   font-size: 1.3rem;
 }
 
+/* 卡片右上角的「查阅场景」小按钮 */
+.card-info-button {
+  margin-left: auto;
+  flex: none;
+  width: 1.9rem;
+  height: 1.9rem;
+  padding: 0;
+  border-radius: 50%;
+  line-height: 1;
+  color: var(--muted);
+}
+
 .card-current-badge {
   border-color: var(--ok);
   color: var(--ok);

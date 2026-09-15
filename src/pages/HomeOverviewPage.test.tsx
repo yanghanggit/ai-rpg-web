@@ -481,6 +481,24 @@ describe("家园概览页", () => {
     expect(await within(dialog).findByText(/青衫/)).toBeInTheDocument();
   });
 
+  it("点卡片右上角的场景详情：展示环境叙述与角色按钮，点角色进入其信息", async () => {
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: "查看场景详情：门厅" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "场景信息" });
+    // StageComponent / EnvironmentComponent
+    expect(await within(dialog).findByText(/的环境叙述/)).toBeInTheDocument();
+    // 场景内角色作为按钮；点一个即换成该角色的信息浮窗
+    fireEvent.click(within(dialog).getByRole("button", { name: "顾知秋" }));
+
+    const actorDialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(
+      await within(actorDialog).findByText("00000000-0000-0000-0000-0000000000bb"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "场景信息" })).not.toBeInTheDocument();
+  });
+
   it("点「道具管理」打开浮窗，展示背包、储物箱与穿戴中时装", async () => {
     renderHome();
 

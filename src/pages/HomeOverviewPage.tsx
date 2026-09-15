@@ -17,6 +17,7 @@ import ItemManagerDialog from "../features/items/ItemManagerDialog";
 import NarrativeOverlay from "../features/session/NarrativeOverlay";
 import { useSessionMessages } from "../features/session/useSessionMessages";
 import { useUnreadCount } from "../features/session/useUnreadCount";
+import StageInfoDialog from "../features/stage/StageInfoDialog";
 
 /**
  * 家园概览页：一屏看全局。
@@ -25,7 +26,8 @@ import { useUnreadCount } from "../features/session/useUnreadCount";
  *
  * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 道具管理 / 叙事未读 / 返回上一级
  * - 下方卡片：每个 stage 一张，列出其中的 actor（每个 actor 是一个按钮，点开
- *   该角色的信息浮窗），并带「切换到此场景」按钮；玩家当前所在卡片高亮标记
+ *   该角色的信息浮窗），右上角有个小按钮打开场景信息，并带「切换到此场景」按钮；
+ *   玩家当前所在卡片高亮标记
  *
  * 「角色信息」打开 `ActorInfoDialog`，玩家与 NPC 共用：点工具栏按钮等同于点玩家 chip。
  * 浮窗内可穿/脱时装，穿时装时叠出 `StorageCostumeDialog` 选储物箱里的时装。
@@ -84,6 +86,8 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   // 正在查看的角色（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
+  // 正在查看的场景（原始名）；非空即打开场景信息浮窗
+  const [infoStage, setInfoStage] = useState<string | null>(null);
   // 是否叠出「选择时装」的二级浮窗
   const [isCostumeOpen, setIsCostumeOpen] = useState(false);
   const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
@@ -182,6 +186,15 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
                   <div className="card-head">
                     <h2 className="mono">{displayName(stage)}</h2>
                     {isCurrent ? <span className="badge card-current-badge">当前所在</span> : null}
+                    <button
+                      type="button"
+                      className="card-info-button"
+                      aria-label={`查看场景详情：${displayName(stage)}`}
+                      title="查看场景详情"
+                      onClick={() => setInfoStage(stage)}
+                    >
+                      ⓘ
+                    </button>
                   </div>
                   {stageActors.length === 0 ? (
                     <p className="muted">无角色</p>
@@ -250,6 +263,21 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
             costume.wear(itemName, infoActor);
           }}
           onClose={() => setIsCostumeOpen(false)}
+        />
+      ) : null}
+
+      {infoStage ? (
+        <StageInfoDialog
+          userName={userName}
+          gameName={gameName}
+          stageName={infoStage}
+          actorNames={mapping[infoStage] ?? []}
+          // 点场景里的角色：关掉场景浮窗，换成角色浮窗
+          onSelectActor={(actorName) => {
+            setInfoStage(null);
+            setInfoActor(actorName);
+          }}
+          onClose={() => setInfoStage(null)}
         />
       ) : null}
 

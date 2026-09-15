@@ -24,6 +24,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   home/useSwitchStage.ts  home/findStageOfActor.ts
   identity/ActorInfoDialog.tsx  identity/readActorInfo.ts  identity/useActorEntity.ts  identity/usePlayerActor.ts
   costume/StorageCostumeDialog.tsx  costume/useStorageCostumes.ts  costume/useCostumeAction.ts
+  stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）

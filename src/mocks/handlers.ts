@@ -28,7 +28,7 @@ import {
 } from "./items";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { sseResponse } from "./sseResponse";
-import { moveMockPlayerToStage, readMockStages } from "./stages";
+import { moveMockPlayerToStage, readMockStageEntity, readMockStages } from "./stages";
 import { createMockTask, watchMockTask } from "./tasks";
 
 /** 把后端相对路径补成完整 URL，供 MSW handler 匹配。 */
@@ -79,6 +79,11 @@ export const handlers = [
       const actor = readMockActorEntity(name);
       if (actor) {
         entities.push(actor);
+        continue;
+      }
+      const stage = readMockStageEntity(name);
+      if (stage) {
+        entities.push(stage);
       }
     }
     return HttpResponse.json({ entities });
