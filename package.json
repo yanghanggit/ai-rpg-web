@@ -11,9 +11,10 @@
     "gen:api": "node scripts/genApi.mjs",
     "screenshot": "node scripts/screenshot.mjs",
     "format": "biome format --write .",
-    "lint": "biome check . && node scripts/checkFileConventions.mjs",
+    "lint": "biome check . && node scripts/checkFileConventions.mjs && node scripts/checkDevPorts.mjs",
     "lint:fix": "biome check --write .",
     "check:conventions": "node scripts/checkFileConventions.mjs",
+    "check:ports": "node scripts/checkDevPorts.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "test:run": "vitest run"

@@ -3,10 +3,31 @@
 > 面向「把项目跑起来、连上后端、调试某个页面」的实操细节。**最简启动见根 README**。
 > 类型生成与契约相关的规则见 [API 使用规范](api-layer.md)。
 
+## 端口
+
+| 用途 | 端口 | 改了会不会自动生效 |
+| ------ | ------ | ------ |
+| `pnpm dev`（连真实后端） | 5173 | 改 `scripts/devPorts.mjs` 的 `DEV_PORT` |
+| `pnpm dev:mock`（MSW 假数据） | 5273 | 同上，改 `MOCK_PORT` |
+| 后端（FastAPI） | 8000 | 改 `.env` 的 `VITE_API_BASE_URL` |
+
+前两个数字**只写在 `scripts/devPorts.mjs`**，`vite.config.ts` 与 `scripts/screenshot.mjs` 都从它引入；`pnpm lint`（`scripts/checkDevPorts.mjs`）会检查别处没有再写死，**注释里也不行**。后端地址不属于这个体系：它由 `.env` 决定（见下一节）。
+
+两个模式用**不同**端口是刻意的：可以同时开着真数据与假数据对比，而不是一件事两个名字。
+
+- **端口被占用会直接启动失败**（`strictPort`），不会静默顺延。这不是待修的体验问题，是设计如此：
+  人与 agent 都要能对「现在跑的是哪个 server」有确定答案。处理方式只有两种，都显式：
+  1. **关掉占用者**：`lsof -nP -i :5173`（往往是自己上次没关的 dev server）；
+  2. **换端口跑**：临时 `pnpm dev --port 5180`；要永久换就改 `scripts/devPorts.mjs`——只改这一处，守卫会保证别处没有漏改的字面量。
+- 为什么不自动顺延：那样「5173」就成了一句谎话——脚本默认值、深链、文档示例都会指向另一台服务器
+  （很可能是别人连着真实后端的那个），**而截图与请求看起来一切正常**。
+
 ## 后端地址
 
-- 默认 `http://localhost:8000`，配在 `.env` 的 `VITE_API_BASE_URL`（从 `.env.example` 复制）。
-- `VITE_OPENAPI_URL` 可省略：`pnpm gen:api` 会自动取 `${VITE_API_BASE_URL}/openapi.json`。
+两个地址都在 `.env` 里，各自维护：
+
+- `VITE_API_BASE_URL`：后端地址，默认 `http://localhost:8000`（从 `.env.example` 复制）。页面与认证都走它。
+- `VITE_OPENAPI_URL`：仅当 OpenAPI 与后端不同源时才需要设置。不设时 `pnpm gen:api` 会取 `${VITE_API_BASE_URL}/openapi.json`。
 - **改 `.env` 必须重启 dev server**：Vite 只在启动时读取环境变量，热更新不生效。改完顺手 `pnpm gen:api`，让生成的类型也跟随新地址。
 
 ## 局域网 / 真机访问（用明确 IP，不用 localhost）
@@ -72,8 +93,8 @@ pnpm screenshot /game/webdev/Game1/dungeon
 # 手机视口 + 点开确认浮窗
 pnpm screenshot /game/webdev/Game1/dungeon --size 390x844 --click "进入副本：荒村义庄"
 
-# mock 模式（vite 可能落在别的端口，用它打印的地址）
-pnpm screenshot /game/webdev/Game1/dungeon --base http://localhost:5174
+# mock 模式（pnpm dev:mock 固定跑在自己的端口，不必再手填 --base）
+pnpm screenshot /game/webdev/Game1/dungeon --mock
 ```
 
 `--click` 按 `aria-label` 或按钮文字匹配，用 `|` 分隔可连点；写错了会直接把当前页面上的按钮全列出来。

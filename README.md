@@ -41,14 +41,15 @@ URL 自带会话参数（账号 / 对局），可以直接深链到任意一层�
 | 命令 | 说明 |
 | ------ | ------ |
 | `pnpm dev` | 启动开发服务器（连真实后端） |
-| `pnpm dev:mock` | 启动开发服务器 + 浏览器端 MSW，用 `src/mocks/fixtures.ts` 假数据调试页面 |
+| `pnpm dev:mock` | 启动开发服务器 + 浏览器端 MSW，用 `src/mocks/fixtures.ts` 假数据调试页面（端口 5273，可与 `pnpm dev` 同时开） |
 | `pnpm build` | 类型检查 + 生产构建 |
 | `pnpm preview` | 预览构建产物 |
 | `pnpm gen:api` | 从后端 `/openapi.json` 生成 TS 类型到 `src/api/schema.d.ts`（需后端已启动） |
 | `pnpm screenshot` | 用 headless Chrome 给页面截图（可指定视口、先点几下再拍），详见 `docs/dev-setup.md` |
 | `pnpm format` | Biome 格式化 |
 | `pnpm lint` / `pnpm lint:fix` | Biome 静态检查（含文件命名校验）/ 自动修复 |
-| `pnpm check:conventions` | 单独跑文件命名校验（已包含在 `pnpm lint`） |
+| `pnpm check:conventions` | 单独跑文件命名 / `.tsx` 位置校验（已包含在 `pnpm lint`） |
+| `pnpm check:ports` | 单独跑「dev 端口只有一个来源」校验（已包含在 `pnpm lint`） |
 | `pnpm typecheck` | TypeScript 严格类型检查 |
 | `pnpm test` / `pnpm test:run` | Vitest 测试（watch / 单次） |
 

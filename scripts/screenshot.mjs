@@ -11,18 +11,19 @@
  *
  * 用法（`pnpm screenshot ...`）：
  *   pnpm screenshot /game/webdev/Game1/dungeon
- *   pnpm screenshot /game/webdev/Game1/dungeon --click "进入副本：荒村义庄"
- *   pnpm screenshot /game/webdev/Game1/dungeon --size 390x844 --out screenshots/dungeon-mobile.png
- *   pnpm screenshot /game/webdev/Game1/dungeon --base http://localhost:5174   # mock 模式
+ *   pnpm screenshot /game/webdev/Game1/dungeon --mock                            # mock 模式
+ *   pnpm screenshot /game/webdev/Game1/dungeon --size 390x844 --click "进入副本：荒村义庄"
+ *   pnpm screenshot /game/webdev/Game1/dungeon --base http://192.168.1.5:<本机 dev 端口>   # 局域网真机
  *
+ * 端口不在这里写死：默认地址由 scripts/devPorts.mjs 派生（`vite.config.ts` 也从那里取）。
  * 输出默认落到 `screenshots/`（已 gitignore）。依赖本机的 Chrome / Chromium。
  */
 import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import { DEV_PORT, localBaseUrl, MOCK_PORT } from "./devPorts.mjs";
 
-const DEFAULT_BASE = "http://localhost:5173";
 const DEFAULT_SIZE = "1280x900";
 const DEFAULT_WAIT_MS = 4000;
 const DEFAULT_CLICK_WAIT_MS = 2000;
@@ -41,11 +42,12 @@ const USAGE = `用真实浏览器给页面截图：导航 → 等待 → （可�
 
 用法：pnpm screenshot <路径或 URL> [选项]
 
-  <路径或 URL>       如 /game/webdev/Game1/dungeon；给完整 URL 则忽略 --base
+  <路径或 URL>       如 /game/webdev/Game1/dungeon；给完整 URL 则忽略 --base / --mock
 
 选项：
-  --base <url>       dev server 地址，默认 ${DEFAULT_BASE}
-                     （mock 模式可能落在别的端口，用 vite 打印的地址，如 http://localhost:5174）
+  --mock             拍 mock 模式的 dev server（端口 ${MOCK_PORT}，见 scripts/devPorts.mjs）
+  --base <url>       显式指定地址（如局域网真机）；与 --mock 二选一
+                     都不给则拍 ${localBaseUrl(DEV_PORT)}（pnpm dev）
   --out <file>       输出文件，默认 screenshots/<路径末段>-<宽>x<高>.png
   --size <宽x高>     视口尺寸，默认 ${DEFAULT_SIZE}；手机用 390x844
   --click <文本>     截图前点一下这个按钮（按 aria-label 或按钮文字匹配）
@@ -61,7 +63,8 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 function parseArgs(argv) {
   const options = {
     target: "",
-    base: DEFAULT_BASE,
+    base: "",
+    mock: false,
     out: "",
     size: DEFAULT_SIZE,
     click: "",
@@ -70,6 +73,9 @@ function parseArgs(argv) {
     help: false,
   };
   const flags = {
+    "--mock": () => {
+      options.mock = true;
+    },
     "--base": (value) => {
       options.base = value;
     },
@@ -102,6 +108,11 @@ function parseArgs(argv) {
       positional.push(arg);
       continue;
     }
+    // 布尔开关（--mock）不吃后面的值
+    if (arg === "--mock") {
+      apply();
+      continue;
+    }
     const value = argv[index + 1];
     if (value === undefined) {
       throw new Error(`选项 ${arg} 缺少取值`);
@@ -113,7 +124,13 @@ function parseArgs(argv) {
   if (positional.length > 1) {
     throw new Error(`多余的参数：${positional.slice(1).join(" ")}`);
   }
+  if (options.mock && options.base !== "") {
+    throw new Error("--base 与 --mock 二选一（给 --base 就按它的地址拍）");
+  }
   options.target = positional[0] ?? "";
+  // 默认地址派生自 devPorts.mjs：本文件不写死端口
+  options.base =
+    options.base !== "" ? options.base : localBaseUrl(options.mock ? MOCK_PORT : DEV_PORT);
   return options;
 }
 

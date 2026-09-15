@@ -9,6 +9,12 @@
 2. **单一事实源**：类型只来自 `pnpm gen:api` 生成的 `schema.d.ts`；约定只写在本文件，别处引用不复制。
 3. **能强制就不靠自觉**：每条规则都要说清"谁保证"（见第五节）。
 4. **先定义再遵守**：规则必须可机械判定。含糊的词（"主函数"、"合理的位置"）不算规则。
+5. **让执行傻，让流程聪明**：节点（函数 / 接口 / 脚本）要简单、坚固、**不做判断**；编排与判断集中在上一层（hook / 页面 / 维护者 / agent）。
+   - 这已经是本仓库的骨架：动作接口只返回 `job_id`、**不**判断"做完没有"，由 `useTask` + 失效刷新这套流程决定何时算完成；`displayName`、`readItems` / `ItemRow`、`devPorts.mjs` 都只做一件事，规则写在文档与测试里。
+   - 推论：**不做「无感智能兼容」**——起不来就明确失败（`strictPort`），不静默降级、不自动兜底、不猜意图；宁可让人 / agent 读一遍报错再显式改一次。
+   - 例：dev 端口被占 → 直接失败，换端口是显式决定；截图脚本找不到按钮 → 列出当前所有按钮并失败，而不是拍一张"差不多"的图。
+   - 代价要说清：傻节点**不会自我纠错**，所以判断必须真的放在上一层，靠测试与守卫脚本（`checkFileConventions` / `checkDevPorts`）兜住，而不是让节点顺手兼容一下。
+   - 判据：一处「聪明」若让错误消失得无影无踪，就不该做；顺手兼容往往是以后花半天排查的捷径。
 
 ## 一、目录结构与组件归属
 
@@ -93,6 +99,7 @@ pages ──┬──▶ features ──┬──▶ components
 - **不手写 API 类型**，不 `any`，不在 API 边界 `as`。
 - **服务器名字一律经 `displayName` 显示**（`src/components/displayName.ts`）：只保留最后一段，`角色.无名` → `无名`。**取身份的地方一律用原始名字**——比较、URL、API 参数、React key 都用原值（显示名会撞：`角色.无名` / `怪物.无名`）。要改"名字怎么显示"只改这一个函数，不在组件里各写一份。
 - **Provider 只在 `main.tsx` 装配**（`QueryClientProvider`、`BrowserRouter`），页面不自己创建，便于测试用 `MemoryRouter` 替换。
+- **端口只有一个来源**：dev / mock 端口写在 `scripts/devPorts.mjs`，别处一律 import（`vite.config.ts`、`scripts/screenshot.mjs`）；注释里也不写数字，具体端口见 [dev-setup.md](dev-setup.md)。由 `pnpm lint` 强制。
 
 ## 五、布局与响应式（手机 / 桌面）
 
@@ -127,10 +134,12 @@ pages ──┬──▶ features ──┬──▶ components
 | 类型正确 | `tsc`（strict + `noUncheckedIndexedAccess`） | `pnpm typecheck` |
 | 格式 / 大小写 / lint | Biome | `pnpm lint` |
 | 文件名 = 导出符号；`.tsx` 位置 | `scripts/checkFileConventions.mjs` | `pnpm lint` / `pnpm check:conventions` |
+| dev 端口字面量只出现在 `scripts/devPorts.mjs` | `scripts/checkDevPorts.mjs` | `pnpm lint` / `pnpm check:ports` |
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
 | 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
 | 手机 / 桌面均可用的排法 | 靠 review（CSS 无断言），可用 `pnpm screenshot` 拍图核对 | — |
 | 不滥用输入控件（游戏客户端） | 靠 review（无工具可强制） | — |
+| 不做无感智能兼容（起不来就失败） | 靠 review（无工具可强制） | — |
 | 行为正确 | Vitest + MSW | `pnpm test:run` |
 | 构建可用 | `tsc --noEmit && vite build` | `pnpm build` |
 
