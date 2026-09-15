@@ -594,22 +594,26 @@ ul.entity-browser > li .chip-button {
   font-size: 0.85rem;
 }
 
-/* 当前队伍：竖着排（一个成员一行）。卡片宽度与「可加入的同伴」相当，
-   不跟着栅格拉伸——否则名字与按钮会隔着半屏，看着“过长”。 */
-ul.roster-stack {
-  display: grid;
-  grid-template-columns: minmax(0, min(11rem, 100%));
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+/* 卡片主体：名字按钮占满剩余宽度，点哪里都能打开角色信息浮窗 */
+.roster-card .roster-card-name {
+  flex: 1;
+  padding: 0.1rem 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: 600;
 }
 
-/* 可加入的同伴：一行多张、自动换行，人多也省地方 */
+.roster-card .roster-card-name:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+/* 角色卡片栅格：尺寸与「可用副本」卡片**完全一致**（同为 min 320px、同间距），
+   所以上下两处的卡片宽度是对齐的；窄屏单列、宽屏自动多列。 */
 ul.roster-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(170px, 100%), 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 1.25rem;
   margin: 0;
   padding: 0;
   list-style: none;

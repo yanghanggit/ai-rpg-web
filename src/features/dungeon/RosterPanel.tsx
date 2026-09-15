@@ -7,29 +7,30 @@ import { useRosterCandidates } from "./useRosterCandidates";
  * 副本的「队伍名单」面板。
  *
  * 名单是进入副本前的预选同伴（`PartyRosterComponent`，挂在玩家实体上），为空即独自冒险。
- * 分两栏：当前队伍（可移出）与可加入的同伴。候选口径是「持 `NPCComponent` 且不是玩家」——
- * 玩家的蓝图类型往往也是 NPC，所以候选查询带了 `none_of=PlayerComponent`。
+ * 候选口径是「持 `NPCComponent` 且不是玩家」——玩家的蓝图类型往往也是 NPC，
+ * 所以候选查询带了 `none_of=PlayerComponent`。
  *
  * 两段内容**上下排**：当前队伍在上、可加入的同伴在下（与「道具管理」的
  * 背包 / 储物箱同一思路），而不是左右两栏——左右分栏会让两侧长度不均衡。
  *
- * 每个角色是一张**小卡片**（一格一卡），而不是整行列表。但两段的排法不同：
- * - **当前队伍竖着排**（一个成员一行，卡片不拉长）——队伍是有序的，竖排更好读；
- * - **可加入的同伴**一行多张、自动换行——候选池可能很大，要省地方。
- * 卡片内部仍是显式的「加入 / 移出」按钮，语义比「点卡片切换」明确。
+ * 两段都用**同一种卡片栅格**（尺寸与「可用副本」卡片一致）：窄屏单列、宽屏一行多张。
  *
- * 增删都是同步接口，成功后失效 group 查询，两栏一起刷新。
- * 玩家名由页面传入——本组件不 import 其他 feature（`features/` 之间不互相依赖）。
+ * 卡片主体是**名字按钮**，点它打开角色信息浮窗（`ActorInfoDialog`）——与家园页
+ * 「点角色 chip 看信息」是同一套流程；「加入 / 移出」是独立的操作按钮，不嵌套在名字里。
+ * 具体打开哪个浮窗由页面负责（`features/` 之间不互相依赖，`onSelectActor` 是回调）。
  */
 export default function RosterPanel({
   userName,
   gameName,
   playerActor,
+  onSelectActor,
 }: {
   userName: string;
   gameName: string;
   /** 玩家角色原始名（用于在队伍里标出自己）；未解析出来时为 `null`。 */
   playerActor: string | null;
+  /** 点角色名时回调（页面据此打开角色信息浮窗）。 */
+  onSelectActor: (actorName: string) => void;
 }) {
   const roster = usePartyRoster(userName, gameName);
   const candidates = useRosterCandidates(userName, gameName);
@@ -56,16 +57,30 @@ export default function RosterPanel({
           ) : null}
           {roster.isSuccess ? (
             <>
-              <ul className="roster-stack">
+              <ul className="roster-cards">
                 {playerActor ? (
                   <li className="roster-card">
-                    <span className="mono">{displayName(playerActor)}</span>
+                    <button
+                      type="button"
+                      className="roster-card-name mono"
+                      aria-label={`查看角色：${displayName(playerActor)}`}
+                      onClick={() => onSelectActor(playerActor)}
+                    >
+                      {displayName(playerActor)}
+                    </button>
                     <span className="badge">玩家</span>
                   </li>
                 ) : null}
                 {members.map((name) => (
                   <li className="roster-card" key={name}>
-                    <span className="mono">{displayName(name)}</span>
+                    <button
+                      type="button"
+                      className="roster-card-name mono"
+                      aria-label={`查看角色：${displayName(name)}`}
+                      onClick={() => onSelectActor(name)}
+                    >
+                      {displayName(name)}
+                    </button>
                     <button
                       type="button"
                       disabled={action.isPending}
@@ -94,7 +109,14 @@ export default function RosterPanel({
               <ul className="roster-cards">
                 {available.map((name) => (
                   <li className="roster-card" key={name}>
-                    <span className="mono">{displayName(name)}</span>
+                    <button
+                      type="button"
+                      className="roster-card-name mono"
+                      aria-label={`查看角色：${displayName(name)}`}
+                      onClick={() => onSelectActor(name)}
+                    >
+                      {displayName(name)}
+                    </button>
                     <button
                       type="button"
                       disabled={action.isPending}

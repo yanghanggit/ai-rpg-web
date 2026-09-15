@@ -112,6 +112,25 @@ describe("副本页 · 队伍名单", () => {
     expect(within(candidateColumn).getByText("顾知秋")).toBeInTheDocument();
   });
 
+  it("点角色名：打开角色信息浮窗（与家园页同一流程）", async () => {
+    renderDungeon();
+
+    // 候选里的 NPC
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：顾知秋" }));
+    const npcDialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(
+      await within(npcDialog).findByText("00000000-0000-0000-0000-0000000000bb"),
+    ).toBeInTheDocument();
+    fireEvent.click(within(npcDialog).getByRole("button", { name: "关闭" }));
+
+    // 当前队伍里的玩家角色
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：无名" }));
+    const playerDialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(
+      await within(playerDialog).findByText("00000000-0000-0000-0000-0000000000aa"),
+    ).toBeInTheDocument();
+  });
+
   it("加入同伴：调用 roster/add，名单与候选一起刷新", async () => {
     renderDungeon();
     await screen.findByRole("heading", { name: "可加入的同伴（2）" });
