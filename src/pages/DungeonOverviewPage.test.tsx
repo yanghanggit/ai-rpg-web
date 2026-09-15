@@ -280,9 +280,7 @@ describe("副本总览 · 进入副本（最终确认）", () => {
     renderDungeon();
 
     expect(await screen.findByRole("button", { name: "进入副本：荒村义庄" })).toBeDisabled();
-    expect(
-      await screen.findByRole("button", { name: "回到副本：副本.荒村义庄" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "回到副本：荒村义庄" })).toBeInTheDocument();
     expect(screen.getByText(/退出副本后才能进入新的副本/)).toBeInTheDocument();
   });
 });

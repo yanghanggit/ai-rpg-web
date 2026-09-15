@@ -21,6 +21,11 @@ export function readMockDungeons(): Schemas["Dungeon"][] {
   return [...dungeons].sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""));
 }
 
+/** 按名字取当前正在进行的副本（没有副本时为 undefined）。 */
+function runningDungeon(): Schemas["Dungeon"] | undefined {
+  return dungeons.find((item) => item.name === runningName);
+}
+
 /**
  * 副本运行状态（`GET /api/dungeons/v1/{user}/{game}/state`）。
  *
@@ -29,7 +34,7 @@ export function readMockDungeons(): Schemas["Dungeon"][] {
  * 这里用同一条时间线：初始空副本，「进入副本」后变成进行中的那一份。
  */
 export function readMockDungeonState(): Schemas["DungeonStateResponse"] {
-  const dungeon = dungeons.find((item) => item.name === runningName);
+  const dungeon = runningDungeon();
   if (dungeon === undefined) {
     return { dungeon: structuredClone(emptyDungeonFixture) };
   }
@@ -40,6 +45,18 @@ export function readMockDungeonState(): Schemas["DungeonStateResponse"] {
       setup_entities: true,
     },
   };
+}
+
+/**
+ * 当前副本房间（`GET /api/dungeons/v1/{user}/{game}/room`）。
+ *
+ * 后端在 `current_room_index == -1`（没有进行中的房间）时返回 404，所以这里也用 `null`
+ * 表示「没有」，由 handler 转成 404——客户端不靠空值兜底。
+ */
+export function readMockDungeonRoom(): Schemas["DungeonRoomResponse"]["room"] | null {
+  const dungeon = runningDungeon();
+  const room = dungeon?.rooms[runningRoomIndex];
+  return room === undefined ? null : structuredClone(room);
 }
 
 /** 发起进入副本：与后端一样，已有副本在跑时拒绝。 */
@@ -53,6 +70,12 @@ export function enterMockDungeon(name: string): { ok: true } | { ok: false; erro
   runningName = name;
   runningRoomIndex = 0;
   return { ok: true };
+}
+
+/** 退出副本：与后端任务一样，退出后世界回到「没有副本在跑」的状态（副本被拆掉）。 */
+export function exitMockDungeon(): void {
+  runningName = "";
+  runningRoomIndex = -1;
 }
 
 /** 生成一份新副本并追加到列表，返回它（mock 里同步完成，真实后端是异步 pipeline）。 */

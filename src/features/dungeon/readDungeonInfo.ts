@@ -14,11 +14,13 @@ function formatCreatedAt(value: string | undefined): string | null {
 }
 
 /**
- * 把副本的静态模型数据整理成浮窗好渲染的形状。
+ * 把副本的模型数据整理成浮窗好渲染的形状。
  *
- * 数据本身就是生成物类型（`Schemas["Dungeon"]`），所以这里不做校验，只做两件展示层的事：
+ * 数据本身就是生成物类型（`Schemas["Dungeon"]`），所以这里不做校验，只做三件展示层的事：
  * - 房间类型直接用判别字段 `room.type`（不学 TUI 用「场景里有没有怪物」去猜）；
- * - 敌人从 `room.stage.actors` 里按 `ActorType === "Monster"` 取。
+ * - 敌人从 `room.stage.actors` 里按 `ActorType === "Monster"` 取；
+ * - 进度直接读模型自己的 `current_room_index`——**副本进行中时它 >= 0**，静态副本（磁盘
+ *   JSON）恒为 -1，所以同一个浮窗给总览页与房间页用都不会误标。
  */
 
 /**
@@ -34,14 +36,23 @@ const ROOM_TYPE_LABELS: Record<string, string> = {
 };
 
 export function readDungeonInfo(dungeon: Schemas["Dungeon"]) {
+  const currentRoomIndex = dungeon.current_room_index;
+
   return {
     name: dungeon.name,
     profile: dungeon.profile,
     createdAt: formatCreatedAt(dungeon.created_at),
-    rooms: dungeon.rooms.map((room) => ({
+    /** 进行中的进度（第 N / M 间）；没有进行中的房间时为 null。 */
+    progress:
+      currentRoomIndex >= 0 && currentRoomIndex < dungeon.rooms.length
+        ? `第 ${currentRoomIndex + 1} / ${dungeon.rooms.length} 间`
+        : null,
+    rooms: dungeon.rooms.map((room, index) => ({
       type: room.type,
       typeLabel: ROOM_TYPE_LABELS[room.type] ?? room.type,
       stageName: room.stage.name,
+      /** 队伍当前所在的房间。 */
+      isCurrent: index === currentRoomIndex,
       monsters: room.stage.actors.filter((actor) => actor.type === "Monster"),
     })),
   };

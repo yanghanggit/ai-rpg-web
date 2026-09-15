@@ -33,6 +33,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   dungeon/RosterPanel.tsx  dungeon/readPartyRoster.ts  dungeon/usePartyRoster.ts  dungeon/useRosterCandidates.ts  dungeon/useRosterAction.ts
   dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
+  dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）

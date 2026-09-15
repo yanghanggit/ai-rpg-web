@@ -47,4 +47,25 @@ describe("readDungeonInfo", () => {
     const info = readDungeonInfo({ ...dungeonFixture, created_at: "2026-09-11T12:00:00Z" });
     expect(info.createdAt).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
   });
+
+  it("静态副本没有进度：progress 为 null，没有房间被标为当前", () => {
+    const info = readDungeonInfo(dungeonFixture);
+
+    expect(info.progress).toBeNull();
+    expect(info.rooms.every((room) => !room.isCurrent)).toBe(true);
+  });
+
+  it("进行中的副本：进度取模型的 current_room_index，当前房间只有一间", () => {
+    const info = readDungeonInfo({ ...dungeonFixture, current_room_index: 1 });
+
+    expect(info.progress).toBe("第 2 / 2 间");
+    expect(info.rooms.map((room) => room.isCurrent)).toEqual([false, true]);
+  });
+
+  it("current_room_index 超出房间范围时不报进度（不猜）", () => {
+    const info = readDungeonInfo({ ...dungeonFixture, current_room_index: 5 });
+
+    expect(info.progress).toBeNull();
+    expect(info.rooms.every((room) => !room.isCurrent)).toBe(true);
+  });
 });

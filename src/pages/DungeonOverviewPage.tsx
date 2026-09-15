@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { describeApiError } from "../api/describeApiError";
+import { displayName } from "../components/displayName";
 import StorageCostumeDialog from "../features/costume/StorageCostumeDialog";
 import { useCostumeAction } from "../features/costume/useCostumeAction";
 import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
 import DungeonPanel from "../features/dungeon/DungeonPanel";
 import EnterDungeonDialog from "../features/dungeon/EnterDungeonDialog";
 import RosterPanel from "../features/dungeon/RosterPanel";
+import { useDungeonList } from "../features/dungeon/useDungeonList";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useEnterDungeon } from "../features/dungeon/useEnterDungeon";
 import { useGenerateDungeon } from "../features/dungeon/useGenerateDungeon";
@@ -56,6 +58,7 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
   const enterDungeon = useEnterDungeon(userName, gameName);
   const costume = useCostumeAction(userName, gameName);
   const run = useDungeonRun(userName, gameName);
+  const dungeons = useDungeonList();
 
   // 正在查阅的副本（原始名）；非空即打开副本信息浮窗
   const [infoDungeon, setInfoDungeon] = useState<string | null>(null);
@@ -72,6 +75,8 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
   const isBusy = generate.isStarting || generate.isRunning;
   const costumeBusy = costume.isStarting || costume.isRunning;
   const dungeonRun = run.data ?? null;
+  // 浮窗是纯展示组件，副本对象由页面给：从列表缓存里按名字取（后端没有「查单个副本」的接口）
+  const infoDungeonData = dungeons.data?.find((item) => item.name === infoDungeon) ?? null;
 
   let generateLabel = "生成新副本";
   if (generate.isStarting) {
@@ -91,7 +96,7 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
             type="button"
             onClick={() => navigate(`/game/${userName}/${gameName}/dungeon/room`)}
           >
-            回到副本：{dungeonRun.name}
+            回到副本：{displayName(dungeonRun.dungeon.name)}
           </button>
         ) : null}
         <button type="button" disabled={isBusy} onClick={generate.start}>
@@ -114,7 +119,9 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
         <p className="error">无法识别玩家角色：{String(playerActor.error)}</p>
       ) : null}
       {dungeonRun?.active ? (
-        <p className="muted">副本进行中：{dungeonRun.name} · 退出副本后才能进入新的副本。</p>
+        <p className="muted">
+          副本进行中：{displayName(dungeonRun.dungeon.name)} · 退出副本后才能进入新的副本。
+        </p>
       ) : null}
 
       <DungeonPanel
@@ -130,8 +137,8 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
         onSelectActor={setInfoActor}
       />
 
-      {infoDungeon ? (
-        <DungeonInfoDialog dungeonName={infoDungeon} onClose={() => setInfoDungeon(null)} />
+      {infoDungeonData ? (
+        <DungeonInfoDialog dungeon={infoDungeonData} onClose={() => setInfoDungeon(null)} />
       ) : null}
 
       {enterTarget && playerActor.data ? (
