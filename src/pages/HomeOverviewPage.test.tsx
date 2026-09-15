@@ -420,6 +420,67 @@ describe("家园概览页", () => {
     expect(within(dialog).queryByText(/旧麻绳|缠麻短刃|吗啡针剂/)).not.toBeInTheDocument();
   });
 
+  it("点场景卡片里的 NPC chip：打开该 NPC 的角色信息，且不显示「玩家名」", async () => {
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: "顾知秋" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(
+      await within(dialog).findByText("00000000-0000-0000-0000-0000000000bb"),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("18 / 18")).toBeInTheDocument();
+    // NPC 没有 PlayerComponent，不显示玩家名这一行
+    expect(within(dialog).queryByText("玩家名")).not.toBeInTheDocument();
+    expect(within(dialog).getAllByText("顾知秋").length).toBeGreaterThan(0);
+  });
+
+  it("点玩家 chip 与点工具栏「角色信息」等价（都显示玩家名）", async () => {
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: "无名" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(await within(dialog).findByText("webdev")).toBeInTheDocument();
+    expect(within(dialog).getByText("玩家名")).toBeInTheDocument();
+  });
+
+  it("角色信息里可脱下时装：等任务完成后不再显示穿着中", async () => {
+    server.use(taskWith(1, "succeeded"));
+
+    renderHome();
+    fireEvent.click(await screen.findByRole("button", { name: "顾知秋" }));
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+
+    expect(await within(dialog).findByText(/朱砂袍/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "脱下时装" }));
+
+    await waitFor(() => expect(within(dialog).getByText("（未穿戴时装）")).toBeInTheDocument());
+    expect(within(dialog).getByRole("button", { name: "穿时装" })).toBeInTheDocument();
+    expect(within(dialog).queryByText(/朱砂袍/)).not.toBeInTheDocument();
+  });
+
+  it("穿时装：二级浮窗列出储物箱时装，点一件即穿上", async () => {
+    server.use(taskWith(1, "succeeded"));
+
+    renderHome();
+    // 小厮未穿时装
+    fireEvent.click(await screen.findByRole("button", { name: "小厮" }));
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(await within(dialog).findByText("（未穿戴时装）")).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "穿时装" }));
+
+    const picker = await screen.findByRole("dialog", { name: "选择时装" });
+    fireEvent.click(await within(picker).findByRole("button", { name: /青衫/ }));
+
+    // 二级浮窗关闭，角色信息里出现新时装
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "选择时装" })).not.toBeInTheDocument(),
+    );
+    expect(await within(dialog).findByText(/青衫/)).toBeInTheDocument();
+  });
+
   it("点「道具管理」打开浮窗，展示背包、储物箱与穿戴中时装", async () => {
     renderHome();
 

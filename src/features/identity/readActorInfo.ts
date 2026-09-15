@@ -3,7 +3,10 @@ import type { Schemas } from "../../api/types";
 type Entity = Schemas["EntitySerialization"];
 
 /**
- * 从玩家实体的序列化数据里读出「角色信息浮窗」需要的字段。
+ * 从角色实体的序列化数据里读出「角色信息浮窗」需要的字段。
+ *
+ * 对玩家与 NPC 通用：`PlayerComponent` 只有玩家有（NPC 读到 `null`），
+ * 其余 Identity / Appearance / CharacterStats / WornCostume 都是所有角色共有的组件。
  *
  * ## 为什么要按 name 分派 + 逐字段校验
  *
@@ -54,11 +57,24 @@ function readStats(data: unknown) {
   return { hp, max_hp, attack, defense };
 }
 
-export function readPlayerInfo(entity: Entity) {
+/** 当前穿戴的时装（`WornCostumeComponent.item` 是个 `CostumeItem`）；未穿戴返回 `null`。 */
+function readWornCostume(data: unknown) {
+  if (!isRecord(data) || !isRecord(data.item)) {
+    return null;
+  }
+  const name = readString(data.item, "name");
+  if (name === null) {
+    return null;
+  }
+  return { name, description: readString(data.item, "description") ?? "" };
+}
+
+export function readActorInfo(entity: Entity) {
   const player = findComponent(entity, "PlayerComponent");
   const identity = findComponent(entity, "IdentityComponent");
   const appearance = findComponent(entity, "AppearanceComponent");
   const stats = findComponent(entity, "CharacterStatsComponent");
+  const worn = findComponent(entity, "WornCostumeComponent");
 
   return {
     player_name: readString(player?.data, "player_name"),
@@ -67,5 +83,6 @@ export function readPlayerInfo(entity: Entity) {
     base_body: readString(appearance?.data, "base_body"),
     appearance: readString(appearance?.data, "appearance"),
     stats: readStats(stats?.data),
+    worn_costume: readWornCostume(worn?.data),
   };
 }

@@ -4,12 +4,14 @@ import { $api } from "../api/query";
 import { displayName } from "../components/displayName";
 import Modal from "../components/Modal";
 import BlueprintInfoDialog from "../features/blueprint/BlueprintInfoDialog";
+import StorageCostumeDialog from "../features/costume/StorageCostumeDialog";
+import { useCostumeAction } from "../features/costume/useCostumeAction";
 import { collectActors } from "../features/home/collectActors";
 import { findStageOfActor } from "../features/home/findStageOfActor";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
 import { useLogout } from "../features/home/useLogout";
 import { useSwitchStage } from "../features/home/useSwitchStage";
-import PlayerInfoDialog from "../features/identity/PlayerInfoDialog";
+import ActorInfoDialog from "../features/identity/ActorInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
 import ItemManagerDialog from "../features/items/ItemManagerDialog";
 import NarrativeOverlay from "../features/session/NarrativeOverlay";
@@ -22,10 +24,11 @@ import { useUnreadCount } from "../features/session/useUnreadCount";
  * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
  * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 道具管理 / 叙事未读 / 返回上一级
- * - 下方卡片：每个 stage 一张，列出其中的 actor，并带「切换到此场景」按钮；
- *   玩家当前所在卡片高亮标记，其切换按钮禁用
+ * - 下方卡片：每个 stage 一张，列出其中的 actor（每个 actor 是一个按钮，点开
+ *   该角色的信息浮窗），并带「切换到此场景」按钮；玩家当前所在卡片高亮标记
  *
- * 「角色信息」打开 `PlayerInfoDialog`，展示玩家实体上必要的组件信息；
+ * 「角色信息」打开 `ActorInfoDialog`，玩家与 NPC 共用：点工具栏按钮等同于点玩家 chip。
+ * 浮窗内可穿/脱时装，穿时装时叠出 `StorageCostumeDialog` 选储物箱里的时装。
  * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统；
  * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
@@ -71,6 +74,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const currentStage = findStageOfActor(mapping, playerActor.data ?? null);
   const session = useSessionMessages(userName, gameName);
   const logout = useLogout(userName, gameName);
+  const costume = useCostumeAction(userName, gameName);
   const hasActors = actors.length > 0;
   // 家园动作共享同一条 pipeline，同一时间只允许一个在跑
   const isBusy =
@@ -78,7 +82,10 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
   const [isNarrativeOpen, setIsNarrativeOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-  const [isPlayerInfoOpen, setIsPlayerInfoOpen] = useState(false);
+  // 正在查看的角色（原始名）；非空即打开角色信息浮窗
+  const [infoActor, setInfoActor] = useState<string | null>(null);
+  // 是否叠出「选择时装」的二级浮窗
+  const [isCostumeOpen, setIsCostumeOpen] = useState(false);
   const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
 
@@ -107,7 +114,11 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
         <button
           type="button"
           disabled={playerActor.isPending || !playerActor.data}
-          onClick={() => setIsPlayerInfoOpen(true)}
+          onClick={() => {
+            if (playerActor.data) {
+              setInfoActor(playerActor.data);
+            }
+          }}
         >
           角色信息
         </button>
@@ -177,8 +188,14 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
                   ) : (
                     <ul className="chips">
                       {stageActors.map((actorName) => (
-                        <li key={actorName} className="chip mono">
-                          {displayName(actorName)}
+                        <li key={actorName}>
+                          <button
+                            type="button"
+                            className="chip chip-button mono"
+                            onClick={() => setInfoActor(actorName)}
+                          >
+                            {displayName(actorName)}
+                          </button>
                         </li>
                       ))}
                     </ul>
@@ -203,12 +220,36 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
         <NarrativeOverlay messages={session.messages} onClose={() => setIsNarrativeOpen(false)} />
       ) : null}
 
-      {isPlayerInfoOpen && playerActor.data ? (
-        <PlayerInfoDialog
+      {infoActor ? (
+        <ActorInfoDialog
           userName={userName}
           gameName={gameName}
-          actorName={playerActor.data}
-          onClose={() => setIsPlayerInfoOpen(false)}
+          actorName={infoActor}
+          busy={isBusy}
+          costumeBusy={costume.isStarting || costume.isRunning}
+          costumeError={costume.error}
+          onWearCostume={() => setIsCostumeOpen(true)}
+          onRemoveCostume={() => costume.remove(infoActor)}
+          // 二级浮窗开着时本层不响应关闭，避免一次 ESC 关掉两层
+          onClose={() => {
+            if (!isCostumeOpen) {
+              setInfoActor(null);
+            }
+          }}
+        />
+      ) : null}
+
+      {isCostumeOpen && infoActor ? (
+        <StorageCostumeDialog
+          userName={userName}
+          gameName={gameName}
+          targetName={infoActor}
+          busy={costume.isStarting || costume.isRunning}
+          onWear={(itemName) => {
+            setIsCostumeOpen(false);
+            costume.wear(itemName, infoActor);
+          }}
+          onClose={() => setIsCostumeOpen(false)}
         />
       ) : null}
 

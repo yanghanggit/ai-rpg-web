@@ -179,6 +179,63 @@ export const playerEntityFixture: Schemas["EntitySerialization"] = {
   ],
 };
 
+/**
+ * NPC 实体（家园运行期）：Identity / Appearance / CharacterStats。
+ * 没有 PlayerComponent（那是玩家专属）；是否穿时装由 `mocks/items.ts` 的运行时状态决定。
+ */
+export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
+  {
+    name: "角色.顾知秋",
+    components: [
+      {
+        name: "IdentityComponent",
+        data: {
+          name: "角色.顾知秋",
+          creation_order: 1,
+          entity_id: "00000000-0000-0000-0000-0000000000bb",
+        },
+      },
+      {
+        name: "AppearanceComponent",
+        data: {
+          name: "角色.顾知秋",
+          base_body: "（mock）身量高挑的女子。",
+          appearance: "（mock）着朱砂暗纹道袍的女子。",
+        },
+      },
+      {
+        name: "CharacterStatsComponent",
+        data: { name: "角色.顾知秋", stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 } },
+      },
+    ],
+  },
+  {
+    name: "角色.小厮",
+    components: [
+      {
+        name: "IdentityComponent",
+        data: {
+          name: "角色.小厮",
+          creation_order: 3,
+          entity_id: "00000000-0000-0000-0000-0000000000cc",
+        },
+      },
+      {
+        name: "AppearanceComponent",
+        data: {
+          name: "角色.小厮",
+          base_body: "（mock）瘦小的少年。",
+          appearance: "（mock）一身短打的小厮。",
+        },
+      },
+      {
+        name: "CharacterStatsComponent",
+        data: { name: "角色.小厮", stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 } },
+      },
+    ],
+  },
+];
+
 export const newGameFixture: Schemas["NewGameResponse"] = {
   blueprint: blueprintFixture,
   player_session: {

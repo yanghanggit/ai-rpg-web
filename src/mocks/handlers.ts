@@ -8,7 +8,7 @@
  */
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
-import type { ApiBody } from "../api/types";
+import type { ApiBody, Schemas } from "../api/types";
 import {
   blueprintFixture,
   blueprintListFixture,
@@ -18,10 +18,13 @@ import {
 import {
   craftMockItem,
   moveMockItem,
+  readMockActorEntity,
   readMockPlayerEntity,
   readMockStorageEntity,
   readMockStorageEntityName,
   readMockWornEntities,
+  removeMockCostume,
+  wearMockCostume,
 } from "./items";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { sseResponse } from "./sseResponse";
@@ -64,15 +67,19 @@ export const handlers = [
     return HttpResponse.json({ entities: [] });
   }),
 
-  // 实体详情：按名字批量查询，角色信息浮窗与道具管理浮窗都用它
+  // 实体详情：按名字批量查询（玩家 / NPC / 储物箱），角色信息与道具管理浮窗都用它
   http.get(api("/api/entities/v1/:userName/:gameName/details"), ({ request }) => {
     const names = new URL(request.url).searchParams.getAll("entities");
-    const entities = [];
-    if (names.includes(blueprintFixture.player_actor)) {
-      entities.push(readMockPlayerEntity());
-    }
-    if (names.includes(readMockStorageEntityName())) {
-      entities.push(readMockStorageEntity());
+    const entities: Schemas["EntitySerialization"][] = [];
+    for (const name of names) {
+      if (name === readMockStorageEntityName()) {
+        entities.push(readMockStorageEntity());
+        continue;
+      }
+      const actor = readMockActorEntity(name);
+      if (actor) {
+        entities.push(actor);
+      }
     }
     return HttpResponse.json({ entities });
   }),
@@ -161,6 +168,37 @@ export const handlers = [
       job_id: createMockTask(),
       message: "mock 时装工坊任务已启动",
     });
+  }),
+
+  // 穿/脱时装：改 mock 的 worn 状态 + 追一条叙事，再返回 job_id 走同一条任务时间线
+  http.post(api("/api/home/costume/wear/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/costume/wear/v1/">;
+    if (!wearMockCostume(body.target_name, body.item_name)) {
+      return HttpResponse.json({ detail: "储物箱中不存在该时装" }, { status: 400 });
+    }
+    appendMockSessionMessage({
+      type: "announce",
+      message: `（mock）${body.target_name} 换上了 ${body.item_name}。`,
+      actor: body.target_name,
+      stage: "场景.门厅",
+      content: `换上了 ${body.item_name}。`,
+    });
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 换装任务已启动" });
+  }),
+
+  http.post(api("/api/home/costume/remove/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/costume/remove/v1/">;
+    if (!removeMockCostume(body.target_name)) {
+      return HttpResponse.json({ detail: "该角色未穿戴时装" }, { status: 400 });
+    }
+    appendMockSessionMessage({
+      type: "announce",
+      message: `（mock）${body.target_name} 脱下了时装。`,
+      actor: body.target_name,
+      stage: "场景.门厅",
+      content: "脱下了时装。",
+    });
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 脱装任务已启动" });
   }),
 
   // 增量拉取：只返回 sequence_id 更大的消息

@@ -9,6 +9,7 @@
  */
 import type { Schemas } from "../api/types";
 import {
+  npcEntityFixtures,
   playerEntityFixture,
   runtimeInventoryFixture,
   runtimeStorageFixture,
@@ -93,6 +94,30 @@ export function readMockStorageEntity(): Schemas["EntitySerialization"] {
   };
 }
 
+/**
+ * 任意角色的完整实体：玩家 = 夹具 + 背包，NPC = 夹具；若其穿着时装则附上
+ * `WornCostumeComponent`。未知名字返回 `null`。
+ */
+export function readMockActorEntity(name: string): Schemas["EntitySerialization"] | null {
+  const base =
+    name === playerEntityFixture.name
+      ? readMockPlayerEntity()
+      : npcEntityFixtures.find((entity) => entity.name === name);
+  if (base === undefined) {
+    return null;
+  }
+  const entity = clone(base);
+  const wornEntry = worn.find((entry) => entry.wearer === name);
+  if (wornEntry === undefined) {
+    return entity;
+  }
+  entity.components.push({
+    name: "WornCostumeComponent",
+    data: { name, item: clone(wornEntry.item) },
+  });
+  return entity;
+}
+
 /** 穿戴中时装实体（group `WornCostumeComponent` 用）。 */
 export function readMockWornEntities(): Schemas["EntitySerialization"][] {
   return worn.map(({ wearer, item }) => ({
@@ -150,4 +175,46 @@ export function resetMockItems(): void {
   inventory = clone(runtimeInventoryFixture);
   storage = clone(runtimeStorageFixture);
   worn = clone(wornCostumesFixture);
+}
+
+/**
+ * 从储物箱取一件时装穿到目标角色身上；若其已穿着先归还旧时装（与后端交换语义一致）。
+ * 储物箱里没有该时装时返回 `false`。
+ */
+export function wearMockCostume(target: string, costumeName: string): boolean {
+  const index = storage.findIndex(
+    (item) => item.name === costumeName && item.type === "CostumeItem",
+  );
+  if (index === -1) {
+    return false;
+  }
+  const [costume] = storage.splice(index, 1);
+  if (costume === undefined) {
+    return false;
+  }
+
+  const existing = worn.findIndex((entry) => entry.wearer === target);
+  if (existing !== -1) {
+    const old = worn[existing];
+    if (old !== undefined) {
+      storage.push(old.item);
+    }
+    worn.splice(existing, 1);
+  }
+
+  worn.push({ wearer: target, item: costume });
+  return true;
+}
+
+/** 脱下目标角色的时装并归还储物箱；未穿着时返回 `false`。 */
+export function removeMockCostume(target: string): boolean {
+  const index = worn.findIndex((entry) => entry.wearer === target);
+  if (index === -1) {
+    return false;
+  }
+  const [entry] = worn.splice(index, 1);
+  if (entry !== undefined) {
+    storage.push(entry.item);
+  }
+  return true;
 }
