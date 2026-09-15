@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
@@ -174,5 +174,32 @@ describe("副本页 · 队伍名单", () => {
     fireEvent.click(await screen.findByRole("button", { name: "← 返回家园" }));
 
     expect(await screen.findByText("家园页占位")).toBeInTheDocument();
+  });
+});
+
+describe("副本页 · 道具管理（出征前整理行装）", () => {
+  it("与家园页同一个浮窗：可以移道具，但**没有**工坊合成入口", async () => {
+    renderDungeon();
+
+    // 玩家名解析出来前按钮是禁用的（与家园页一致），先等它可用再点
+    const openButton = await screen.findByRole("button", { name: "道具管理" });
+    await waitFor(() => expect(openButton).toBeEnabled());
+    fireEvent.click(openButton);
+
+    const dialog = await screen.findByRole("dialog", { name: "道具管理" });
+    // 背包 / 储物箱 / 穿戴中时装都在
+    expect(await within(dialog).findByText("缠麻短刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("穿戴中（只读）")).toBeInTheDocument();
+    expect(within(dialog).getByText("背包 2 · 储物箱 4")).toBeInTheDocument();
+
+    // 移动可用：勾选背包道具 → 移入储物箱
+    fireEvent.click(within(dialog).getByLabelText("选择 装备.缠麻短刃"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "移入储物箱（1）" }));
+    expect(await within(dialog).findByText("背包 1 · 储物箱 5")).toBeInTheDocument();
+
+    // 三个工坊按钮一个都不在（合成必须在家园做）
+    expect(within(dialog).queryByRole("button", { name: "合成消耗品" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "制造装备" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "制作时装" })).not.toBeInTheDocument();
   });
 });

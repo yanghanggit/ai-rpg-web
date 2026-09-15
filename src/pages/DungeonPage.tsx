@@ -8,6 +8,7 @@ import RosterPanel from "../features/dungeon/RosterPanel";
 import { useGenerateDungeon } from "../features/dungeon/useGenerateDungeon";
 import ActorInfoDialog from "../features/identity/ActorInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
+import ItemManagerDialog from "../features/items/ItemManagerDialog";
 
 /**
  * 副本页：家园之外单独一屏，展开所有与副本相关的操作。
@@ -21,7 +22,9 @@ import { usePlayerActor } from "../features/identity/usePlayerActor";
  * - 「可用副本」卡片 → `GET /api/home/dungeon-list/v1/`（磁盘上的静态模型数据），
  *   点卡片打开 `DungeonInfoDialog` 查阅，对应 TUI 的 `/list-dungeons` + `/dungeon @名`；
  * - 队伍名单 → `PartyRosterComponent` 的 add / remove；**点角色名打开 `ActorInfoDialog`**，
- *   与家园页「点角色 chip 看信息」是同一套流程（连穿/脱时装的两级浮窗也一并接上）。
+ *   与家园页「点角色 chip 看信息」是同一套流程（连穿/脱时装的两级浮窗也一并接上）；
+ * - 「道具管理」→ `ItemManagerDialog` 的**移动版**（`craftEnabled={false}`）：
+ *   出征前只整理行装（背包 ↔ 储物箱），不合成——合成必须在家园做。
  *
  * 页面是组合层：玩家名与「点角色」的回调都由页面接线（features 之间不互相依赖）。
  */
@@ -52,6 +55,8 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
   const [infoActor, setInfoActor] = useState<string | null>(null);
   // 是否叠出「选择时装」的二级浮窗
   const [isCostumeOpen, setIsCostumeOpen] = useState(false);
+  // 是否打开「道具管理」浮窗
+  const [isItemsOpen, setIsItemsOpen] = useState(false);
 
   // 生成副本与其他家园动作共用同一条 pipeline，同一时间只允许一个在跑
   const isBusy = generate.isStarting || generate.isRunning;
@@ -72,12 +77,22 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
         <button type="button" disabled={isBusy} onClick={generate.start}>
           {generateLabel}
         </button>
+        <button
+          type="button"
+          disabled={playerActor.isPending || !playerActor.data}
+          onClick={() => setIsItemsOpen(true)}
+        >
+          道具管理
+        </button>
         <button type="button" onClick={() => navigate(`/game/${userName}/${gameName}/home`)}>
           ← 返回家园
         </button>
       </div>
 
       {generate.error ? <p className="error">生成副本失败：{generate.error}</p> : null}
+      {playerActor.isError ? (
+        <p className="error">无法识别玩家角色：{String(playerActor.error)}</p>
+      ) : null}
 
       <DungeonPanel onSelect={setInfoDungeon} />
 
@@ -122,6 +137,18 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
             costume.wear(itemName, infoActor);
           }}
           onClose={() => setIsCostumeOpen(false)}
+        />
+      ) : null}
+
+      {isItemsOpen && playerActor.data ? (
+        <ItemManagerDialog
+          userName={userName}
+          gameName={gameName}
+          actorName={playerActor.data}
+          busy={isBusy}
+          // 副本页只有移动：出征前整理行装用不上工坊
+          craftEnabled={false}
+          onClose={() => setIsItemsOpen(false)}
         />
       ) : null}
     </main>

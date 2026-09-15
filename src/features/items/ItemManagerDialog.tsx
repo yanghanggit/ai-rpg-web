@@ -64,19 +64,27 @@ function ItemRow({
  *   所以视为储物箱里挂出去的一件，只读展示并标注穿戴者），下面是箱内道具。
  *   勾选后可与「移入背包」平级的三个工坊按钮——点开会叠出第二层确认浮窗，
  *   默认填入已勾选材料与最大用量，确认才真正合成。
+ *
+ * 工坊合成是**可选能力**（`craftEnabled`）：家园页要（默认），副本页不要——
+ * 出征前只整理行装，合成必须在家园做。这里刻意**不拆成两个组件**：两种形态的
+ * 结构完全相同（两段容器 + 移动按钮），只差一组按钮，拆开会让「行渲染」这类
+ * 逻辑出现两份；而 `useCraftItem` 空闲时不发请求，没启用就等于没接。
  */
 export default function ItemManagerDialog({
   userName,
   gameName,
   actorName,
   busy = false,
+  craftEnabled = true,
   onClose,
 }: {
   userName: string;
   gameName: string;
   actorName: string;
-  /** 家园页已有 pipeline 动作在跑时为 true，此时禁用所有操作。 */
+  /** 已有 pipeline 动作在跑时为 true，此时禁用所有操作。 */
   busy?: boolean;
+  /** 是否显示工坊合成入口（默认显示）。副本页传 `false`，只留移动。 */
+  craftEnabled?: boolean;
   onClose: () => void;
 }) {
   const containers = useItemContainers(userName, gameName, actorName);
@@ -92,9 +100,10 @@ export default function ItemManagerDialog({
     materials: MaterialTotal[];
   } | null>(null);
 
-  const isMutating = busy || move.isPending || craft.isStarting || craft.isRunning;
+  const isMutating =
+    busy || move.isPending || (craftEnabled && (craft.isStarting || craft.isRunning));
 
-  // 勾选的道具里能送工坊的只有材料；同名材料按名字汇总
+  // 勾选的道具里能送工坊的只有材料；同名材料按名字汇总（只在启用合成时用得上）
   const checkedMaterials = collectMaterials(
     containers.storage.filter((item) => storageSelection.includes(item.name)),
   );
@@ -133,7 +142,7 @@ export default function ItemManagerDialog({
         <p className="error">无法获取道具：{String(containers.error)}</p>
       ) : null}
       {move.error ? <p className="error">移动失败：{move.error}</p> : null}
-      {craft.error ? <p className="error">合成失败：{craft.error}</p> : null}
+      {craftEnabled && craft.error ? <p className="error">合成失败：{craft.error}</p> : null}
 
       {containers.isSuccess ? (
         <>
@@ -204,23 +213,29 @@ export default function ItemManagerDialog({
             >
               移入背包（{storageSelection.length}）
             </button>
-            {WORKSHOPS.map(({ workshop, label }) => (
-              <button
-                key={workshop}
-                type="button"
-                disabled={checkedMaterials.length === 0 || isMutating}
-                onClick={() => setCraftRequest({ workshop, label, materials: checkedMaterials })}
-              >
-                {label}
-              </button>
-            ))}
+            {craftEnabled
+              ? WORKSHOPS.map(({ workshop, label }) => (
+                  <button
+                    key={workshop}
+                    type="button"
+                    disabled={checkedMaterials.length === 0 || isMutating}
+                    onClick={() =>
+                      setCraftRequest({ workshop, label, materials: checkedMaterials })
+                    }
+                  >
+                    {label}
+                  </button>
+                ))
+              : null}
           </div>
-          {craft.isStarting ? <p className="muted">提交合成…</p> : null}
-          {craft.isRunning ? <p className="muted">合成中…（结果会出现在叙事里）</p> : null}
+          {craftEnabled && craft.isStarting ? <p className="muted">提交合成…</p> : null}
+          {craftEnabled && craft.isRunning ? (
+            <p className="muted">合成中…（结果会出现在叙事里）</p>
+          ) : null}
         </>
       ) : null}
 
-      {craftRequest ? (
+      {craftEnabled && craftRequest ? (
         <CraftConfirmDialog
           label={craftRequest.label}
           materials={craftRequest.materials}
