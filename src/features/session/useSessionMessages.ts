@@ -5,8 +5,11 @@
  * 返回 `sequence_id > N` 的消息。客户端记住已收到的最大 `sequence_id` 作为游标，
  * 每轮只拉新增部分，再用 `mergeSessionMessages` 合并——因此重复、乱序都不会出错。
  *
- * 本轮用轮询；将来换成 SSE（`/stream?last_sequence_id=N`，参数语义完全相同）时，
- * 本 hook 的对外接口不变，调用方无需改动。
+ * 同步策略（与 TUI 一致）：
+ * - 会话消息是「可增量、幂等、有水位线」的拉取型资源，用一次性 `/since` 端点即可，
+ *   不需要 SSE 长连接（旧 `/stream` 端点已从后端移除）。
+ * - 无操作时用 `refetchInterval` 定时兜底；任务到终态（如 `useHomeAdvance` 的成功点）
+ *   用 `invalidateQueries` 立即拉一次，不必等定时器到点。
  *
  * 注意：游标进了 queryKey（`[method, path, params]`），所以每前进一次会产生一个新的
  * 缓存条目（旧的由 gcTime 回收）。想按"整个会话消息资源"失效时，用

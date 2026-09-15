@@ -115,7 +115,7 @@ server.use(
 
 | 场景 | 处理 |
 | ------ | ------ |
-| SSE（会话消息、任务） | `src/api/sse.ts` 的 `streamSseData()` + `apiUrl()`（流式 `fetch`）；会话消息需自行做序号去重 |
+| SSE（任务） | `src/api/sse.ts` 的 `streamSseData()` + `apiUrl()`（流式 `fetch`）。目前唯一的 SSE 端点是 `GET /api/tasks/v1/watch/{job_id}`；会话消息走上面的增量轮询 |
 | 后端静态图片 | 直接渲染 URL（`apiUrl()` 拼接），不硬编码静态前缀 |
 | 任务（job 模式） | 绝大多数动作接口返回 `job_id` 而**非**新状态。统一用 `src/api/useTask.ts` 经 SSE `GET /api/tasks/v1/watch/{job_id}` 等到终态，再刷新相关查询。**禁止把拿到 `job_id` 当作"操作已完成"。** |
 | 任务查询的两种边界 | `job_id` 是整数（OpenAPI 里为 `integer`），非法输入由后端返回 422；未知 id 则推 `{"error":"task_not_found"}` 事件——客户端按连接错误（`streamError`）处理，并保留超时兜底。 |

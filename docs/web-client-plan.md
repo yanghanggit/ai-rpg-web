@@ -14,7 +14,7 @@
 | 能力 | 现状 |
 | ------ | ------ |
 | REST 路由 | login / new_game / home / dungeon / combat / stages / tasks 等已按领域拆分 |
-| 实时推送 | 会话新消息与任务完成均以 SSE 提供（GET + `text/event-stream`） |
+| 实时推送 | 仅任务完成用 SSE（GET + `text/event-stream`）；会话新消息用带游标的增量轮询 + 任务终态即时拉取 |
 | 跨域 | CORS 已放开（`allow_origins=["*"]`） |
 | 图片 | 生成图片经 StaticFiles 挂载为静态 URL，前端直接渲染 |
 | 契约 | FastAPI 自动产出 OpenAPI（`/openapi.json`），根路由 `/` 列出全部路由 |
@@ -54,7 +54,7 @@
 | ------ | ------ |
 | 命令/动作（登录、出牌、合成、进副本） | REST POST |
 | 状态查询（场景/副本/战斗状态） | REST GET + TanStack Query |
-| 会话新消息 | 本期：轮询 `GET /api/session_messages/v1/{u}/{g}/since`；后续可升级为 SSE `/stream` |
+| 会话新消息 | 增量轮询 `GET /api/session_messages/v1/{u}/{g}/since` + 任务终态即时拉取（不引入 SSE；旧 `/stream` 端点已移除） |
 | 任务完成 | SSE `GET /api/tasks/v1/watch/{job_id}`（与 TUI `watch_task_until_done` 一致） |
 
 将来出现实时双向需求（聊天、多人同步）时再引入 WebSocket，当前不需要。
@@ -91,7 +91,7 @@
 | ------ | ------ |
 | 副本全套（`dungeon-list` / `generate_dungeon` / `enter_dungeon` / `opening/*` / `dungeons/state` / `advance_stage` / `exit`） | 先跑通家园闭环；且会引入新路由与新的 union 渲染 |
 | 战斗全套（`dungeon/combat/*`） | 最复杂，且依赖副本 |
-| 会话消息 SSE（`session_messages/.../stream`） | 会话消息仍用轮询（已足够）；任务 `/watch` 已改用 SSE |
+| 会话消息 SSE（`session_messages/.../stream`） | 已从后端移除。会话消息用「增量轮询 + 任务终态即时拉取」即可，无需无推送语义的长连接；任务 `/watch` 仍用 SSE |
 | 图片展示 | 依赖副本/外观事件，且需先定后端静态路由前缀 |
 | 家园次要动作（`roster/*`、`item/move_to_*`、`craft/*`、`costume/*`） | 不阻塞主闭环，按需再加 |
 | 隐藏 `NoneEvent` | 它本是引擎给 LLM 的提示语（角色进出场景的通知广播，见 `rpg_stage_transition.py`），不是给玩家的叙事。目标是叙事面板里**完全不显示**；本期先原样渲染（与 TUI 兜底行为一致），不纠结格式。 |
@@ -104,5 +104,5 @@
 ## 注意事项
 
 - CORS 现为 `*`，仅限开发期；生产需收紧到具体域名。
-- SSE 需处理断线重连与事件序号去重。
+- SSE（仅任务 `/watch`）需处理断线重连；会话消息按 `sequence_id` 做增量去重（`mergeSessionMessages`）。
 - 图片渲染依赖后端静态路由前缀，前端应避免硬编码路径。

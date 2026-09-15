@@ -4,9 +4,8 @@
  * 为什么不用浏览器原生 `EventSource`（尽管 docs/web-client-plan.md 最初如此设想）：
  * - `EventSource` 不能携带 `Authorization` 头，JWT 接入后无法鉴权；本项目约定
  *   认证头只在 `client.ts` 的 `authHeaders()` 注入，这里复用同一份。
- * - 它自带断线重连语义，而后端两个 SSE 端点都是「按游标/参数查询」的一次性流
- *   （`watch` 到终态即正常结束、`stream` 靠 `last_sequence_id` 续传）。自动重连
- *   会把「正常结束」当成断线反复重连，反而要额外代码把它关掉。
+ * - 它自带断线重连语义，而后端唯一的 SSE 端点 `watch` 是「等到任务终态即正常结束」
+ *   的一次性流。自动重连会把「正常结束」当成断线反复重连，反而要额外代码把它关掉。
  * - 单测环境是 jsdom（没有 `EventSource`）+ MSW；流式 `fetch` 才能被 MSW 拦截与断言。
  *
  * 因此与 TUI（`tui/server_client.py` 的 `client.stream` + `aiter_lines`）保持一致：
