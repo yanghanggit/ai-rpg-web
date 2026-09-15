@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { $api } from "../api/query";
-import BlueprintDetails from "../features/entry/BlueprintDetails";
+import BlueprintDetails from "../features/blueprint/BlueprintDetails";
 import { generatePlayerName } from "../features/entry/generatePlayerName";
 import { useStartGame } from "../features/entry/useStartGame";
 

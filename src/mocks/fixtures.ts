@@ -142,6 +142,43 @@ export const homeStagesFixture: Schemas["StagesStateResponse"] = {
   ),
 };
 
+/**
+ * 玩家实体的序列化数据（家园运行期）。
+ *
+ * 玩家实体在 Identity / Appearance / CharacterStats 之外额外挂 PlayerComponent，
+ * 所以 group / details 两个端点用它当返回体。字段形状照抄后端 `model_dump()`：
+ * CharacterStatsComponent 的 stats 是嵌套对象。
+ */
+export const playerEntityFixture: Schemas["EntitySerialization"] = {
+  name: blueprintFixture.player_actor,
+  components: [
+    { name: "PlayerComponent", data: { player_name: "webdev" } },
+    {
+      name: "IdentityComponent",
+      data: {
+        name: blueprintFixture.player_actor,
+        creation_order: 2,
+        entity_id: "00000000-0000-0000-0000-0000000000aa",
+      },
+    },
+    {
+      name: "AppearanceComponent",
+      data: {
+        name: blueprintFixture.player_actor,
+        base_body: "（mock）清瘦的青年，着一身洗得发白的青布长衫。",
+        appearance: "（mock）清瘦的青年，着青布长衫，腰间悬着一柄缠麻短刃。",
+      },
+    },
+    {
+      name: "CharacterStatsComponent",
+      data: {
+        name: blueprintFixture.player_actor,
+        stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
+      },
+    },
+  ],
+};
+
 export const newGameFixture: Schemas["NewGameResponse"] = {
   blueprint: blueprintFixture,
   player_session: {

@@ -13,6 +13,7 @@ import {
   blueprintFixture,
   blueprintListFixture,
   newGameFixture,
+  playerEntityFixture,
   serverInfoFixture,
 } from "./fixtures";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
@@ -47,14 +48,14 @@ export const handlers = [
     if (!conditions.getAll("all_of").includes("PlayerComponent")) {
       return HttpResponse.json({ entities: [] });
     }
-    return HttpResponse.json({
-      entities: [
-        {
-          name: blueprintFixture.player_actor,
-          components: [{ name: "PlayerComponent", data: { player_name: "mock" } }],
-        },
-      ],
-    });
+    return HttpResponse.json({ entities: [playerEntityFixture] });
+  }),
+
+  // 实体详情：按名字批量查询，角色信息浮窗用它取玩家的完整组件
+  http.get(api("/api/entities/v1/:userName/:gameName/details"), ({ request }) => {
+    const names = new URL(request.url).searchParams.getAll("entities");
+    const entities = names.includes(blueprintFixture.player_actor) ? [playerEntityFixture] : [];
+    return HttpResponse.json({ entities });
   }),
 
   // 任务：SSE 监听单个任务至终态，与真实后端 /api/tasks/v1/watch/{job_id} 一致。

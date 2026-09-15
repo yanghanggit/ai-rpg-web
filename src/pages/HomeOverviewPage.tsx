@@ -3,11 +3,13 @@ import { useParams } from "react-router";
 import { $api } from "../api/query";
 import { displayName } from "../components/displayName";
 import Modal from "../components/Modal";
+import BlueprintInfoDialog from "../features/blueprint/BlueprintInfoDialog";
 import { collectActors } from "../features/home/collectActors";
 import { findStageOfActor } from "../features/home/findStageOfActor";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
 import { useLogout } from "../features/home/useLogout";
 import { useSwitchStage } from "../features/home/useSwitchStage";
+import PlayerInfoDialog from "../features/identity/PlayerInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
 import NarrativeOverlay from "../features/session/NarrativeOverlay";
 import { useSessionMessages } from "../features/session/useSessionMessages";
@@ -18,10 +20,12 @@ import { useUnreadCount } from "../features/session/useUnreadCount";
  *
  * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
- * - 顶部按钮：推进 / 叙事未读 / 返回上一级
+ * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 叙事未读 / 返回上一级
  * - 下方卡片：每个 stage 一张，列出其中的 actor，并带「切换到此场景」按钮；
  *   玩家当前所在卡片高亮标记，其切换按钮禁用
  *
+ * 「角色信息」打开 `PlayerInfoDialog`，展示玩家实体上必要的组件信息；
+ * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统。
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
  * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
@@ -72,6 +76,8 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
   const [isNarrativeOpen, setIsNarrativeOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isPlayerInfoOpen, setIsPlayerInfoOpen] = useState(false);
+  const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
 
   // 通知按钮上的两个数字：已看 / 总共。右大于左即"有新事件没看"
   const total = session.messages.length;
@@ -89,13 +95,22 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   return (
     <main className="page">
       <h1>家园概览</h1>
-      <p className="muted mono">
-        {userName} / {gameName}
-      </p>
 
       <div className="toolbar">
         <button type="button" disabled={!hasActors || isBusy} onClick={advance.start}>
           {buttonLabel}
+        </button>
+
+        <button
+          type="button"
+          disabled={playerActor.isPending || !playerActor.data}
+          onClick={() => setIsPlayerInfoOpen(true)}
+        >
+          角色信息
+        </button>
+
+        <button type="button" onClick={() => setIsBlueprintInfoOpen(true)}>
+          蓝图信息
         </button>
 
         <button
@@ -175,6 +190,19 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
       {isNarrativeOpen ? (
         <NarrativeOverlay messages={session.messages} onClose={() => setIsNarrativeOpen(false)} />
+      ) : null}
+
+      {isPlayerInfoOpen && playerActor.data ? (
+        <PlayerInfoDialog
+          userName={userName}
+          gameName={gameName}
+          actorName={playerActor.data}
+          onClose={() => setIsPlayerInfoOpen(false)}
+        />
+      ) : null}
+
+      {isBlueprintInfoOpen ? (
+        <BlueprintInfoDialog gameName={gameName} onClose={() => setIsBlueprintInfoOpen(false)} />
       ) : null}
 
       {isLogoutOpen ? (

@@ -274,6 +274,16 @@ ul.items li {
   margin-top: 0;
 }
 
+.overlay-body h3 {
+  margin: 1.5rem 0 0.25rem;
+  font-size: 1rem;
+}
+
+/* 浮窗内的名值对比页面级的 .facts 紧凑一些 */
+.overlay-body .facts {
+  margin: 0.75rem 0 0;
+}
+
 /* 会话消息（叙事）列表：sequence_id 递增，所以用有序列表 */
 ol.session {
   margin: 1rem 0;

@@ -379,6 +379,38 @@ describe("家园概览页", () => {
     expect(await screen.findByText(/无法识别玩家角色/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "当前所在" })).not.toBeInTheDocument();
   });
+
+  it("点「角色信息」打开浮窗，展示玩家组件的必要信息", async () => {
+    renderHome();
+
+    const open = await screen.findByRole("button", { name: "角色信息" });
+    await waitFor(() => expect(open).toBeEnabled());
+    fireEvent.click(open);
+
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(await within(dialog).findByText("webdev")).toBeInTheDocument();
+    expect(within(dialog).getByText("00000000-0000-0000-0000-0000000000aa")).toBeInTheDocument();
+    expect(within(dialog).getByText("12 / 15")).toBeInTheDocument();
+    expect(within(dialog).getByText(/缠麻短刃/)).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
+    expect(screen.queryByRole("dialog", { name: "角色信息" })).not.toBeInTheDocument();
+  });
+
+  it("点「蓝图信息」打开浮窗，只展示蓝图名字/战役设定/世界系统", async () => {
+    renderHome();
+
+    fireEvent.click(await screen.findByRole("button", { name: "蓝图信息" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "蓝图信息" });
+    expect(await within(dialog).findByText("Game1")).toBeInTheDocument();
+    expect(within(dialog).getByText(/架空的、融合狩猎玩法/)).toBeInTheDocument();
+    expect(within(dialog).getByText("玩家行动审计系统")).toBeInTheDocument();
+    expect(within(dialog).getByText("副本生成系统")).toBeInTheDocument();
+
+    // 进入游戏后再看无意义的场景/角色、背包与仓库物品都不展示
+    expect(within(dialog).queryByText(/旧麻绳|缠麻短刃|吗啡针剂/)).not.toBeInTheDocument();
+  });
 });
 
 /** 按显示名找到场景卡片（article），把断言限定在单张卡内。 */

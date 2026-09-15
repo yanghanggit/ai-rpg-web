@@ -255,7 +255,7 @@ describe("家园页 /game/:userName/:gameName/home", () => {
   it("每个 stage 一张卡片，卡片内列出该 stage 的 actor", async () => {
     renderApp("/game/webdev/Game1/home");
 
-    expect(screen.getByText("webdev / Game1")).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "角色信息" })).toBeInTheDocument();
     expect(await screen.findByRole("heading", { name: "门厅" })).toBeInTheDocument();
 
     // 断言限定在「场景」分区内：叙事分区也会出现角色名（谁/何地/何事）
