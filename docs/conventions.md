@@ -21,7 +21,7 @@
 ```text
 src/api/                 # 基础设施：传输层与契约适配，无业务功能
   schema.d.ts            #   生成物，只读
-  client.ts  query.ts  types.ts  serverInfo.ts  sse.ts  useTask.ts  describeApiError.ts
+  client.ts  query.ts  types.ts  serverInfo.ts  sse.ts  useTask.ts  useJobAction.ts  describeApiError.ts
 src/pages/               # 路由级页面组件（每个 URL 一个）
   LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx  DungeonRoomPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
@@ -33,7 +33,10 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   dungeon/RosterPanel.tsx  dungeon/readPartyRoster.ts  dungeon/usePartyRoster.ts  dungeon/useRosterCandidates.ts  dungeon/useRosterAction.ts
   dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
-  dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts
+  dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/useAdvanceStage.ts
+  dungeon/OpeningRoomPanel.tsx  dungeon/useOpeningParty.ts  dungeon/useOpeningActions.ts  dungeon/DeckDialog.tsx  dungeon/AdvanceRoomDialog.tsx
+  entities/invalidateEntities.ts
+  cards/CardItem.tsx  cards/readCard.ts  cards/readCards.ts  cards/types.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）

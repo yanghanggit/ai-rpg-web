@@ -61,6 +61,11 @@ function isNpc(name: string): boolean {
   return npcEntityFixtures.some((entity) => entity.name === name);
 }
 
+/** 当前名单（不含玩家自身）。进副本时据此固化副本内队伍。 */
+export function readMockRosterNames(): string[] {
+  return [...roster];
+}
+
 export function addMockRosterMember(name: string): { ok: true } | { ok: false; error: string } {
   if (!isNpc(name)) {
     return { ok: false, error: `角色 ${name} 不是 NPC，无法加入队伍` };

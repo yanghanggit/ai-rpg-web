@@ -489,3 +489,117 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
   setup_entities: false,
   image: emptyImage,
 };
+
+/**
+ * 卡牌载荷（后端 `Card.model_dump()` 的形状：`DeckComponent` / `SpoilsComponent` 的 `cards`）。
+ *
+ * 牌名**不带** `类型.` 前缀——后端卡牌名就是叙事化的牌名（原型见 `demo/card_prototypes.py`，
+ * 由 Agent 在开场/卡池阶段润色），所以展示时也不走 `displayName`。
+ */
+function mockCard(name: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return {
+    name,
+    description: `（mock）${name}的叙事描述。`,
+    on_play_affixes: [],
+    on_hit_affixes: [],
+    on_turn_end_affixes: [],
+    playable: true,
+    exhaust: false,
+    retain: false,
+    ethereal: false,
+    transferable: false,
+    cost: 1,
+    damage: 1,
+    hit_count: 1,
+    block: 0,
+    target_type: "single",
+    self_target: false,
+    source: "",
+    uuid: `mock-card-${name}`,
+    ...overrides,
+  };
+}
+
+/** 几张示例卡，覆盖卡面上的各种部件（数值 / 多段 / 自身目标 / 阵营散射 / 消耗 / 不可出牌 / 词缀）。 */
+export const cardFixtures = {
+  cleave: mockCard("剖棺", { cost: 1, damage: 3, source: "角色.无名" }),
+  sweep: mockCard("撬棍横击", {
+    cost: 2,
+    damage: 2,
+    hit_count: 2,
+    on_play_affixes: ["[破竹]:本段命中后更容易击穿格挡"],
+    source: "角色.顾知秋",
+  }),
+  breath: mockCard("屏息", {
+    description: "（mock）贴着棺壁屏住呼吸，把手里的家伙握稳。",
+    cost: 1,
+    damage: 0,
+    block: 3,
+    self_target: true,
+  }),
+  spark: mockCard("火折子", {
+    description: "（mock）吹亮火折子，只此一次的爆亮。",
+    cost: 0,
+    damage: 5,
+    exhaust: true,
+  }),
+  paper: mockCard("撒纸钱", {
+    cost: 2,
+    damage: 1,
+    hit_count: 3,
+    target_type: "spread",
+    on_turn_end_affixes: ["[纸灰]:回合结束时纸灰未落，气场不散"],
+  }),
+  ward: mockCard("镇棺符", {
+    description: "（mock）贴在棺头的镇物，只在手里才管用。",
+    cost: 1,
+    damage: 0,
+    block: 2,
+    retain: true,
+    self_target: true,
+  }),
+  passive: mockCard("常驻厌胜", {
+    description: "（mock）缝在衣里的厌胜之物，靠它自己起作用。",
+    cost: 0,
+    damage: 0,
+    playable: false,
+    retain: false,
+  }),
+};
+
+/** 队伍成员的初始牌组（按角色名）。未列出的角色用默认牌组。 */
+export const deckFixtures: Record<string, Record<string, unknown>[]> = {
+  [blueprintFixture.player_actor]: [cardFixtures.cleave, cardFixtures.breath, cardFixtures.passive],
+  "角色.顾知秋": [cardFixtures.sweep, cardFixtures.ward],
+  "角色.小厮": [cardFixtures.cleave],
+};
+
+export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
+
+/** 卡池候选（后端 `CARD_POOL_SIZE = 3`，3 选 1）。 */
+export const cardPoolFixture: Record<string, unknown>[] = [
+  cardFixtures.spark,
+  cardFixtures.paper,
+  cardFixtures.ward,
+];
+
+/**
+ * 副本场景实体（运行期）：`StageComponent` + `EnvironmentComponent`。
+ *
+ * 从 `dungeonFixture` 的房间派生，场景名与副本数据天然一致；环境叙述在真实后端由
+ * `EnvironmentInitializationSystem` 用 LLM 生成（副本初始化时），mock 里给固定文本。
+ */
+export const dungeonStageEntityFixtures: Schemas["EntitySerialization"][] =
+  dungeonFixture.rooms.map((room) => ({
+    name: room.stage.name,
+    components: [
+      { name: "StageComponent", data: { name: room.stage.name } },
+      {
+        name: "EnvironmentComponent",
+        data: {
+          name: room.stage.name,
+          narrative: `（mock）${room.stage.name} 的环境叙述：门轴涩住，风从棺缝里过。`,
+        },
+      },
+    ],
+  }));

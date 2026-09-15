@@ -728,3 +728,72 @@ ol.dungeon-rooms {
 .dungeon-monsters {
   margin: 0.35rem 0 0;
 }
+
+/* ── 副本开场房间 ───────────────────────────────────────────── */
+
+/* 环境叙述：这一屏的正文开场白（房间名由页面标题给出）。
+   页面是宽屏页（卡池要并排比较），但散文限宽——可读行长与全站文字页一致。 */
+.opening-narrative {
+  max-width: 42rem;
+  margin: 1.5rem 0 0;
+  line-height: 1.75;
+}
+
+/* 队伍准备里每个成员一段（段头复用 .section-head） */
+.opening-member .section-head {
+  margin-top: 1.75rem;
+}
+
+.opening-member .section-head h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+/* 卡牌：卡池候选与牌组共用（栅格参数与副本卡 / 角色卡一致，宽度自然对齐） */
+ul.card-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 1.25rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.card-tile-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.card-tile-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.card-tile-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.card-tile-stats,
+.card-tile-affixes {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.card-tile-source {
+  margin: 0;
+  font-size: 0.8rem;
+}

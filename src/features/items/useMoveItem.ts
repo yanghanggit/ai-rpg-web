@@ -8,7 +8,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../api/client";
 import { describeApiError } from "../../api/describeApiError";
-import { invalidateItems } from "./invalidateItems";
+import { invalidateEntities } from "../entities/invalidateEntities";
 
 export function useMoveItem(userName: string, gameName: string) {
   const queryClient = useQueryClient();
@@ -20,7 +20,7 @@ export function useMoveItem(userName: string, gameName: string) {
           body: { user_name: userName, game_name: gameName, item_names: itemNames },
         }),
       ),
-    onSuccess: () => invalidateItems(queryClient),
+    onSuccess: () => invalidateEntities(queryClient),
   });
 
   const toStorage = useMutation({
@@ -30,7 +30,7 @@ export function useMoveItem(userName: string, gameName: string) {
           body: { user_name: userName, game_name: gameName, item_names: itemNames },
         }),
       ),
-    onSuccess: () => invalidateItems(queryClient),
+    onSuccess: () => invalidateEntities(queryClient),
   });
 
   let error: string | null = null;

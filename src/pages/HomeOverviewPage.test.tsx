@@ -119,17 +119,17 @@ describe("家园概览页", () => {
     expect(await findNarrativeButton()).not.toHaveClass("count-button--unread");
   });
 
-  it("触发请求失败时展示 HTTP 错误", async () => {
+  it("触发请求失败时展示后端原因（优先 detail，而不是 API 500）", async () => {
     server.use(
       http.post(api("/api/home/advance/v1/"), () =>
-        HttpResponse.json({ detail: "boom" }, { status: 500 }),
+        HttpResponse.json({ detail: "当前不在家园状态，不能进行家园操作" }, { status: 500 }),
       ),
     );
 
     renderHome();
     fireEvent.click(await findReadyAdvanceButton());
 
-    expect(await screen.findByText(/推进失败：API 500/)).toBeInTheDocument();
+    expect(await screen.findByText(/推进失败：当前不在家园状态/)).toBeInTheDocument();
   });
 
   it("叙事不在页面上展开，只留一个通知按钮", async () => {
@@ -355,7 +355,7 @@ describe("家园概览页", () => {
 
     fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
 
-    expect(await screen.findByText(/切换失败：API 400/)).toBeInTheDocument();
+    expect(await screen.findByText(/切换失败：目标场景不存在/)).toBeInTheDocument();
     expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled();
   });
 

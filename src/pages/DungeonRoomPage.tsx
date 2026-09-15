@@ -4,6 +4,7 @@ import { describeApiError } from "../api/describeApiError";
 import type { Schemas } from "../api/types";
 import { displayName } from "../components/displayName";
 import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
+import OpeningRoomPanel from "../features/dungeon/OpeningRoomPanel";
 import { useDungeonRoom } from "../features/dungeon/useDungeonRoom";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useExitDungeon } from "../features/dungeon/useExitDungeon";
@@ -32,7 +33,7 @@ export default function DungeonRoomPage() {
   // useParams 的类型是 string | undefined；路由已保证存在，这里做一次显式守卫
   if (!userName || !gameName) {
     return (
-      <main className="page">
+      <main className="page page--wide">
         <p className="error">URL 缺少会话参数，应为 /game/:userName/:gameName/dungeon/room</p>
       </main>
     );
@@ -62,7 +63,7 @@ function DungeonRoom({ userName, gameName }: { userName: string; gameName: strin
   }, [exit.isExited, homePath, navigate]);
 
   return (
-    <main className="page">
+    <main className="page page--wide">
       {room.isPending ? <p className="muted">加载中…</p> : null}
 
       {room.isError ? (
@@ -97,7 +98,7 @@ function DungeonRoom({ userName, gameName }: { userName: string; gameName: strin
 
           {exit.error ? <p className="error">离开副本失败：{exit.error}</p> : null}
 
-          <DungeonRoomBody room={room.data} />
+          <DungeonRoomBody room={room.data} userName={userName} gameName={gameName} />
         </>
       ) : null}
 
@@ -114,11 +115,18 @@ function DungeonRoom({ userName, gameName }: { userName: string; gameName: strin
  * 分发开关是后端判别联合的判别字段 `room.type`——与 TUI 的 `dungeon_room_router.py` 同一个开关
  * （TUI 只按类型切屏，没有共同框架，所以这一层是 web 端多出来的）。
  */
-function DungeonRoomBody({ room }: { room: Schemas["DungeonRoomResponse"]["room"] }) {
+function DungeonRoomBody({
+  room,
+  userName,
+  gameName,
+}: {
+  room: Schemas["DungeonRoomResponse"]["room"];
+  userName: string;
+  gameName: string;
+}) {
   switch (room.type) {
     case "opening":
-      // 开场房间暂时没有专属内容（标题已由上面的共同框架给出）
-      return null;
+      return <OpeningRoomPanel userName={userName} gameName={gameName} room={room} />;
     case "combat":
       return <p className="muted">战斗房间界面尚未实现。</p>;
   }

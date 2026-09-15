@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll } from "vitest";
 import { resetMockDungeons } from "../mocks/dungeons";
 import { resetMockItems } from "../mocks/items";
 import { server } from "../mocks/node";
+import { resetMockOpening } from "../mocks/opening";
 import { resetMockRoster } from "../mocks/roster";
 import { resetMockSessionMessages } from "../mocks/sessionMessages";
 import { resetMockStages } from "../mocks/stages";
@@ -20,5 +21,6 @@ afterEach(() => {
   resetMockItems();
   resetMockRoster();
   resetMockDungeons();
+  resetMockOpening();
 });
 afterAll(() => server.close());

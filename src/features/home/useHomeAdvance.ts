@@ -1,73 +1,26 @@
 /**
  * 家园「推进」：触发一轮推进 → 等待任务 → 刷新家园状态。
  *
- * 这是「触发 → 等待 → 刷新」这一 API 范式的第一次完整落地（见 docs/api-layer.md 六）：
  * `POST /api/home/advance/v1/` 只返回 `job_id`，真正的状态变化发生在任务里，
- * 所以**拿到 job_id 不等于操作完成**，必须等任务进入终态，再刷新相关查询。
- *
- * 触发用 plain `useMutation` + `client.POST`（跨接口编排，见 api-layer.md 五），
- * 等待复用 `src/api/useTask.ts`。
+ * 所以**拿到 job_id 不等于操作完成**——三步里的后两步由 `src/api/useJobAction.ts` 统一负责
+ * （见 docs/api-layer.md 六）。
  */
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
 import { client, unwrap } from "../../api/client";
-import { useTask } from "../../api/useTask";
+import { useJobAction } from "../../api/useJobAction";
 import { invalidateHomeState } from "./invalidateHomeState";
 
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-
 export function useHomeAdvance(userName: string, gameName: string, actors: readonly string[]) {
-  const queryClient = useQueryClient();
-  const [jobId, setJobId] = useState<number | null>(null);
-  const task = useTask(jobId);
-
-  const advance = useMutation({
-    mutationFn: async () =>
+  const job = useJobAction({
+    request: async () =>
       unwrap(
         await client.POST("/api/home/advance/v1/", {
           body: { user_name: userName, game_name: gameName, actors: [...actors] },
         }),
       ),
-    // 这里只拿到 job_id；结果由下面的 useTask 负责等待
-    onSuccess: (result) => setJobId(result.job_id),
+    // 家园状态与叙事一起刷新（口径见 invalidateHomeState）。
+    onCompleted: (queryClient) => invalidateHomeState(queryClient, userName, gameName),
   });
 
-  // 任务进入终态后刷新家园状态。同一个 job 只失效一次——
-  // 否则 isCompleted 期间每次渲染都会再触发一轮请求。
-  const invalidatedJob = useRef<number | null>(null);
-  useEffect(() => {
-    if (jobId === null || !task.isCompleted || invalidatedJob.current === jobId) {
-      return;
-    }
-    invalidatedJob.current = jobId;
-    // 家园状态与叙事一起刷新（口径与 switch_stage 共用，见 invalidateHomeState）。
-    invalidateHomeState(queryClient, userName, gameName);
-  }, [jobId, task.isCompleted, queryClient, userName, gameName]);
-
-  // 失败有四种来源，这里统一成一条文案给页面用
-  let error: string | null = null;
-  if (advance.isError) {
-    error = describeError(advance.error);
-  } else if (task.isFailed) {
-    error = task.error ?? "任务失败（后端未提供错误信息）";
-  } else if (task.isTimedOut) {
-    error = "等待任务超时，请检查服务器状态";
-  } else if (task.streamError) {
-    error = `监听任务状态失败：${describeError(task.streamError)}`;
-  }
-
-  return {
-    start: () => {
-      advance.reset();
-      setJobId(null); // 清掉上一轮的终态，避免按钮闪回「已完成」
-      advance.mutate();
-    },
-    /** 正在提交请求（还没拿到 job_id）。 */
-    isStarting: advance.isPending,
-    /** 任务进行中。 */
-    isRunning: task.isRunning,
-    error,
-  };
+  // 这个动作没有参数，对外就不该带参数（`(v: void) => void` 挂不到 onClick 上）
+  return { ...job, start: () => job.start() };
 }

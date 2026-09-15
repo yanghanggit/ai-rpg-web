@@ -7,7 +7,9 @@
  * 「生成 → 列表变长 → 查阅静态数据」这条链路可见。
  */
 import type { Schemas } from "../api/types";
-import { dungeonFixture, emptyDungeonFixture } from "./fixtures";
+import { blueprintFixture, dungeonFixture, emptyDungeonFixture } from "./fixtures";
+import { enterMockOpeningParty, leaveMockOpening } from "./opening";
+import { readMockRosterNames } from "./roster";
 
 let dungeons: Schemas["Dungeon"][] = [structuredClone(dungeonFixture)];
 let generatedCount = 0;
@@ -59,7 +61,7 @@ export function readMockDungeonRoom(): Schemas["DungeonRoomResponse"]["room"] | 
   return room === undefined ? null : structuredClone(room);
 }
 
-/** 发起进入副本：与后端一样，已有副本在跑时拒绝。 */
+/** 发起进入副本：与后端一样，已有副本在跑时拒绝；成功则同时固化队伍。 */
 export function enterMockDungeon(name: string): { ok: true } | { ok: false; error: string } {
   if (runningRoomIndex >= 0) {
     return { ok: false, error: `当前副本 ${runningName} 正在进行中，请先退出` };
@@ -69,13 +71,31 @@ export function enterMockDungeon(name: string): { ok: true } | { ok: false; erro
   }
   runningName = name;
   runningRoomIndex = 0;
+  // 后端在同一步里把玩家与名单成员固化成队伍，所以这里也一行做完:
+  // 分开两个模块自己调，迟早有一个调用点忘掉（测试就抓到过一次）。
+  enterMockOpeningParty([blueprintFixture.player_actor, ...readMockRosterNames()]);
   return { ok: true };
 }
 
-/** 退出副本：与后端任务一样，退出后世界回到「没有副本在跑」的状态（副本被拆掉）。 */
+/** 退出副本：与后端任务一样，退出后世界回到「没有副本在跑」（副本拆掉、队伍解散）。 */
 export function exitMockDungeon(): void {
   runningName = "";
   runningRoomIndex = -1;
+  leaveMockOpening();
+}
+
+/**
+ * 进入下一关：`current_room_index + 1`（同步完成，真实后端也是同步接口）。
+ *
+ * 没有下一间时返回 `false`——对应后端 409「副本已全部通关，请返回营地」。
+ */
+export function advanceMockDungeon(): boolean {
+  const dungeon = runningDungeon();
+  if (dungeon === undefined || runningRoomIndex + 1 >= dungeon.rooms.length) {
+    return false;
+  }
+  runningRoomIndex += 1;
+  return true;
 }
 
 /** 生成一份新副本并追加到列表，返回它（mock 里同步完成，真实后端是异步 pipeline）。 */

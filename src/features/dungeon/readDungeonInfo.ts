@@ -28,9 +28,9 @@ function formatCreatedAt(value: string | undefined): string | null {
  *
  * `opening` 不是「探索」这类打法描述：`OpeningRoom` 是副本开场（非战斗叙事场景），
  * 而且 `enter_dungeon` 固定传送到 `rooms[0]`，所以它意味着「进入副本后的起点」。
- * 这个映射只写在这里，浮窗与确认框都从 `readDungeonInfo` 取，不各写一份。
+ * 这个映射只写在这里，浮窗与确认框都从这里取，不各写一份。
  */
-const ROOM_TYPE_LABELS: Record<string, string> = {
+export const ROOM_TYPE_LABELS: Record<string, string> = {
   opening: "开场",
   combat: "战斗",
 };

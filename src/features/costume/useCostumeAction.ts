@@ -13,7 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { client, unwrap } from "../../api/client";
 import { useTask } from "../../api/useTask";
-import { invalidateItemsAndMessages } from "../items/invalidateItems";
+import { invalidateEntitiesAndMessages } from "../entities/invalidateEntities";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -56,7 +56,7 @@ export function useCostumeAction(userName: string, gameName: string) {
       return;
     }
     invalidatedJob.current = jobId;
-    invalidateItemsAndMessages(queryClient);
+    invalidateEntitiesAndMessages(queryClient);
   }, [jobId, task.isCompleted, queryClient]);
 
   // 失败来源统一成一条文案给页面用

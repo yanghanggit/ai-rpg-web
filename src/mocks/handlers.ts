@@ -10,6 +10,7 @@ import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
 import type { ApiBody, Schemas } from "../api/types";
 import {
+  advanceMockDungeon,
   enterMockDungeon,
   exitMockDungeon,
   generateMockDungeon,
@@ -34,6 +35,14 @@ import {
   removeMockCostume,
   wearMockCostume,
 } from "./items";
+import {
+  generateMockCardPool,
+  initMockOpening,
+  pickMockCard,
+  readMockOpeningInitialized,
+  readMockPartyEntities,
+  withMockOpeningComponents,
+} from "./opening";
 import {
   addMockRosterMember,
   readMockNpcEntities,
@@ -84,6 +93,10 @@ export const handlers = [
     if (conditions.includes("PartyRosterComponent")) {
       return HttpResponse.json({ entities: readMockRosterEntities() });
     }
+    // 副本内的队伍（进副本时固化）：持 PartyMemberComponent 的成员，带牌组 / 卡池
+    if (conditions.includes("PartyMemberComponent")) {
+      return HttpResponse.json({ entities: readMockPartyEntities() });
+    }
     // 副本队伍候选：持 NPCComponent 的实体；玩家可能也带 NPCComponent，靠 none_of 排除
     if (conditions.includes("NPCComponent")) {
       return HttpResponse.json({ entities: readMockNpcEntities(noneOf) });
@@ -102,7 +115,8 @@ export const handlers = [
       }
       const actor = readMockActorEntity(name);
       if (actor) {
-        entities.push(actor);
+        // 副本内的成员还带 PartyMemberComponent / DeckComponent（可能还有 SpoilsComponent）
+        entities.push(withMockOpeningComponents(actor));
         continue;
       }
       const stage = readMockStageEntity(name);
@@ -282,7 +296,54 @@ export const handlers = [
     if (room === null) {
       return HttpResponse.json({ detail: "当前副本没有进行中的房间" }, { status: 404 });
     }
+    // 开场是否已初始化属于房间状态（真实后端记在 `OpeningRoom.initialized` 上）
+    if (room.type === "opening") {
+      room.initialized = readMockOpeningInitialized();
+    }
     return HttpResponse.json({ room });
+  }),
+
+  // 开场房间初始化：任务接口（叙事 + 牌库），mock 里同步切状态并追一条叙事
+  http.post(api("/api/dungeon/opening/init/v1/"), () => {
+    initMockOpening();
+    appendMockSessionMessage({
+      type: "announce",
+      message: "（mock）开场房间初始化完成。",
+      actor: "旁白",
+      stage: "场景.义庄前院",
+      content: "（mock）开场叙事：门轴涩住，风从棺缝里过。",
+    });
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 开场初始化任务已启动" });
+  }),
+
+  // 生成卡池：依赖开场已初始化；幂等（已有卡池则后端拒绝）
+  http.post(api("/api/dungeon/opening/generate_card_pool/v1/"), () => {
+    if (!readMockOpeningInitialized()) {
+      return HttpResponse.json(
+        { detail: "开场房间尚未初始化（叙事 + 牌库），请先调用开场初始化接口" },
+        { status: 409 },
+      );
+    }
+    generateMockCardPool();
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 卡池生成任务已启动" });
+  }),
+
+  // 挑卡：挑完清空整个卡池（3 选 1），与后端同一语义
+  http.post(api("/api/dungeon/opening/pick_card_from_pool/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/dungeon/opening/pick_card_from_pool/v1/">;
+    const result = pickMockCard(body.actor_name, body.card_name);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.error }, { status: 409 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 挑卡任务已启动" });
+  }),
+
+  // 进入下一关：**同步**接口（后端就地推进关卡），mock 里同步换房间
+  http.post(api("/api/dungeon/progress/advance_stage/v1/"), () => {
+    if (!advanceMockDungeon()) {
+      return HttpResponse.json({ detail: "副本已全部通关，请返回营地" }, { status: 409 });
+    }
+    return HttpResponse.json({ message: "已前进到下一关" });
   }),
 
   // 退出副本：真实后端是异步任务（只返回 job_id），且状态变化由任务完成；
