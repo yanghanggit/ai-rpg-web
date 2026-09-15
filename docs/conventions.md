@@ -91,7 +91,18 @@ pages ──┬──▶ features ──┬──▶ components
 - **服务器名字一律经 `displayName` 显示**（`src/components/displayName.ts`）：只保留最后一段，`角色.无名` → `无名`。**取身份的地方一律用原始名字**——比较、URL、API 参数、React key 都用原值（显示名会撞：`角色.无名` / `怪物.无名`）。要改"名字怎么显示"只改这一个函数，不在组件里各写一份。
 - **Provider 只在 `main.tsx` 装配**（`QueryClientProvider`、`BrowserRouter`），页面不自己创建，便于测试用 `MemoryRouter` 替换。
 
-## 五、强制手段（谁保证）
+## 五、布局与响应式（手机 / 桌面）
+
+同一套 DOM 同时适配手机与桌面，**靠 CSS 媒体查询，不写两套页面**：
+
+- 页面外层统一用 `.page`（窄栏、居中，宽屏不铺满）。需要横向空间的页面加 `.page--wide`，它在 `@media (min-width: 900px)` 才放宽到 1180px。
+- 多列一律交给 CSS Grid：`repeat(auto-fill, minmax(min(Npx, 100%), 1fr))`。`min(Npx, 100%)` 保证窄屏不撑破容器（不出现横向滚动），宽屏自动多列。**不要写固定列数**。
+- 需要宽屏多列时用「窄屏单列 / 宽屏多列」的网格容器（如 `.entry-layout`、`.link-grid`），不要把内容写两遍。
+- 文字类页面保持窄栏（控制可读行长）；长值（URL、UUID）用 `overflow-wrap: anywhere` 防溢出。
+
+新增页面默认 `.page`；只有确实需要更多横向空间才加 `.page--wide`，并在宽屏下给出多列排法。
+
+## 六、强制手段（谁保证）
 
 | 规则 | 谁保证 | 命令 |
 | --- | --- | --- |
@@ -100,6 +111,7 @@ pages ──┬──▶ features ──┬──▶ components
 | 文件名 = 导出符号；`.tsx` 位置 | `scripts/checkFileConventions.mjs` | `pnpm lint` / `pnpm check:conventions` |
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
 | 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
+| 手机 / 桌面均可用的排法 | 靠 review（CSS 无断言） | — |
 | 行为正确 | Vitest + MSW | `pnpm test:run` |
 | 构建可用 | `tsc --noEmit && vite build` | `pnpm build` |
 

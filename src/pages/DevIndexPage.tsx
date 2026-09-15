@@ -14,12 +14,12 @@ const links = [
 
 export default function DevIndexPage() {
   return (
-    <main className="page">
+    <main className="page page--wide">
       <h1>开发索引</h1>
       <p className="muted">
         仅 dev 下注册。配合 <code>pnpm dev:mock</code> 可跳过全部正式流程直接查看页面。
       </p>
-      <ul className="plain">
+      <ul className="plain link-grid">
         {links.map((link) => (
           <li key={link.to}>
             <Link to={link.to}>{link.label}</Link> <span className="muted mono">{link.to}</span>

@@ -28,62 +28,66 @@ export default function EntryPage() {
   const canSubmit = gameName !== "" && !start.isPending;
 
   return (
-    <main className="page">
+    <main className="page page--wide">
       <h1>玩家入口</h1>
       <p className="muted">
         <Link to="/">← 返回启动屏</Link>
       </p>
 
-      <dl className="facts">
-        <dt>玩家名</dt>
-        <dd className="mono">
-          {playerName} <span className="muted">（自动生成，暂不可改）</span>
-        </dd>
-      </dl>
+      <div className="entry-layout">
+        <div>
+          <dl className="facts">
+            <dt>玩家名</dt>
+            <dd className="mono">
+              {playerName} <span className="muted">（自动生成，暂不可改）</span>
+            </dd>
+          </dl>
 
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          if (canSubmit) {
-            start.mutate(
-              { user_name: playerName, game_name: gameName },
-              // 开局成功后直接进入家园页（地址即状态，可重访/收藏）
-              { onSuccess: () => navigate(`/game/${playerName}/${gameName}/home`) },
-            );
-          }
-        }}
-      >
-        {blueprints.isPending ? <p className="muted">正在获取蓝图列表…</p> : null}
-        {blueprints.isError ? (
-          <p className="error">无法获取蓝图列表：{String(blueprints.error)}</p>
-        ) : null}
-        {blueprints.isSuccess && list.length === 0 ? (
-          <p className="error">服务器没有可用蓝图。</p>
-        ) : null}
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              if (canSubmit) {
+                start.mutate(
+                  { user_name: playerName, game_name: gameName },
+                  // 开局成功后直接进入家园页（地址即状态，可重访/收藏）
+                  { onSuccess: () => navigate(`/game/${playerName}/${gameName}/home`) },
+                );
+              }
+            }}
+          >
+            {blueprints.isPending ? <p className="muted">正在获取蓝图列表…</p> : null}
+            {blueprints.isError ? (
+              <p className="error">无法获取蓝图列表：{String(blueprints.error)}</p>
+            ) : null}
+            {blueprints.isSuccess && list.length === 0 ? (
+              <p className="error">服务器没有可用蓝图。</p>
+            ) : null}
 
-        {list.length > 0 ? (
-          <p>
-            <label htmlFor="game-name">游戏名 </label>
-            <select id="game-name" value={gameName} onChange={(e) => setPicked(e.target.value)}>
-              {list.map((blueprint) => (
-                <option key={blueprint.name} value={blueprint.name}>
-                  {blueprint.name}
-                </option>
-              ))}
-            </select>
-          </p>
-        ) : null}
+            {list.length > 0 ? (
+              <p>
+                <label htmlFor="game-name">游戏名 </label>
+                <select id="game-name" value={gameName} onChange={(e) => setPicked(e.target.value)}>
+                  {list.map((blueprint) => (
+                    <option key={blueprint.name} value={blueprint.name}>
+                      {blueprint.name}
+                    </option>
+                  ))}
+                </select>
+              </p>
+            ) : null}
 
-        <p>
-          <button type="submit" disabled={!canSubmit}>
-            {start.isPending ? "处理中…" : "登录 → 新游戏"}
-          </button>
-        </p>
-      </form>
+            <p>
+              <button type="submit" disabled={!canSubmit}>
+                {start.isPending ? "处理中…" : "登录 → 新游戏"}
+              </button>
+            </p>
+          </form>
 
-      {start.isError ? <p className="error">出错：{String(start.error)}</p> : null}
+          {start.isError ? <p className="error">出错：{String(start.error)}</p> : null}
+        </div>
 
-      {current ? <BlueprintDetails blueprint={current} /> : null}
+        {current ? <BlueprintDetails blueprint={current} /> : null}
+      </div>
     </main>
   );
 }

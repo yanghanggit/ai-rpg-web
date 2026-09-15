@@ -16,6 +16,7 @@ AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独�
 - 路由表在 `src/App.tsx`；Provider（`QueryClientProvider`、`BrowserRouter`）在 `src/main.tsx` 装配。
 - **游戏页一律带会话参数**（`/game/:userName/:gameName/...`），即“地址即状态”——可直接深链到任意一层。
 - 领域逻辑与跨接口编排放 `src/features/<domain>/`；组件放哪、依赖方向见 [`docs/conventions.md`](docs/conventions.md)。
+- **手机 / 桌面同时适配**：同一套 DOM，靠 CSS 媒体查询——页面外层 `.page`（窄栏居中），需要横向空间的加 `.page--wide`（宽屏放宽，卡片/栏目自动多列）。家园页宽屏 3 列卡片、入口页宽屏左表单右蓝图、开发索引宽屏多列。
 
 ## 快速开始
 

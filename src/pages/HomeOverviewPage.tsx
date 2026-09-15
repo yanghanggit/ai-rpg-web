@@ -107,7 +107,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   }
 
   return (
-    <main className="page">
+    <main className="page page--wide">
       <h1>家园概览</h1>
 
       <div className="toolbar">

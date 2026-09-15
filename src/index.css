@@ -31,10 +31,48 @@ body {
   line-height: 1.6;
 }
 
+/* 页面容器：默认是「阅读宽度」的窄栏，窄屏自动占满、宽屏居中，不会横向滚动。
+   普通页面（启动屏）就用这个；需要横向空间的页面加 `.page--wide`。 */
 .page {
+  width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 4rem 1.5rem;
+  padding: 2.5rem 1.25rem;
+}
+
+@media (min-width: 900px) {
+  .page {
+    padding: 4rem 2rem;
+  }
+
+  /* 宽屏下需要更多横向空间的页面：家园卡片排多列、入口左右双栏、开发索引多列 */
+  .page--wide {
+    max-width: 1180px;
+  }
+}
+
+/* 入口页布局：窄屏上下堆叠，宽屏左右双栏（左表单 / 右蓝图详情） */
+.entry-layout {
+  display: grid;
+  gap: 2rem 3rem;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .entry-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  }
+}
+
+/* 开发索引的深链列表：宽屏排成多列 */
+@media (min-width: 900px) {
+  .link-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.75rem 2rem;
+    padding-left: 0;
+    list-style: none;
+  }
 }
 
 .mono {
@@ -67,6 +105,13 @@ body {
 
 .facts dd {
   margin: 0;
+  /* 宽屏/窄屏都安全：长值（URL、UUID）在需要时断行，不会撑破容器 */
+  overflow-wrap: anywhere;
+}
+
+/* 入口页左栏里的名值对：去掉顶部外边距，与右栏对齐 */
+.entry-layout .facts {
+  margin-top: 0;
 }
 
 .status {
@@ -243,6 +288,17 @@ ul.items li {
   box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
 }
 
+/* 窄屏：浮窗尽量占满可用宽度与高度，少留遮罩边 */
+@media (max-width: 480px) {
+  .overlay {
+    padding: 0.75rem;
+  }
+
+  .overlay-panel {
+    max-height: 92vh;
+  }
+}
+
 .overlay-head {
   display: flex;
   align-items: baseline;
@@ -360,7 +416,8 @@ ol.session .what {
 /* 场景卡片：本页的主要信息与操作入口，给足尺寸 */
 .cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  /* min(320px, 100%)：窄屏不撑破容器；宽屏按可用宽度自动排 2~3 列 */
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 1.25rem;
 }
