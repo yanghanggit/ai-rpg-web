@@ -4,8 +4,11 @@ import { $api } from "../api/query";
 import { displayName } from "../components/displayName";
 import Modal from "../components/Modal";
 import { collectActors } from "../features/home/collectActors";
+import { findStageOfActor } from "../features/home/findStageOfActor";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
 import { useLogout } from "../features/home/useLogout";
+import { useSwitchStage } from "../features/home/useSwitchStage";
+import { usePlayerActor } from "../features/identity/usePlayerActor";
 import NarrativeOverlay from "../features/session/NarrativeOverlay";
 import { useSessionMessages } from "../features/session/useSessionMessages";
 import { useUnreadCount } from "../features/session/useUnreadCount";
@@ -16,7 +19,11 @@ import { useUnreadCount } from "../features/session/useUnreadCount";
  * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
  * - 顶部按钮：推进 / 叙事未读 / 返回上一级
- * - 下方卡片：每个 stage 一张，列出其中的 actor
+ * - 下方卡片：每个 stage 一张，列出其中的 actor，并带「切换到此场景」按钮；
+ *   玩家当前所在卡片高亮标记，其切换按钮禁用
+ *
+ * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
+ * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
  * 叙事不在这里展开（历史事件在浮层里看），所以页面上只留一个带「已看 / 总共」数字的
  * 通知按钮：右边大于左边就说明有新事件没看。
@@ -45,13 +52,23 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   });
 
   const mapping = state.data?.mapping ?? {};
+  // 顺序固定：直接沿用后端返回的 mapping key 顺序，客户端不排序、不重排。
+  // 卡片位置是玩家的「空间记忆」，切换场景时卡片不能跳；当前场景靠高亮 + 角标表达，
+  // 而不是把它移到最前。要改顺序请改后端（客户端不自行决定）。
   const stages = Object.entries(mapping);
   // 后端要求显式传入"要推进的角色"；口径与 TUI 一致：全部场景的全部角色
   const actors = collectActors(mapping);
   const advance = useHomeAdvance(userName, gameName, actors);
+  const switchStage = useSwitchStage(userName, gameName);
+  // 玩家角色名用于判断「当前在哪个场景」；缓存未命中时回退查询 group 端点
+  const playerActor = usePlayerActor(userName, gameName);
+  const currentStage = findStageOfActor(mapping, playerActor.data ?? null);
   const session = useSessionMessages(userName, gameName);
   const logout = useLogout(userName, gameName);
   const hasActors = actors.length > 0;
+  // 家园动作共享同一条 pipeline，同一时间只允许一个在跑
+  const isBusy =
+    advance.isStarting || advance.isRunning || switchStage.isStarting || switchStage.isRunning;
 
   const [isNarrativeOpen, setIsNarrativeOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
@@ -77,11 +94,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
       </p>
 
       <div className="toolbar">
-        <button
-          type="button"
-          disabled={!hasActors || advance.isStarting || advance.isRunning}
-          onClick={advance.start}
-        >
+        <button type="button" disabled={!hasActors || isBusy} onClick={advance.start}>
           {buttonLabel}
         </button>
 
@@ -100,6 +113,10 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
       </div>
 
       {advance.error ? <p className="error">推进失败：{advance.error}</p> : null}
+      {switchStage.error ? <p className="error">切换失败：{switchStage.error}</p> : null}
+      {playerActor.isError ? (
+        <p className="error">无法识别玩家角色：{String(playerActor.error)}</p>
+      ) : null}
 
       <section aria-labelledby="stages-heading">
         <div className="section-head">
@@ -111,22 +128,47 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
         {state.isSuccess ? (
           <div className="cards">
-            {stages.map(([stage, stageActors]) => (
-              <article key={stage} className="card">
-                <h2 className="mono">{displayName(stage)}</h2>
-                {stageActors.length === 0 ? (
-                  <p className="muted">无角色</p>
-                ) : (
-                  <ul className="chips">
-                    {stageActors.map((actorName) => (
-                      <li key={actorName} className="chip mono">
-                        {displayName(actorName)}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </article>
-            ))}
+            {stages.map(([stage, stageActors]) => {
+              const isCurrent = stage === currentStage;
+              const isSwitching = switchStage.switchingStage === stage;
+              // 当前场景、有动作在跑、玩家身份还没解析出来时不接受切换
+              const switchDisabled = isCurrent || isBusy || playerActor.isPending;
+              let switchLabel = "切换到此场景";
+              if (isCurrent) {
+                switchLabel = "当前所在";
+              } else if (isSwitching) {
+                switchLabel = "切换中…";
+              }
+
+              return (
+                <article key={stage} className={isCurrent ? "card card--current" : "card"}>
+                  <div className="card-head">
+                    <h2 className="mono">{displayName(stage)}</h2>
+                    {isCurrent ? <span className="badge card-current-badge">当前所在</span> : null}
+                  </div>
+                  {stageActors.length === 0 ? (
+                    <p className="muted">无角色</p>
+                  ) : (
+                    <ul className="chips">
+                      {stageActors.map((actorName) => (
+                        <li key={actorName} className="chip mono">
+                          {displayName(actorName)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="card-actions">
+                    <button
+                      type="button"
+                      disabled={switchDisabled}
+                      onClick={() => switchStage.start(stage)}
+                    >
+                      {switchLabel}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         ) : null}
       </section>

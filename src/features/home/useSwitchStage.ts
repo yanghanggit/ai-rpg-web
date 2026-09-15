@@ -1,12 +1,11 @@
 /**
- * 家园「推进」：触发一轮推进 → 等待任务 → 刷新家园状态。
+ * 家园「切换场景」：触发一次场景切换 → 等待任务 → 刷新家园状态。
  *
- * 这是「触发 → 等待 → 刷新」这一 API 范式的第一次完整落地（见 docs/api-layer.md 六）：
- * `POST /api/home/advance/v1/` 只返回 `job_id`，真正的状态变化发生在任务里，
- * 所以**拿到 job_id 不等于操作完成**，必须等任务进入终态，再刷新相关查询。
+ * 与 `useHomeAdvance` 同一范式（见 docs/api-layer.md 六）：
+ * `POST /api/home/player/switch_stage/v1/` 只返回 `job_id`，真正的场景迁移
+ * （以及随之而来的一轮 home pipeline）都发生在任务里，拿到 job_id 不等于切换完成。
  *
- * 触发用 plain `useMutation` + `client.POST`（跨接口编排，见 api-layer.md 五），
- * 等待复用 `src/api/useTask.ts`。
+ * `switchingStage` 记录本次目标场景，页面上只把被点的那张卡显示为「切换中…」。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -18,16 +17,17 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-export function useHomeAdvance(userName: string, gameName: string, actors: readonly string[]) {
+export function useSwitchStage(userName: string, gameName: string) {
   const queryClient = useQueryClient();
   const [jobId, setJobId] = useState<number | null>(null);
+  const [targetStage, setTargetStage] = useState<string | null>(null);
   const task = useTask(jobId);
 
-  const advance = useMutation({
-    mutationFn: async () =>
+  const switchStage = useMutation({
+    mutationFn: async (stageName: string) =>
       unwrap(
-        await client.POST("/api/home/advance/v1/", {
-          body: { user_name: userName, game_name: gameName, actors: [...actors] },
+        await client.POST("/api/home/player/switch_stage/v1/", {
+          body: { user_name: userName, game_name: gameName, stage_name: stageName },
         }),
       ),
     // 这里只拿到 job_id；结果由下面的 useTask 负责等待
@@ -42,14 +42,16 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
       return;
     }
     invalidatedJob.current = jobId;
-    // 家园状态与叙事一起刷新（口径与 switch_stage 共用，见 invalidateHomeState）。
     invalidateHomeState(queryClient, userName, gameName);
   }, [jobId, task.isCompleted, queryClient, userName, gameName]);
 
+  const isStarting = switchStage.isPending;
+  const isRunning = task.isRunning;
+
   // 失败有四种来源，这里统一成一条文案给页面用
   let error: string | null = null;
-  if (advance.isError) {
-    error = describeError(advance.error);
+  if (switchStage.isError) {
+    error = describeError(switchStage.error);
   } else if (task.isFailed) {
     error = task.error ?? "任务失败（后端未提供错误信息）";
   } else if (task.isTimedOut) {
@@ -59,15 +61,18 @@ export function useHomeAdvance(userName: string, gameName: string, actors: reado
   }
 
   return {
-    start: () => {
-      advance.reset();
+    start: (stageName: string) => {
+      switchStage.reset();
       setJobId(null); // 清掉上一轮的终态，避免按钮闪回「已完成」
-      advance.mutate();
+      setTargetStage(stageName);
+      switchStage.mutate(stageName);
     },
     /** 正在提交请求（还没拿到 job_id）。 */
-    isStarting: advance.isPending,
+    isStarting,
     /** 任务进行中。 */
-    isRunning: task.isRunning,
+    isRunning,
+    /** 本次正在切换的目标场景名；空闲时为 `null`。 */
+    switchingStage: isStarting || isRunning ? targetStage : null,
     error,
   };
 }

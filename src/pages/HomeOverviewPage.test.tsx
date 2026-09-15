@@ -260,7 +260,136 @@ describe("家园概览页", () => {
     expect(screen.queryByRole("dialog", { name: "确认登出" })).not.toBeInTheDocument();
     expect(bodies).toHaveLength(0);
   });
+
+  it("标出玩家当前所在场景，并禁止切换到当前场景", async () => {
+    renderHome();
+
+    // 默认玩家角色「角色.无名」在「场景.门厅」
+    await screen.findByRole("heading", { name: "门厅" });
+    await waitFor(() =>
+      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+    );
+    expect(cardOf("门厅")).toHaveClass("card--current");
+
+    // 其它场景没有高亮，按钮可点
+    const otherSwitches = screen.getAllByRole("button", { name: "切换到此场景" });
+    expect(otherSwitches).toHaveLength(2);
+    for (const button of otherSwitches) {
+      expect(button).toBeEnabled();
+    }
+    expect(cardOf("一楼客房")).not.toHaveClass("card--current");
+  });
+
+  it("切换场景：等任务完成后刷新状态与叙事，并把「当前所在」移过去", async () => {
+    // 默认 switch_stage handler 会改 mock 场景表并追一条叙事；
+    // 只把任务监听替换成立即成功，避免测试等 2 秒。
+    server.use(taskWith(1, "succeeded"));
+
+    renderHome();
+
+    await screen.findByRole("heading", { name: "门厅" });
+    await waitFor(() =>
+      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+    );
+
+    fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
+
+    // 切换完成后：高亮与「当前所在」移到一楼客房
+    await waitFor(() =>
+      expect(within(cardOf("一楼客房")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+    );
+    expect(cardOf("一楼客房")).toHaveClass("card--current");
+    expect(cardOf("门厅")).not.toHaveClass("card--current");
+
+    // 切换产生 trans_stage 叙事 → 叙事按钮出现未读
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /查看叙事事件/ })).toHaveClass(
+        "count-button--unread",
+      ),
+    );
+  });
+
+  it("切换请求体使用原始场景名（不是显示名）", async () => {
+    const bodies: unknown[] = [];
+    server.use(
+      http.post(api("/api/home/player/switch_stage/v1/"), async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ job_id: 1, message: "ok" });
+      }),
+      taskWith(1, "succeeded"),
+    );
+
+    renderHome();
+
+    await screen.findByRole("heading", { name: "二楼卧室" });
+    fireEvent.click(within(cardOf("二楼卧室")).getByRole("button", { name: "切换到此场景" }));
+
+    await waitFor(() =>
+      expect(bodies).toEqual([
+        { user_name: "webdev", game_name: "Game1", stage_name: "场景.二楼卧室" },
+      ]),
+    );
+  });
+
+  it("切换失败时展示后端错误，且当前场景不变", async () => {
+    server.use(
+      http.post(api("/api/home/player/switch_stage/v1/"), () =>
+        HttpResponse.json({ detail: "目标场景不存在" }, { status: 400 }),
+      ),
+    );
+
+    renderHome();
+
+    await screen.findByRole("heading", { name: "一楼客房" });
+    await waitFor(() =>
+      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+    );
+
+    fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
+
+    expect(await screen.findByText(/切换失败：API 400/)).toBeInTheDocument();
+    expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled();
+  });
+
+  it("切换进行中时，推进与其它切换按钮一起禁用", async () => {
+    // 不覆盖 watch：mock 任务约 2 秒后完成，足够观察进行中状态
+    renderHome();
+
+    await screen.findByRole("heading", { name: "一楼客房" });
+    await waitFor(() =>
+      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+    );
+
+    fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
+
+    expect(await screen.findByRole("button", { name: "切换中…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /^推进一步/ })).toBeDisabled();
+    expect(within(cardOf("二楼卧室")).getByRole("button", { name: "切换到此场景" })).toBeDisabled();
+  });
+
+  it("无法解析玩家角色时给出提示，且不误标当前场景", async () => {
+    server.use(
+      http.get(api("/api/entities/v1/:userName/:gameName/group"), () =>
+        HttpResponse.json({ detail: "没有房间" }, { status: 404 }),
+      ),
+    );
+
+    renderHome();
+
+    expect(await screen.findByText(/无法识别玩家角色/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "当前所在" })).not.toBeInTheDocument();
+  });
 });
+
+/** 按显示名找到场景卡片（article），把断言限定在单张卡内。 */
+function cardOf(stageDisplay: string): HTMLElement {
+  const heading = screen.getByRole("heading", { name: stageDisplay });
+  const card = heading.closest("article");
+  if (!(card instanceof HTMLElement)) {
+    throw new Error(`找不到场景卡片：${stageDisplay}`);
+  }
+  return card;
+}
 
 /** 读取通知按钮的当前文案（waitFor 里用，避免重复查询）。 */
 function findNarrativeButtonValue(): string {

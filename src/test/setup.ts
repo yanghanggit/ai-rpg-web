@@ -2,6 +2,7 @@ import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll } from "vitest";
 import { server } from "../mocks/node";
 import { resetMockSessionMessages } from "../mocks/sessionMessages";
+import { resetMockStages } from "../mocks/stages";
 import { resetMockTasks } from "../mocks/tasks";
 
 // 默认挂 src/mocks/handlers 的共享 handlers；未注册的请求一律报错，
@@ -12,5 +13,6 @@ afterEach(() => {
   // mock 里的内存状态（任务表、会话消息表）也要复位，否则用例之间会互相污染
   resetMockTasks();
   resetMockSessionMessages();
+  resetMockStages();
 });
 afterAll(() => server.close());

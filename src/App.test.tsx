@@ -170,6 +170,7 @@ describe("玩家入口页 /entry", () => {
 
   it("选中另一个蓝图提交后，跳到家园页，且两个请求都使用所选游戏名", async () => {
     const bodies: Array<{ path: string; body: unknown }> = [];
+    let groupCalls = 0;
     server.use(
       http.get(api("/api/game/blueprint-list/v1/"), () =>
         HttpResponse.json({
@@ -193,6 +194,11 @@ describe("玩家入口页 /entry", () => {
           },
         });
       }),
+      // 开局已缓存 player_actor；家园页若把它用上，就不该再查 group
+      http.get(api("/api/entities/v1/:userName/:gameName/group"), () => {
+        groupCalls += 1;
+        return HttpResponse.json({ entities: [] });
+      }),
     );
 
     renderApp("/entry");
@@ -203,6 +209,7 @@ describe("玩家入口页 /entry", () => {
 
     // 开局成功后自动进入家园概览页
     expect(await screen.findByRole("heading", { name: "家园概览" })).toBeInTheDocument();
+    expect(groupCalls).toBe(0);
 
     const expectedBody = expect.objectContaining({
       user_name: expect.stringMatching(/^player-\d{8}-\d{6}-[0-9a-f]{8}$/),

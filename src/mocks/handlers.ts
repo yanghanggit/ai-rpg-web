@@ -8,14 +8,16 @@
  */
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
+import type { ApiBody } from "../api/types";
 import {
+  blueprintFixture,
   blueprintListFixture,
-  homeStagesFixture,
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { sseResponse } from "./sseResponse";
+import { moveMockPlayerToStage, readMockStages } from "./stages";
 import { createMockTask, watchMockTask } from "./tasks";
 
 /** 把后端相对路径补成完整 URL，供 MSW handler 匹配。 */
@@ -35,8 +37,25 @@ export const handlers = [
   http.post(api("/api/game/new/v1/"), () => HttpResponse.json(newGameFixture)),
 
   http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>
-    HttpResponse.json(homeStagesFixture),
+    HttpResponse.json(readMockStages()),
   ),
+
+  // 玩家身份：后端用 group 端点按组件过滤，玩家是唯一带 PlayerComponent 的实体。
+  // mock 里只有蓝图里的玩家角色带该组件（口径见 dbg_game.py）。
+  http.get(api("/api/entities/v1/:userName/:gameName/group"), ({ request }) => {
+    const conditions = new URL(request.url).searchParams;
+    if (!conditions.getAll("all_of").includes("PlayerComponent")) {
+      return HttpResponse.json({ entities: [] });
+    }
+    return HttpResponse.json({
+      entities: [
+        {
+          name: blueprintFixture.player_actor,
+          components: [{ name: "PlayerComponent", data: { player_name: "mock" } }],
+        },
+      ],
+    });
+  }),
 
   // 任务：SSE 监听单个任务至终态，与真实后端 /api/tasks/v1/watch/{job_id} 一致。
   // 真实后端只在终态/超时/任务不存在时结束推送，这里用 watchMockTask 模拟同一条时间线。
@@ -59,6 +78,23 @@ export const handlers = [
     return HttpResponse.json({
       job_id: createMockTask(),
       message: "mock 推进任务已启动",
+    });
+  }),
+
+  // 切换场景：mock 里直接改场景表 + 追一条 trans_stage 叙事，让位置变化可见
+  http.post(api("/api/home/player/switch_stage/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/player/switch_stage/v1/">;
+    const origin = moveMockPlayerToStage(body.stage_name);
+    appendMockSessionMessage({
+      type: "trans_stage",
+      message: `（mock）${blueprintFixture.player_actor} 由 ${origin ?? "未知场景"} 移至 ${body.stage_name}。`,
+      actor: blueprintFixture.player_actor,
+      stage: origin ?? body.stage_name,
+      target: body.stage_name,
+    });
+    return HttpResponse.json({
+      job_id: createMockTask(),
+      message: "mock 场景切换任务已启动",
     });
   }),
 

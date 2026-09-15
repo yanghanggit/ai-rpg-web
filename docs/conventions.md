@@ -20,6 +20,8 @@ src/pages/               # 路由级页面组件（每个 URL 一个）
   LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts  entry/BlueprintDetails.tsx
+  home/useSwitchStage.ts  home/findStageOfActor.ts  identity/usePlayerActor.ts
+  session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）
   displayName.ts         #   服务器名字 → 显示名，名字显示的唯一规则入口
 src/mocks/               # mock fixtures / handlers / browser / node（测试与 dev 共用）
