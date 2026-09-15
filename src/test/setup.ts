@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll } from "vitest";
+import { resetMockItems } from "../mocks/items";
 import { server } from "../mocks/node";
 import { resetMockSessionMessages } from "../mocks/sessionMessages";
 import { resetMockStages } from "../mocks/stages";
@@ -14,5 +15,6 @@ afterEach(() => {
   resetMockTasks();
   resetMockSessionMessages();
   resetMockStages();
+  resetMockItems();
 });
 afterAll(() => server.close());

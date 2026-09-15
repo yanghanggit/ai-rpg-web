@@ -13,9 +13,16 @@ import {
   blueprintFixture,
   blueprintListFixture,
   newGameFixture,
-  playerEntityFixture,
   serverInfoFixture,
 } from "./fixtures";
+import {
+  craftMockItem,
+  moveMockItem,
+  readMockPlayerEntity,
+  readMockStorageEntity,
+  readMockStorageEntityName,
+  readMockWornEntities,
+} from "./items";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { sseResponse } from "./sseResponse";
 import { moveMockPlayerToStage, readMockStages } from "./stages";
@@ -42,19 +49,31 @@ export const handlers = [
   ),
 
   // 玩家身份：后端用 group 端点按组件过滤，玩家是唯一带 PlayerComponent 的实体。
-  // mock 里只有蓝图里的玩家角色带该组件（口径见 dbg_game.py）。
+  // 同端点还用于解析储物箱世界实体（WorldComponent + StorageComponent）与穿戴中时装。
   http.get(api("/api/entities/v1/:userName/:gameName/group"), ({ request }) => {
-    const conditions = new URL(request.url).searchParams;
-    if (!conditions.getAll("all_of").includes("PlayerComponent")) {
-      return HttpResponse.json({ entities: [] });
+    const conditions = new URL(request.url).searchParams.getAll("all_of");
+    if (conditions.includes("PlayerComponent")) {
+      return HttpResponse.json({ entities: [readMockPlayerEntity()] });
     }
-    return HttpResponse.json({ entities: [playerEntityFixture] });
+    if (conditions.includes("WornCostumeComponent")) {
+      return HttpResponse.json({ entities: readMockWornEntities() });
+    }
+    if (conditions.includes("StorageComponent")) {
+      return HttpResponse.json({ entities: [readMockStorageEntity()] });
+    }
+    return HttpResponse.json({ entities: [] });
   }),
 
-  // 实体详情：按名字批量查询，角色信息浮窗用它取玩家的完整组件
+  // 实体详情：按名字批量查询，角色信息浮窗与道具管理浮窗都用它
   http.get(api("/api/entities/v1/:userName/:gameName/details"), ({ request }) => {
     const names = new URL(request.url).searchParams.getAll("entities");
-    const entities = names.includes(blueprintFixture.player_actor) ? [playerEntityFixture] : [];
+    const entities = [];
+    if (names.includes(blueprintFixture.player_actor)) {
+      entities.push(readMockPlayerEntity());
+    }
+    if (names.includes(readMockStorageEntityName())) {
+      entities.push(readMockStorageEntity());
+    }
     return HttpResponse.json({ entities });
   }),
 
@@ -96,6 +115,51 @@ export const handlers = [
     return HttpResponse.json({
       job_id: createMockTask(),
       message: "mock 场景切换任务已启动",
+    });
+  }),
+
+  // 移动道具：同步接口，直接改 mock 内存状态（批量：逐个搬）
+  http.post(api("/api/home/item/move_to_inventory/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/item/move_to_inventory/v1/">;
+    for (const name of body.item_names) {
+      moveMockItem(name, "inventory");
+    }
+    return HttpResponse.json({ message: "mock 已移入随身背包" });
+  }),
+
+  http.post(api("/api/home/item/move_to_storage/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/item/move_to_storage/v1/">;
+    for (const name of body.item_names) {
+      moveMockItem(name, "storage");
+    }
+    return HttpResponse.json({ message: "mock 已移入储物箱" });
+  }),
+
+  // 工坊合成：消耗储物箱材料 + 追一条叙事，再返回 job_id 走同一条任务时间线
+  http.post(api("/api/home/craft/consumable/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/craft/consumable/v1/">;
+    craftMockItem("consumable", body.materials);
+    return HttpResponse.json({
+      job_id: createMockTask(),
+      message: "mock 消耗品工坊任务已启动",
+    });
+  }),
+
+  http.post(api("/api/home/craft/gear/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/craft/gear/v1/">;
+    craftMockItem("gear", body.materials);
+    return HttpResponse.json({
+      job_id: createMockTask(),
+      message: "mock 装备工坊任务已启动",
+    });
+  }),
+
+  http.post(api("/api/home/craft/costume/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/craft/costume/v1/">;
+    craftMockItem("costume", body.materials);
+    return HttpResponse.json({
+      job_id: createMockTask(),
+      message: "mock 时装工坊任务已启动",
     });
   }),
 

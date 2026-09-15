@@ -191,6 +191,83 @@ export const newGameFixture: Schemas["NewGameResponse"] = {
 };
 
 /**
+ * 运行期道具（背包 / 储物箱）与穿戴中时装。
+ *
+ * 蓝图 fixture 里的容器内容被 `collectItemContainers.test.ts` 精确断言，不动它；
+ * 这里是「已开局的家园」的运行期状态，比蓝图初始内容多几件，专供道具管理浮窗的 mock。
+ */
+export const runtimeInventoryFixture: Record<string, unknown>[] = [
+  {
+    name: "装备.缠麻短刃",
+    uuid: "00000000-0000-0000-0000-000000000001",
+    type: "GearItem",
+    description: "（mock）由旧铁剪反复磨砺而成的短刃。",
+    count: 1,
+    resources: [],
+    cards: [],
+  },
+  {
+    name: "消耗品.吗啡针剂",
+    uuid: "00000000-0000-0000-0000-000000000002",
+    type: "ConsumableItem",
+    description: "（mock）淡琥珀色的玻璃针剂。",
+    count: 2,
+    on_use_prompt: ["（mock）恢复 4 点 HP。"],
+    resources: [],
+  },
+];
+
+/** 运行期道具：储物箱（材料两种、装备一件、时装一件）。 */
+export const runtimeStorageFixture: Record<string, unknown>[] = [
+  {
+    name: "材料.旧麻绳",
+    uuid: "00000000-0000-0000-0000-000000000003",
+    type: "MaterialItem",
+    description: "（mock）已泛黄，但韧劲仍在。",
+    count: 3,
+  },
+  {
+    name: "材料.符纸残片",
+    uuid: "00000000-0000-0000-0000-000000000004",
+    type: "MaterialItem",
+    description: "（mock）边角焦黑的黄符残片。",
+    count: 2,
+  },
+  {
+    name: "装备.铁刀",
+    uuid: "00000000-0000-0000-0000-000000000005",
+    type: "GearItem",
+    description: "（mock）样式朴素的铁刀。",
+    count: 1,
+    resources: [],
+    cards: [],
+  },
+  {
+    name: "时装.青衫",
+    uuid: "00000000-0000-0000-0000-000000000006",
+    type: "CostumeItem",
+    description: "（mock）浆洗得发白的青布长衫。",
+    count: 1,
+    resources: [],
+  },
+];
+
+/** 穿戴中的时装（`WornCostumeComponent` 的运行期状态，蓝图里没有）。 */
+export const wornCostumesFixture: { wearer: string; item: Record<string, unknown> }[] = [
+  {
+    wearer: "角色.顾知秋",
+    item: {
+      name: "时装.朱砂袍",
+      uuid: "00000000-0000-0000-0000-000000000007",
+      type: "CostumeItem",
+      description: "（mock）绯色暗纹的道袍。",
+      count: 1,
+      resources: [],
+    },
+  },
+];
+
+/**
  * 会话消息（叙事）。覆盖多种 agent_event 类型（字符串字面量，与后端 models/agent_event.py 一致），
  * 其中最后一条用未分类的 `NoneEvent`（`type` 为 "none"）测渲染兜底。
  */

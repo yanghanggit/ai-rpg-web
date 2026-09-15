@@ -11,6 +11,7 @@ import { useLogout } from "../features/home/useLogout";
 import { useSwitchStage } from "../features/home/useSwitchStage";
 import PlayerInfoDialog from "../features/identity/PlayerInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
+import ItemManagerDialog from "../features/items/ItemManagerDialog";
 import NarrativeOverlay from "../features/session/NarrativeOverlay";
 import { useSessionMessages } from "../features/session/useSessionMessages";
 import { useUnreadCount } from "../features/session/useUnreadCount";
@@ -20,12 +21,13 @@ import { useUnreadCount } from "../features/session/useUnreadCount";
  *
  * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
- * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 叙事未读 / 返回上一级
+ * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 道具管理 / 叙事未读 / 返回上一级
  * - 下方卡片：每个 stage 一张，列出其中的 actor，并带「切换到此场景」按钮；
  *   玩家当前所在卡片高亮标记，其切换按钮禁用
  *
  * 「角色信息」打开 `PlayerInfoDialog`，展示玩家实体上必要的组件信息；
- * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统。
+ * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统；
+ * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
  * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
@@ -78,6 +80,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   const [isPlayerInfoOpen, setIsPlayerInfoOpen] = useState(false);
   const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
+  const [isItemsOpen, setIsItemsOpen] = useState(false);
 
   // 通知按钮上的两个数字：已看 / 总共。右大于左即"有新事件没看"
   const total = session.messages.length;
@@ -111,6 +114,14 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
         <button type="button" onClick={() => setIsBlueprintInfoOpen(true)}>
           蓝图信息
+        </button>
+
+        <button
+          type="button"
+          disabled={playerActor.isPending || !playerActor.data}
+          onClick={() => setIsItemsOpen(true)}
+        >
+          道具管理
         </button>
 
         <button
@@ -203,6 +214,16 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
       {isBlueprintInfoOpen ? (
         <BlueprintInfoDialog gameName={gameName} onClose={() => setIsBlueprintInfoOpen(false)} />
+      ) : null}
+
+      {isItemsOpen && playerActor.data ? (
+        <ItemManagerDialog
+          userName={userName}
+          gameName={gameName}
+          actorName={playerActor.data}
+          busy={isBusy}
+          onClose={() => setIsItemsOpen(false)}
+        />
       ) : null}
 
       {isLogoutOpen ? (

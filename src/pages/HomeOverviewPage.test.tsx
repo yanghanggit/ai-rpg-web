@@ -31,6 +31,14 @@ async function findReadyAdvanceButton() {
   return button;
 }
 
+/** 打开道具管理浮窗：等按钮可用（玩家身份解析完）再点。 */
+async function openItemsDialog() {
+  const button = await screen.findByRole("button", { name: "道具管理" });
+  await waitFor(() => expect(button).toBeEnabled());
+  fireEvent.click(button);
+  return screen.findByRole("dialog", { name: "道具管理" });
+}
+
 const findNarrativeButton = () => screen.findByRole("button", { name: /查看叙事事件/ });
 
 const advanceReturns = (jobId: number) =>
@@ -410,6 +418,81 @@ describe("家园概览页", () => {
 
     // 进入游戏后再看无意义的场景/角色、背包与仓库物品都不展示
     expect(within(dialog).queryByText(/旧麻绳|缠麻短刃|吗啡针剂/)).not.toBeInTheDocument();
+  });
+
+  it("点「道具管理」打开浮窗，展示背包、储物箱与穿戴中时装", async () => {
+    renderHome();
+
+    const dialog = await openItemsDialog();
+
+    // 背包：装备 + 消耗品
+    expect(await within(dialog).findByText("缠麻短刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("吗啡针剂 ×2")).toBeInTheDocument();
+    // 储物箱：材料（×2）、装备、时装各一
+    expect(within(dialog).getAllByText("旧麻绳 ×3").length).toBeGreaterThan(0);
+    expect(within(dialog).getByText("铁刀")).toBeInTheDocument();
+    expect(within(dialog).getByText("青衫")).toBeInTheDocument();
+    // 穿戴中的时装合入储物箱顶部，只读展示（顾知秋 · 朱砂袍）
+    expect(within(dialog).getByText("穿戴中（只读）")).toBeInTheDocument();
+    expect(within(dialog).getByText("顾知秋 · 朱砂袍")).toBeInTheDocument();
+    expect(within(dialog).getByText(/绯色暗纹的道袍/)).toBeInTheDocument();
+
+    // 时装不可移入背包：储物箱里的时装没勾选框，背包里的每件都有
+    expect(within(dialog).queryByLabelText("选择 时装.青衫")).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText("选择 装备.缠麻短刃")).toBeInTheDocument();
+  });
+
+  it("勾选背包道具后可批量移入储物箱", async () => {
+    renderHome();
+    const dialog = await openItemsDialog();
+
+    fireEvent.click(await within(dialog).findByLabelText("选择 装备.缠麻短刃"));
+    fireEvent.click(within(dialog).getByLabelText("选择 消耗品.吗啡针剂"));
+    fireEvent.click(within(dialog).getByRole("button", { name: "移入储物箱（2）" }));
+
+    // 移动后：背包清空，两件道具出现在储物箱
+    await waitFor(() => expect(within(dialog).getByText("（空）")).toBeInTheDocument());
+    expect(within(dialog).getByText("缠麻短刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("吗啡针剂 ×2")).toBeInTheDocument();
+  });
+
+  it("勾选材料后经二次确认合成消耗品：默认填满用量，确认后刷新道具与叙事", async () => {
+    // 默认 craft handler 会消耗材料 + 追一条叙事，再返回 job_id；只把任务监听换成立即成功
+    server.use(taskWith(1, "succeeded"));
+
+    renderHome();
+    const dialog = await openItemsDialog();
+
+    // 勾选两种材料（旧麻绳 ×3、符纸残片 ×2）
+    fireEvent.click(await within(dialog).findByLabelText("选择 材料.旧麻绳"));
+    fireEvent.click(within(dialog).getByLabelText("选择 材料.符纸残片"));
+
+    // 点工坊按钮：叠出第二层确认浮窗，用量默认填满库存
+    fireEvent.click(within(dialog).getByRole("button", { name: "合成消耗品" }));
+    const confirm = await screen.findByRole("dialog", { name: "合成消耗品" });
+    expect(within(confirm).getByLabelText("材料.旧麻绳 用量")).toHaveValue(3);
+    expect(within(confirm).getByLabelText("材料.符纸残片 用量")).toHaveValue(2);
+
+    // 改低旧麻绳用量后确认
+    fireEvent.change(within(confirm).getByLabelText("材料.旧麻绳 用量"), {
+      target: { value: "2" },
+    });
+    fireEvent.click(within(confirm).getByRole("button", { name: "确认" }));
+
+    // 确认后回到道具管理；任务完成后：产物入箱，旧麻绳 3→1（显为「旧麻绳」），符纸残片用尽
+    expect(await within(dialog).findByText("回气散")).toBeInTheDocument();
+    expect(within(dialog).getByText("旧麻绳")).toBeInTheDocument();
+    expect(within(dialog).queryByText("旧麻绳 ×3")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/符纸残片/)).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "合成消耗品" })).not.toBeInTheDocument();
+
+    // 合成产物通过叙事通知：关闭浮窗后叙事按钮出现未读
+    fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /查看叙事事件/ })).toHaveClass(
+        "count-button--unread",
+      ),
+    );
   });
 });
 

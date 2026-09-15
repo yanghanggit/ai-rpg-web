@@ -284,6 +284,42 @@ ul.items li {
   margin: 0.75rem 0 0;
 }
 
+.overlay-body h4 {
+  margin: 1.25rem 0 0.25rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+/* 道具行：勾选 / 类型标签 / 名称 / 描述 横排，窄屏换行 */
+.item-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.item-row .item-name {
+  font-weight: 600;
+}
+
+.item-row .item-desc {
+  flex: 1 1 12rem;
+  font-size: 0.85rem;
+}
+
+.item-amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.item-amount input {
+  width: 4rem;
+  padding: 0.2rem 0.4rem;
+}
+
 /* 会话消息（叙事）列表：sequence_id 递增，所以用有序列表 */
 ol.session {
   margin: 1rem 0;

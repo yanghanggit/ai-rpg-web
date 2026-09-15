@@ -22,6 +22,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts
   blueprint/BlueprintDetails.tsx  blueprint/BlueprintInfoDialog.tsx  blueprint/useBlueprint.ts
   home/useSwitchStage.ts  home/findStageOfActor.ts  identity/usePlayerActor.ts  identity/PlayerInfoDialog.tsx
+  items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）
   displayName.ts         #   服务器名字 → 显示名，名字显示的唯一规则入口
