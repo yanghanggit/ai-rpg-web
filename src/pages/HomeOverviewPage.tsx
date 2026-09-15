@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { $api } from "../api/query";
 import { displayName } from "../components/displayName";
 import Modal from "../components/Modal";
@@ -25,7 +25,7 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  *
  * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
- * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 实体浏览器 / 道具管理 / 叙事未读 / 返回上一级
+ * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 实体浏览器 / 道具管理 / 副本 / 叙事未读 / 返回上一级
  * - 下方卡片：每个 stage 一张，列出其中的 actor（每个 actor 是一个按钮，点开
  *   该角色的信息浮窗），右上角有个小按钮打开场景信息，并带「切换到此场景」按钮；
  *   玩家当前所在卡片高亮标记
@@ -36,6 +36,8 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
  * 「实体浏览器」打开 `EntityBrowserDialog`，把「场景 → 角色」mapping 一次性摊开，
  * 点名字即可打开对应的场景 / 角色信息浮窗——与点场景卡片等价，只是多一条宏观快捷入口。
+ * 「副本」不属于浮窗：它切到 `DungeonPage`（`/game/:userName/:gameName/dungeon`）单独一屏，
+ * 交接全部副本操作。
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
  * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
@@ -61,6 +63,7 @@ export default function HomeOverviewPage() {
 }
 
 function HomeOverview({ userName, gameName }: { userName: string; gameName: string }) {
+  const navigate = useNavigate();
   const state = $api.useQuery("get", "/api/stages/v1/{user_name}/{game_name}/state", {
     params: { path: { user_name: userName, game_name: gameName } },
   });
@@ -149,6 +152,10 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           onClick={() => setIsItemsOpen(true)}
         >
           道具管理
+        </button>
+
+        <button type="button" onClick={() => navigate(`/game/${userName}/${gameName}/dungeon`)}>
+          副本
         </button>
 
         <button

@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router";
 import DevIndexPage from "./pages/DevIndexPage";
+import DungeonPage from "./pages/DungeonPage";
 import EntryPage from "./pages/EntryPage";
 import HomeOverviewPage from "./pages/HomeOverviewPage";
 import LaunchPage from "./pages/LaunchPage";
@@ -21,6 +22,7 @@ import LaunchPage from "./pages/LaunchPage";
         <Route path="/" element={<LaunchPage />} />
         <Route path="/entry" element={<EntryPage />} />
         <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
+        <Route path="/game/:userName/:gameName/dungeon" element={<DungeonPage />} />
         {import.meta.env.DEV ? <Route path="/dev" element={<DevIndexPage />} /> : null}
       </Routes>
     </>

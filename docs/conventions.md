@@ -17,7 +17,7 @@ src/api/                 # 基础设施：传输层与契约适配，无业务�
   schema.d.ts            #   生成物，只读
   client.ts  query.ts  types.ts  serverInfo.ts
 src/pages/               # 路由级页面组件（每个 URL 一个）
-  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DevIndexPage.tsx
+  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts
   blueprint/BlueprintDetails.tsx  blueprint/BlueprintInfoDialog.tsx  blueprint/useBlueprint.ts
@@ -25,6 +25,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   identity/ActorInfoDialog.tsx  identity/readActorInfo.ts  identity/useActorEntity.ts  identity/usePlayerActor.ts
   costume/StorageCostumeDialog.tsx  costume/useStorageCostumes.ts  costume/useCostumeAction.ts
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
+  dungeon/RosterPanel.tsx  dungeon/readPartyRoster.ts  dungeon/usePartyRoster.ts  dungeon/useRosterCandidates.ts  dungeon/useRosterAction.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）
@@ -102,7 +103,22 @@ pages ──┬──▶ features ──┬──▶ components
 
 新增页面默认 `.page`；只有确实需要更多横向空间才加 `.page--wide`，并在宽屏下给出多列排法。
 
-## 六、强制手段（谁保证）
+## 六、交互基调：游戏客户端，输入控件要克制
+
+这是**游戏客户端**，不是表单系统。页面应该「像游戏一样可点」，所以设计准则是**尽量不用需要用户输入的控件**：
+
+- 能用点击解决的，就不要让用户打字。选择 / 切换 / 增删一律用按钮、chip、列表项完成。
+- **不要用「搜索框 / 筛选框 / 文本框」去解决列表变长的问题**。正确做法是**限高滚动列表**（必要时再做多列或分组），让规模由布局消化，而不是把负担转给玩家。
+- 新增输入控件必须单独说明理由（属于「必须让用户给一个值」的情形），并在 review 时确认没有别的点选方案。
+
+现有**需要用户给值**的输入控件仅两处，均为不可替代的“给值”，不是自由输入：
+
+- 入口页的蓝图 `<select>`：取值范围由服务器决定（契约约束），不能让用户手填。
+- 合成浮窗的材料用量 `<input type="number">`：需要具体份数，且已默认填满库存。
+
+其余 `<input>` 只有道具勾选用的 `type="checkbox"`——那是“点选”，符合上面的准则。
+
+## 七、强制手段（谁保证）
 
 | 规则 | 谁保证 | 命令 |
 | --- | --- | --- |
@@ -112,6 +128,7 @@ pages ──┬──▶ features ──┬──▶ components
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
 | 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
 | 手机 / 桌面均可用的排法 | 靠 review（CSS 无断言） | — |
+| 不滥用输入控件（游戏客户端） | 靠 review（无工具可强制） | — |
 | 行为正确 | Vitest + MSW | `pnpm test:run` |
 | 构建可用 | `tsc --noEmit && vite build` | `pnpm build` |
 

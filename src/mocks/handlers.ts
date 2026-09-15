@@ -26,6 +26,12 @@ import {
   removeMockCostume,
   wearMockCostume,
 } from "./items";
+import {
+  addMockRosterMember,
+  readMockNpcEntities,
+  readMockRosterEntities,
+  removeMockRosterMember,
+} from "./roster";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { sseResponse } from "./sseResponse";
 import { moveMockPlayerToStage, readMockStageEntity, readMockStages } from "./stages";
@@ -54,7 +60,9 @@ export const handlers = [
   // 玩家身份：后端用 group 端点按组件过滤，玩家是唯一带 PlayerComponent 的实体。
   // 同端点还用于解析储物箱世界实体（WorldComponent + StorageComponent）与穿戴中时装。
   http.get(api("/api/entities/v1/:userName/:gameName/group"), ({ request }) => {
-    const conditions = new URL(request.url).searchParams.getAll("all_of");
+    const searchParams = new URL(request.url).searchParams;
+    const conditions = searchParams.getAll("all_of");
+    const noneOf = searchParams.getAll("none_of");
     if (conditions.includes("PlayerComponent")) {
       return HttpResponse.json({ entities: [readMockPlayerEntity()] });
     }
@@ -63,6 +71,14 @@ export const handlers = [
     }
     if (conditions.includes("StorageComponent")) {
       return HttpResponse.json({ entities: [readMockStorageEntity()] });
+    }
+    // 队伍名单挂在玩家实体上（名单为空时该组件不存在，entities 为空）
+    if (conditions.includes("PartyRosterComponent")) {
+      return HttpResponse.json({ entities: readMockRosterEntities() });
+    }
+    // 副本队伍候选：持 NPCComponent 的实体；玩家可能也带 NPCComponent，靠 none_of 排除
+    if (conditions.includes("NPCComponent")) {
+      return HttpResponse.json({ entities: readMockNpcEntities(noneOf) });
     }
     return HttpResponse.json({ entities: [] });
   }),
@@ -204,6 +220,25 @@ export const handlers = [
       content: "脱下了时装。",
     });
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 脱装任务已启动" });
+  }),
+
+  // 队伍名单：同步接口，直接改 mock 内存状态；校验口径对齐后端
+  http.post(api("/api/home/roster/add/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/roster/add/v1/">;
+    const result = addMockRosterMember(body.member_name);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.error }, { status: 400 });
+    }
+    return HttpResponse.json({ message: `mock 已将 ${body.member_name} 加入队伍` });
+  }),
+
+  http.post(api("/api/home/roster/remove/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/roster/remove/v1/">;
+    const result = removeMockRosterMember(body.member_name);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.error }, { status: 400 });
+    }
+    return HttpResponse.json({ message: `mock 已将 ${body.member_name} 从队伍移除` });
   }),
 
   // 增量拉取：只返回 sequence_id 更大的消息

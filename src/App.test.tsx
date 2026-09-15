@@ -267,6 +267,15 @@ describe("家园页 /game/:userName/:gameName/home", () => {
     expect(within(stages).getAllByText("无角色")).toHaveLength(1);
   });
 
+  it("点「副本」切到副本页（不是浮窗，是换页）", async () => {
+    renderApp("/game/webdev/Game1/home");
+
+    fireEvent.click(await screen.findByRole("button", { name: "副本" }));
+
+    expect(await screen.findByRole("heading", { name: "副本" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "队伍名单" })).toBeInTheDocument();
+  });
+
   it("接口失败时展示错误", async () => {
     server.use(
       http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>

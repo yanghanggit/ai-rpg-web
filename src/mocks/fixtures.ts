@@ -200,13 +200,16 @@ export const playerEntityFixture: Schemas["EntitySerialization"] = {
 };
 
 /**
- * NPC 实体（家园运行期）：Identity / Appearance / CharacterStats。
+ * NPC 实体（家园运行期）：NPC / Identity / Appearance / CharacterStats。
  * 没有 PlayerComponent（那是玩家专属）；是否穿时装由 `mocks/items.ts` 的运行时状态决定。
+ * 带 `NPCComponent` 才能成为队伍候选（后端 `add_party_member` 会校验，契约见
+ * `game/dbg_game.py`：NPC → NPCComponent，Monster → MonsterComponent，玩家 → PlayerComponent）。
  */
 export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
   {
     name: "角色.顾知秋",
     components: [
+      { name: "NPCComponent", data: { name: "角色.顾知秋" } },
       {
         name: "IdentityComponent",
         data: {
@@ -232,6 +235,7 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
   {
     name: "角色.小厮",
     components: [
+      { name: "NPCComponent", data: { name: "角色.小厮" } },
       {
         name: "IdentityComponent",
         data: {
