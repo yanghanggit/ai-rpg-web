@@ -499,6 +499,46 @@ describe("家园概览页", () => {
     expect(screen.queryByRole("dialog", { name: "场景信息" })).not.toBeInTheDocument();
   });
 
+  it("「实体浏览器」摊开全部场景与角色，点场景名打开场景信息浮窗", async () => {
+    renderHome();
+
+    const button = await screen.findByRole("button", { name: "实体浏览器" });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    const browser = await screen.findByRole("dialog", { name: "实体浏览器" });
+    // 三个场景与它们的角色都在（含无角色的场景）
+    expect(within(browser).getByRole("button", { name: "门厅" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "一楼客房" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "二楼卧室" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "顾知秋" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "小厮" })).toBeInTheDocument();
+    expect(within(browser).getByText("（无角色）")).toBeInTheDocument();
+
+    // 点场景名 → 换成场景信息浮窗
+    fireEvent.click(within(browser).getByRole("button", { name: "一楼客房" }));
+    const stageDialog = await screen.findByRole("dialog", { name: "场景信息" });
+    expect(await within(stageDialog).findByText(/的环境叙述/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "实体浏览器" })).not.toBeInTheDocument();
+  });
+
+  it("「实体浏览器」点角色名打开角色信息浮窗", async () => {
+    renderHome();
+
+    const button = await screen.findByRole("button", { name: "实体浏览器" });
+    await waitFor(() => expect(button).toBeEnabled());
+    fireEvent.click(button);
+
+    const browser = await screen.findByRole("dialog", { name: "实体浏览器" });
+    fireEvent.click(within(browser).getByRole("button", { name: "小厮" }));
+
+    const actorDialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(
+      await within(actorDialog).findByText("00000000-0000-0000-0000-0000000000cc"),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "实体浏览器" })).not.toBeInTheDocument();
+  });
+
   it("点「道具管理」打开浮窗，展示背包、储物箱与穿戴中时装", async () => {
     renderHome();
 

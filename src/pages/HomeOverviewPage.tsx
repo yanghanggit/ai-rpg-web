@@ -7,6 +7,7 @@ import BlueprintInfoDialog from "../features/blueprint/BlueprintInfoDialog";
 import StorageCostumeDialog from "../features/costume/StorageCostumeDialog";
 import { useCostumeAction } from "../features/costume/useCostumeAction";
 import { collectActors } from "../features/home/collectActors";
+import EntityBrowserDialog from "../features/home/EntityBrowserDialog";
 import { findStageOfActor } from "../features/home/findStageOfActor";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
 import { useLogout } from "../features/home/useLogout";
@@ -24,7 +25,7 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  *
  * 页面只有两块内容——**功能按钮**和**场景卡片**：
  *
- * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 道具管理 / 叙事未读 / 返回上一级
+ * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 实体浏览器 / 道具管理 / 叙事未读 / 返回上一级
  * - 下方卡片：每个 stage 一张，列出其中的 actor（每个 actor 是一个按钮，点开
  *   该角色的信息浮窗），右上角有个小按钮打开场景信息，并带「切换到此场景」按钮；
  *   玩家当前所在卡片高亮标记
@@ -33,6 +34,8 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  * 浮窗内可穿/脱时装，穿时装时叠出 `StorageCostumeDialog` 选储物箱里的时装。
  * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统；
  * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
+ * 「实体浏览器」打开 `EntityBrowserDialog`，把「场景 → 角色」mapping 一次性摊开，
+ * 点名字即可打开对应的场景 / 角色信息浮窗——与点场景卡片等价，只是多一条宏观快捷入口。
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
  * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
@@ -91,6 +94,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   // 是否叠出「选择时装」的二级浮窗
   const [isCostumeOpen, setIsCostumeOpen] = useState(false);
   const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
+  const [isEntityBrowserOpen, setIsEntityBrowserOpen] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
 
   // 通知按钮上的两个数字：已看 / 总共。右大于左即"有新事件没看"
@@ -129,6 +133,14 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
         <button type="button" onClick={() => setIsBlueprintInfoOpen(true)}>
           蓝图信息
+        </button>
+
+        <button
+          type="button"
+          disabled={stages.length === 0}
+          onClick={() => setIsEntityBrowserOpen(true)}
+        >
+          实体浏览器
         </button>
 
         <button
@@ -278,6 +290,22 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
             setInfoActor(actorName);
           }}
           onClose={() => setInfoStage(null)}
+        />
+      ) : null}
+
+      {isEntityBrowserOpen ? (
+        <EntityBrowserDialog
+          mapping={mapping}
+          // 点名字：关掉浏览器，换成对应的信息浮窗（与场景卡片点击等价）
+          onSelectStage={(stage) => {
+            setIsEntityBrowserOpen(false);
+            setInfoStage(stage);
+          }}
+          onSelectActor={(actorName) => {
+            setIsEntityBrowserOpen(false);
+            setInfoActor(actorName);
+          }}
+          onClose={() => setIsEntityBrowserOpen(false)}
         />
       ) : null}
 

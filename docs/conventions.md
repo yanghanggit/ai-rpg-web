@@ -21,7 +21,7 @@ src/pages/               # 路由级页面组件（每个 URL 一个）
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts
   blueprint/BlueprintDetails.tsx  blueprint/BlueprintInfoDialog.tsx  blueprint/useBlueprint.ts
-  home/useSwitchStage.ts  home/findStageOfActor.ts
+  home/useSwitchStage.ts  home/findStageOfActor.ts  home/EntityBrowserDialog.tsx
   identity/ActorInfoDialog.tsx  identity/readActorInfo.ts  identity/useActorEntity.ts  identity/usePlayerActor.ts
   costume/StorageCostumeDialog.tsx  costume/useStorageCostumes.ts  costume/useCostumeAction.ts
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts

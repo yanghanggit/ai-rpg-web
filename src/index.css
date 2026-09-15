@@ -501,6 +501,51 @@ ol.session .what {
   line-height: 1.3;
 }
 
+/* 实体浏览器：每个场景一行 —— 左侧场景名（key），右侧横排角色（list of value）。
+   按钮内边距与行距都放大，手机上也好点。 */
+.entity-stage {
+  justify-self: start;
+  padding: 0.45rem 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.entity-empty {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+ul.entity-browser {
+  display: grid;
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul.entity-browser > li {
+  display: grid;
+  /* 固定 key 宽度，让各行的角色列起点对齐（key: list[value] 的观感） */
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem 1rem;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+ul.entity-browser > li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+/* 行内角色 chip：横向拉开间距 */
+ul.entity-browser > li .chips {
+  gap: 0.75rem;
+}
+
+ul.entity-browser > li .chip-button {
+  padding: 0.4rem 0.9rem;
+}
+
 /* 二级浮窗里的时装选项：整行可点 */
 .costume-option {
   width: 100%;
