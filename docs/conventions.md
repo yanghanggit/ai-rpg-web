@@ -129,7 +129,7 @@ pages ──┬──▶ features ──┬──▶ components
 | 文件名 = 导出符号；`.tsx` 位置 | `scripts/checkFileConventions.mjs` | `pnpm lint` / `pnpm check:conventions` |
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
 | 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
-| 手机 / 桌面均可用的排法 | 靠 review（CSS 无断言） | — |
+| 手机 / 桌面均可用的排法 | 靠 review（CSS 无断言），可用 `pnpm screenshot` 拍图核对 | — |
 | 不滥用输入控件（游戏客户端） | 靠 review（无工具可强制） | — |
 | 行为正确 | Vitest + MSW | `pnpm test:run` |
 | 构建可用 | `tsc --noEmit && vite build` | `pnpm build` |

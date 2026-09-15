@@ -45,6 +45,7 @@ URL 自带会话参数（账号 / 对局），可以直接深链到任意一层�
 | `pnpm build` | 类型检查 + 生产构建 |
 | `pnpm preview` | 预览构建产物 |
 | `pnpm gen:api` | 从后端 `/openapi.json` 生成 TS 类型到 `src/api/schema.d.ts`（需后端已启动） |
+| `pnpm screenshot` | 用 headless Chrome 给页面截图（可指定视口、先点几下再拍），详见 `docs/dev-setup.md` |
 | `pnpm format` | Biome 格式化 |
 | `pnpm lint` / `pnpm lint:fix` | Biome 静态检查（含文件命名校验）/ 自动修复 |
 | `pnpm check:conventions` | 单独跑文件命名校验（已包含在 `pnpm lint`） |

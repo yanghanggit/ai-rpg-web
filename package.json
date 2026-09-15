@@ -9,6 +9,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "gen:api": "node scripts/genApi.mjs",
+    "screenshot": "node scripts/screenshot.mjs",
     "format": "biome format --write .",
     "lint": "biome check . && node scripts/checkFileConventions.mjs",
     "lint:fix": "biome check --write .",

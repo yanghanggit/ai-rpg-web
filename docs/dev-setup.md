@@ -60,6 +60,30 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 - IP 由 DHCP 分配可能变化，变了要同步改 `.env`；建议在路由器上做 MAC 绑定。
 - 后端 CORS 已是 `allow_origins=["*"]`，换 IP 不会触发跨域问题。
 
+## UI 截图（视觉核对）
+
+响应式排法没有 CSS 断言，只能看：`pnpm screenshot` 会用真实的 headless Chrome 拍一张，
+能指定视口、还能**先点几下再拍**（浮窗、二级浮窗这类只有点开才看得到）。
+
+```bash
+# 桌面默认（1280x900），输出 screenshots/dungeon-1280x900.png
+pnpm screenshot /game/webdev/Game1/dungeon
+
+# 手机视口 + 点开确认浮窗
+pnpm screenshot /game/webdev/Game1/dungeon --size 390x844 --click "进入副本：荒村义庄"
+
+# mock 模式（vite 可能落在别的端口，用它打印的地址）
+pnpm screenshot /game/webdev/Game1/dungeon --base http://localhost:5174
+```
+
+`--click` 按 `aria-label` 或按钮文字匹配，用 `|` 分隔可连点；写错了会直接把当前页面上的按钮全列出来。
+完整选项见 `pnpm screenshot --help`。输出默认落在 `screenshots/`（已 gitignore）。
+
+两个容易踩的坑，脚本已经处理：
+
+- **不要用 `chrome --headless --screenshot`**：它在 load 事件就落笔，而首屏要等 React 挂载、mock 模式还要等 MSW 的 service worker 接管，拍出来是**空白页**（`--virtual-time-budget` 在 headless=new 下也救不回来）。
+- **不要用 `--window-size` 定视口**：headless 下有最小宽度，想验 390px 会被悄悄放大，也就验不出横向溢出。脚本走 CDP 的 `Emulation.setDeviceMetricsOverride`。
+
 ## 调试深层页面
 
 不必每次从启动屏一步步走完：
