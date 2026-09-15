@@ -1,7 +1,7 @@
 /**
  * SSE（Server-Sent Events）读取器：流式 `fetch` + 手动解析 `data:` 行。
  *
- * 为什么不用浏览器原生 `EventSource`（尽管 docs/web-client-plan.md 最初如此设想）：
+ * 为什么不用浏览器原生 `EventSource`：
  * - `EventSource` 不能携带 `Authorization` 头，JWT 接入后无法鉴权；本项目约定
  *   认证头只在 `client.ts` 的 `authHeaders()` 注入，这里复用同一份。
  * - 它自带断线重连语义，而后端唯一的 SSE 端点 `watch` 是「等到任务终态即正常结束」

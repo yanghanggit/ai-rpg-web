@@ -23,7 +23,7 @@ export function describeAgentEvent(event: AgentEvent) {
   // `message` 在每个联合成员上都有，所以在收窄之前取——这样 default 分支不需要
   // 再访问 event 的任何专有字段（那些字段只有在收窄后才能拿到）。
   // 注：`NoneEvent`（`# ` 开头的系统日志行，如角色进出场景的通知）走的就是这条分支；
-  // 计划后续在叙事面板里整体隐藏（见 docs/web-client-plan.md 暂缓项）。
+  // 它本是引擎给 LLM 的提示语、不是给玩家的叙事，后续应在叙事面板里整体隐藏。
   const fallback = { label: "事件", who: "", where: "", what: event.message };
 
   switch (event.type) {

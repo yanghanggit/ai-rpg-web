@@ -1,98 +1,40 @@
 # ai-rpg-web
 
-AI-RPG 的 Web 客户端（面向玩家），与后端仓库 `ai-rpg` 完全独立。
+AI-RPG 的 Web 客户端（面向玩家）。
 
-技术栈：React + Vite + TypeScript（strict）+ React Router + TanStack Query + openapi-fetch / openapi-react-query + Biome + Vitest + MSW。
+一个**纯前端**项目：只消费后端仓库 `ai-rpg`（FastAPI）的 HTTP 接口，不依赖后端代码、不做 SSR，两者无共享代码。它和后端自带的 `tui/` 是**平行的消费者**——TUI 给后端开发者走查接口，这里是正式玩家入口；唯一的耦合是 API 契约，靠类型生成同步。
 
-## 页面结构
+## 技术选型
 
-| 路由 | 页面 | 职责 |
+| 项 | 选择 | 理由 |
 | ------ | ------ | ------ |
-| `/` | `src/pages/LaunchPage.tsx` | 启动屏：展示服务器地址与连接状态，与玩家身份无关 |
-| `/entry` | `src/pages/EntryPage.tsx` | 玩家入口：玩家名自动生成（带日期），游戏名从 `/api/game/blueprint-list/v1/` 蓝图列表选择，并展示所选蓝图详情（玩家角色 / 战役设定 / 场景-角色映射 / 世界实体），登录 → 新游戏 |
-| `/game/:userName/:gameName/home` | `src/pages/HomeOverviewPage.tsx` | 家园概览：只有**功能按钮**与**场景卡片**两块。按钮条：`推进一步 · N 个角色`（人数直接写在按钮上）、`角色信息`（点击弹出玩家控制角色的信息浮窗；**卡片里每个角色 chip 也可点**，同样打开该角色的信息浮窗，NPC 亦可——玩家与 NPC 共用一个组件；浮窗内可穿/脱时装，穿时装会叠出选储物箱时装的二级浮窗）、`蓝图信息`（点击弹出蓝图名字/战役设定/世界系统）、`实体浏览器`（把「场景 → 角色」mapping 一次摊开，点场景名开场景信息、点角色名开角色信息——与点场景卡片等价，只是多一条宏观快捷入口）、`道具管理`（点击弹出背包与储物箱道具；储物箱顶部为穿戴中的时装，只读；勾选道具后可与「移入背包」平级地合成消耗品/制造装备/制作时装，点开会叠出确认用量的浮窗）、`副本`（**不是浮窗**：切到 `DungeonPage` 单独一屏，交接全部副本操作）、`叙事 已看/总共`（右边大于左边即有新事件未看，点击弹出「全部叙事」浮层）、`← 返回上一级`（浮窗确认后登出）。卡片：每个 stage 一张，列出其中的 actor（**角色名可点**，打开角色信息浮窗），右上角小按钮打开**场景信息**浮窗（`StageComponent`/`EnvironmentComponent` + 场景内角色按钮），底部有「切换到此场景」按钮；玩家当前所在卡片高亮并标记「当前所在」 |
-| `/game/:userName/:gameName/dungeon` | `src/pages/DungeonPage.tsx` | 副本页：由家园页工具栏的「副本」按钮切过来（独立一屏，可切回）。三块：①**生成新副本**（`POST /api/home/generate_dungeon/v1/`，异步 job，等任务完成再刷新列表）；②**可用副本**（`GET /api/home/dungeon-list/v1/` 的**静态模型数据**；**卡片化**展示，窄屏单列宽屏多列，整体设定超出卡片高度即省略号，点整张卡片弹出 `DungeonInfoDialog` 查阅全文：整体设定 / 创建时间 / 房间（探索·战斗）与敌人 HP·ATK·DEF）；③**队伍名单**（`PartyRosterComponent` 的 add / remove：当前队伍（玩家 + 已选同伴，可移出）与可加入的同伴（持 `NPCComponent` 且**排除玩家控制角色**的 NPC）；角色**卡片化**：两段**上下排**（当前队伍在上、可加入的同伴在下，同「道具管理」的背包 / 储物箱思路），两段都用与「可用副本」**同一种卡片栅格**（同 `min 320px`、同间距，所以上下卡片宽度对齐）；窄屏单列、宽屏一行多张；**点角色名打开 `ActorInfoDialog`**——与家园页「点角色 chip 看信息」同一套流程，连穿/脱时装的两级浮窗也一并接上）；工具栏另有**道具管理**（同一个 `ItemManagerDialog`，但 `craftEnabled={false}`：出征前只整理行装，背包 ↔ 储物箱可互移，**没有**工坊合成——合成必须在家园做））。对应 TUI 的 `/list-dungeons` + `/dungeon @名` + `/generate-dungeon` |
-| `/dev` | `src/pages/DevIndexPage.tsx` | 开发索引（仅 dev 注册）：常用深链清单 |
-
-- 路由表在 `src/App.tsx`；Provider（`QueryClientProvider`、`BrowserRouter`）在 `src/main.tsx` 装配。
-- **游戏页一律带会话参数**（`/game/:userName/:gameName/...`），即“地址即状态”——可直接深链到任意一层。
-- 领域逻辑与跨接口编排放 `src/features/<domain>/`；组件放哪、依赖方向见 [`docs/conventions.md`](docs/conventions.md)。
-- **手机 / 桌面同时适配**：同一套 DOM，靠 CSS 媒体查询——页面外层 `.page`（窄栏居中），需要横向空间的加 `.page--wide`（宽屏放宽，卡片/栏目自动多列）。家园页宽屏 3 列卡片、入口页宽屏左表单右蓝图、开发索引宽屏多列。
+| 构建 | Vite + React + TypeScript（strict） | 生态成熟、开发体验好；SPA 不需要 SSR / SEO |
+| 路由 | React Router | **地址即状态**：游戏页带会话参数，可直接深链到任意一层 |
+| 服务端状态 | TanStack Query | 天然适配本项目的「命令 → `job_id` → 等任务 → 失效刷新」模式 |
+| 客户端状态 | 只用组件内 `useState` | 游戏数据全在 Query 缓存里；纯 UI 状态（浮窗开合）不需要跨组件共享，所以不引入状态库 |
+| HTTP / 契约 | openapi-fetch + openapi-react-query + openapi-typescript | 类型从后端 `/openapi.json` 生成，请求方法 / 路径 / 参数 / 响应端到端类型安全 |
+| 实时推送 | 任务用 SSE，会话消息用增量轮询 | 与 TUI 一致；不用原生 `EventSource`（无法带鉴权头，且自带重连语义与后端一次性流冲突） |
+| 质量 | Biome + Vitest + MSW | lint / format 一个工具；mock handlers 与 `pnpm dev:mock` **共用一套**，不会两边漂移 |
+| 明确不引入 | Next.js、状态机、WebSocket、UI 组件库 | 都是当前换不来收益的复杂度：无 SSR 需求、无双向实时需求、样式只有一份 `index.css` |
 
 ## 快速开始
 
 ```bash
 pnpm install
-cp .env.example .env        # 按需修改后端地址
+cp .env.example .env      # 按需修改后端地址，默认 http://localhost:8000
+pnpm gen:api              # 拉后端 /openapi.json 生成 TS 类型（需后端已启动）
 pnpm dev
 ```
 
-后端默认地址 `http://localhost:8000`（见 `.env`）。`pnpm dev` 监听 `0.0.0.0`，终端会打印 Network 地址，局域网内其他设备可直接访问。
+局域网 / 手机真机访问、Mock 模式、深链调试见 [`docs/dev-setup.md`](docs/dev-setup.md)。
 
-### 局域网开发（用明确 IP，不用 localhost）
+## 怎么用
 
-适用场景：后端监听 `0.0.0.0`，希望用本机网卡 IP 访问，或让手机/其他设备访问本前端。
+`/` 启动屏（服务器连没连上）→ `/entry` 起名字、选蓝图开局 → `/game/:userName/:gameName/home` 家园。
 
-#### **1. 查本机网卡 IP**
+家园一屏看全局：顶部按钮推进剧情、看叙事 / 角色 / 蓝图 / 道具，「副本」切到单独一屏；下方每个场景一张卡片，角色名可点开信息，可切换玩家所在场景。
 
-```bash
-# macOS
-ifconfig en0 | grep "inet "
-
-# Linux
-ip addr show
-```
-
-留意可能有多个网卡（如 VPN 的 `utun*`），选真实局域网那张（通常是 `en0`，形如 `192.168.x.x`）。
-
-#### **2. 把后端地址改成本机 IP**（`.env`，不要用 `localhost`）
-
-```dotenv
-VITE_API_BASE_URL=http://192.168.22.235:8000
-```
-
-`VITE_OPENAPI_URL` 可省略，`pnpm gen:api` 会自动取 `${VITE_API_BASE_URL}/openapi.json`。
-
-#### **3. 重启开发服务器**（Vite 仅在启动时读取环境变量，改 `.env` 后热更新不生效）
-
-```bash
-pnpm gen:api    # 让类型也跟随新地址生成
-pnpm dev
-```
-
-终端会同时打印 Local 与 Network 地址，局域网内其他设备用 `en0` 那条：
-
-```text
-➜  Local:   http://localhost:5173/
-➜  Network: http://192.168.22.235:5173/  en0
-➜  Network: http://198.18.194.71:5173/   utun4
-```
-
-#### **4. 验证**
-
-```bash
-curl -I http://192.168.22.235:8000/     # 后端可达
-```
-
-注意事项：
-
-- 后端必须监听 `0.0.0.0`（仅 `127.0.0.1` 时局域网 IP 连不上）。
-- 前端 dev server 已在 `vite.config.ts` 设置 `server.host: true`，无需额外参数。
-- 首次从其他设备访问若被系统防火墙拦截，需在系统设置中放行 Node/Vite 的入站连接。
-- IP 由 DHCP 分配可能变化，变了要同步改 `.env`；建议在路由器上做 MAC 绑定。
-- 后端 CORS 已是 `allow_origins=["*"]`，换 IP 不会触发跨域问题。
-
-## 调试与 Mock 模式
-
-调试深层页面不必每次从启动屏一步步走完：
-
-1. **地址即状态**：游戏页带会话参数，直接改 URL 即可，例如
-   `http://localhost:5173/game/webdev/Game1/home`（真实数据，需该 user/game 已存在）。
-2. **Mock 模式**：`pnpm dev:mock`，浏览器端 MSW 拦截 API，完全不需要后端。
-   - 假数据在 `src/mocks/fixtures.ts`，指定接口的假响应在 `src/mocks/handlers.ts`；
-   - 这套 handlers **与单元测试共用**，不会两边漂移；
-   - 页面右上角会显示橙色 `MOCK 模式` 徽标，避免误以为在连真实后端。
-3. **开发索引**：`/dev` 列出常用深链，点一下就到（例：`http://localhost:5173/dev`）。
+URL 自带会话参数（账号 / 对局），可以直接深链到任意一层，不必每次从头走一遍。
 
 ## 常用命令
 
@@ -109,16 +51,14 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 | `pnpm typecheck` | TypeScript 严格类型检查 |
 | `pnpm test` / `pnpm test:run` | Vitest 测试（watch / 单次） |
 
-## 约定
-
-- **开发规范（命名 / 目录结构 / 组件归属 / 依赖方向）见 [`docs/conventions.md`](docs/conventions.md)**，由 `pnpm lint`（Biome + `check:conventions`）强制。
-- **API 使用规范见 [`docs/api-layer.md`](docs/api-layer.md)（先读「基本原则」）。**
-- 核心：类型来自 `pnpm gen:api` 生成的 `src/api/schema.d.ts`（已 gitignore，开发期不提交）；不手写 API 类型；REST 走 `src/api/client.ts`（openapi-fetch），查询用 `src/api/query.ts` 的 `$api`。
-- 测试用 MSW：handlers / fixtures 在 `src/mocks/`，与 `pnpm dev:mock` 共用；未注册 handler 的请求会让测试失败。
-- 后端契约见 `ai-rpg` 仓库的 `docs/web-client-plan.md`。
-
-## 最短的"检查 + 构建 + 启动"三连
+最短的「检查 + 构建 + 启动」三连：
 
 ```bash
-pnpm install && pnpm gen:api && pnpm typecheck && pnpm lint && pnpm test:run && pnpm build && pnpm dev 
+pnpm install && pnpm gen:api && pnpm typecheck && pnpm lint && pnpm test:run && pnpm build && pnpm dev
 ```
+
+## 文档
+
+工程细节都在 **[`docs/`](docs/README.md)（唯一入口，带索引）**：页面结构与交互、开发规范（目录结构 / 命名 / 依赖方向）、API 使用规范、本地开发与联调。
+
+根 README 只保留项目介绍、技术选型与启动方式。**易变的细节（页面结构、接口用法）只写在 `docs/`**，不在两处各写一份——复制必然漂移。
