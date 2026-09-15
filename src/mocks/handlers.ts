@@ -9,7 +9,12 @@
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
 import type { ApiBody, Schemas } from "../api/types";
-import { generateMockDungeon, readMockDungeons } from "./dungeons";
+import {
+  enterMockDungeon,
+  generateMockDungeon,
+  readMockDungeonState,
+  readMockDungeons,
+} from "./dungeons";
 import {
   blueprintFixture,
   blueprintListFixture,
@@ -246,6 +251,28 @@ export const handlers = [
   http.get(api("/api/home/dungeon-list/v1/"), () =>
     HttpResponse.json({ dungeons: readMockDungeons() }),
   ),
+
+  // 副本运行状态：`current_room_index >= 0` 即「有副本正在进行中」
+  http.get(api("/api/dungeons/v1/:userName/:gameName/state"), () =>
+    HttpResponse.json(readMockDungeonState()),
+  ),
+
+  // 进入副本：同步接口（真实后端只返回 message），成功后 mock 的副本状态变为进行中
+  http.post(api("/api/home/enter_dungeon/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/home/enter_dungeon/v1/">;
+    const result = enterMockDungeon(body.dungeon_name);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.error }, { status: 500 });
+    }
+    appendMockSessionMessage({
+      type: "trans_stage",
+      message: `（mock）进入副本：${body.dungeon_name}。`,
+      actor: blueprintFixture.player_actor,
+      stage: "场景.门厅",
+      target: "场景.义庄前院",
+    });
+    return HttpResponse.json({ message: `mock 已进入副本：${body.dungeon_name}` });
+  }),
 
   // 生成副本：真实后端是异步 pipeline（只返回 job_id），mock 里同步追加一份并追一条叙事
   http.post(api("/api/home/generate_dungeon/v1/"), () => {

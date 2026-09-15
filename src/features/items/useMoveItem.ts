@@ -7,11 +7,8 @@
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../api/client";
+import { describeApiError } from "../../api/describeApiError";
 import { invalidateItems } from "./invalidateItems";
-
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function useMoveItem(userName: string, gameName: string) {
   const queryClient = useQueryClient();
@@ -38,9 +35,9 @@ export function useMoveItem(userName: string, gameName: string) {
 
   let error: string | null = null;
   if (toInventory.isError) {
-    error = describeError(toInventory.error);
+    error = describeApiError(toInventory.error);
   } else if (toStorage.isError) {
-    error = describeError(toStorage.error);
+    error = describeApiError(toStorage.error);
   }
 
   return {

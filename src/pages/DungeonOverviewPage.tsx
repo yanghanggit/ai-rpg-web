@@ -1,34 +1,40 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import { describeApiError } from "../api/describeApiError";
 import StorageCostumeDialog from "../features/costume/StorageCostumeDialog";
 import { useCostumeAction } from "../features/costume/useCostumeAction";
 import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
 import DungeonPanel from "../features/dungeon/DungeonPanel";
+import EnterDungeonDialog from "../features/dungeon/EnterDungeonDialog";
 import RosterPanel from "../features/dungeon/RosterPanel";
+import { useDungeonRun } from "../features/dungeon/useDungeonRun";
+import { useEnterDungeon } from "../features/dungeon/useEnterDungeon";
 import { useGenerateDungeon } from "../features/dungeon/useGenerateDungeon";
 import ActorInfoDialog from "../features/identity/ActorInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
 import ItemManagerDialog from "../features/items/ItemManagerDialog";
 
 /**
- * 副本页：家园之外单独一屏，展开所有与副本相关的操作。
+ * 副本总览页：**宏观阅览副本 + 做准备 + 决定是否进入**，不承担副本内的流程。
  *
- * 为什么是 page 而不是浮窗：副本操作是一组独立流程（队伍名单、生成 / 查阅 / 进入副本……），
- * 内容会越滚越长，浮窗装不下，也容易和家园状态混淆。所以从家园页工具栏的「副本」
- * 按钮切过来，页面上再给「← 返回家园」切回去。
+ * 所以这里只有三类事：生成副本、查阅副本的静态模型数据、出征前的准备
+ * （队伍名单、整理行装）。「进入副本」是这一步的**终点**——发起成功即切到
+ * `DungeonRoomPage`（副本进行中那一屏），页面的职责到此为止。
  *
- * 当前实现：
+ * 内容：
  * - 「生成新副本」→ `POST /api/home/generate_dungeon/v1/`（异步 job，等任务完成再刷新列表）；
- * - 「可用副本」卡片 → `GET /api/home/dungeon-list/v1/`（磁盘上的静态模型数据），
- *   点卡片打开 `DungeonInfoDialog` 查阅，对应 TUI 的 `/list-dungeons` + `/dungeon @名`；
+ * - 「可用副本」卡片 → `GET /api/home/dungeon-list/v1/`（磁盘上的静态模型数据）：
+ *   点卡片主体打开 `DungeonInfoDialog` 查阅（对应 TUI 的 `/list-dungeons` + `/dungeon @名`），
+ *   点「进入副本」打开 `EnterDungeonDialog` 做最终确认（队伍 + 背包 + 确认）；
  * - 队伍名单 → `PartyRosterComponent` 的 add / remove；**点角色名打开 `ActorInfoDialog`**，
  *   与家园页「点角色 chip 看信息」是同一套流程（连穿/脱时装的两级浮窗也一并接上）；
  * - 「道具管理」→ `ItemManagerDialog` 的**移动版**（`craftEnabled={false}`）：
  *   出征前只整理行装（背包 ↔ 储物箱），不合成——合成必须在家园做。
  *
- * 页面是组合层：玩家名与「点角色」的回调都由页面接线（features 之间不互相依赖）。
+ * 页面是组合层：玩家名、浮窗开关、「进入成功后跳哪」都由页面接线
+ * （features 之间不互相依赖，`onSelectActor` / `onConfirm` 都是回调）。
  */
-export default function DungeonPage() {
+export default function DungeonOverviewPage() {
   const { userName, gameName } = useParams();
 
   // useParams 的类型是 string | undefined；路由已保证存在，这里做一次显式守卫
@@ -40,17 +46,21 @@ export default function DungeonPage() {
     );
   }
 
-  return <Dungeon userName={userName} gameName={gameName} />;
+  return <DungeonOverview userName={userName} gameName={gameName} />;
 }
 
-function Dungeon({ userName, gameName }: { userName: string; gameName: string }) {
+function DungeonOverview({ userName, gameName }: { userName: string; gameName: string }) {
   const navigate = useNavigate();
   const playerActor = usePlayerActor(userName, gameName);
   const generate = useGenerateDungeon(userName, gameName);
+  const enterDungeon = useEnterDungeon(userName, gameName);
   const costume = useCostumeAction(userName, gameName);
+  const run = useDungeonRun(userName, gameName);
 
   // 正在查阅的副本（原始名）；非空即打开副本信息浮窗
   const [infoDungeon, setInfoDungeon] = useState<string | null>(null);
+  // 正在确认进入的副本（原始名）；非空即打开进入确认浮窗
+  const [enterTarget, setEnterTarget] = useState<string | null>(null);
   // 正在查看的角色（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
   // 是否叠出「选择时装」的二级浮窗
@@ -61,6 +71,7 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
   // 生成副本与其他家园动作共用同一条 pipeline，同一时间只允许一个在跑
   const isBusy = generate.isStarting || generate.isRunning;
   const costumeBusy = costume.isStarting || costume.isRunning;
+  const dungeonRun = run.data ?? null;
 
   let generateLabel = "生成新副本";
   if (generate.isStarting) {
@@ -74,6 +85,15 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
       <h1>副本</h1>
 
       <div className="toolbar">
+        {/* 副本进行中时，第一优先是回到那一屏，而不是再发起新的进入 */}
+        {dungeonRun?.active ? (
+          <button
+            type="button"
+            onClick={() => navigate(`/game/${userName}/${gameName}/dungeon/room`)}
+          >
+            回到副本：{dungeonRun.name}
+          </button>
+        ) : null}
         <button type="button" disabled={isBusy} onClick={generate.start}>
           {generateLabel}
         </button>
@@ -93,8 +113,15 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
       {playerActor.isError ? (
         <p className="error">无法识别玩家角色：{String(playerActor.error)}</p>
       ) : null}
+      {dungeonRun?.active ? (
+        <p className="muted">副本进行中：{dungeonRun.name} · 退出副本后才能进入新的副本。</p>
+      ) : null}
 
-      <DungeonPanel onSelect={setInfoDungeon} />
+      <DungeonPanel
+        onSelect={setInfoDungeon}
+        onEnter={setEnterTarget}
+        enterDisabled={dungeonRun?.active ?? false}
+      />
 
       <RosterPanel
         userName={userName}
@@ -105,6 +132,27 @@ function Dungeon({ userName, gameName }: { userName: string; gameName: string })
 
       {infoDungeon ? (
         <DungeonInfoDialog dungeonName={infoDungeon} onClose={() => setInfoDungeon(null)} />
+      ) : null}
+
+      {enterTarget && playerActor.data ? (
+        <EnterDungeonDialog
+          userName={userName}
+          gameName={gameName}
+          playerActor={playerActor.data}
+          dungeonName={enterTarget}
+          busy={enterDungeon.isPending}
+          error={enterDungeon.isError ? describeApiError(enterDungeon.error) : null}
+          onConfirm={() => {
+            enterDungeon.mutate(enterTarget, {
+              // 成功即离开本页：玩家的场景已经变成副本第一关，这里已经没有可做的事
+              onSuccess: () => navigate(`/game/${userName}/${gameName}/dungeon/room`),
+            });
+          }}
+          onClose={() => {
+            enterDungeon.reset();
+            setEnterTarget(null);
+          }}
+        />
       ) : null}
 
       {infoActor ? (

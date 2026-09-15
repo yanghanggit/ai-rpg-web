@@ -3,12 +3,6 @@ import Modal from "../../components/Modal";
 import { readDungeonInfo } from "./readDungeonInfo";
 import { useDungeonList } from "./useDungeonList";
 
-/** 房间类型（判别字段 `room.type`）→ 界面说法。未知类型显示原值：不猜。 */
-const ROOM_TYPE_LABELS: Record<string, string> = {
-  opening: "探索",
-  combat: "战斗",
-};
-
 /**
  * 副本信息浮窗：只展示**静态模型数据**（整体设定 / 创建时间 / 房间 / 敌人属性），
  * 对应 TUI 的 `/dungeon @副本名`。
@@ -58,7 +52,7 @@ export default function DungeonInfoDialog({
                 <div className="dungeon-room-head">
                   <span className="mono">{displayName(room.stageName)}</span>
                   <span className={room.type === "combat" ? "badge badge--combat" : "badge"}>
-                    {ROOM_TYPE_LABELS[room.type] ?? room.type}
+                    {room.typeLabel}
                   </span>
                 </div>
                 {room.monsters.length === 0 ? (

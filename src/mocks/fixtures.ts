@@ -443,7 +443,7 @@ function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"
  * 副本（**静态模型数据**）：`GET /api/home/dungeon-list/v1/` 返回的形状。
  *
  * 真实后端把副本存成磁盘 JSON（`game/config.py` 的 `DUNGEONS_DIR`），该接口读取全部文件。
- * 这里给一个开场房间（探索）+ 一个战斗房间（含怪物），使「查阅」视图有意义。
+ * 这里给一个开场房间（无敌人）+ 一个战斗房间（含怪物），使「查阅」视图有意义。
  */
 export const dungeonFixture: Schemas["Dungeon"] = {
   name: "副本.荒村义庄",
@@ -474,4 +474,18 @@ export const dungeonFixture: Schemas["Dungeon"] = {
       ]),
     },
   ],
+};
+
+/**
+ * 空副本：后端 `world.dungeon` 的初始值（`Dungeon(name="", rooms=[], profile="")`）。
+ * 没有任何副本时 `GET /api/dungeons/v1/{user}/{game}/state` 返回它，`current_room_index = -1`
+ * 就是客户端判断「当前没有副本在跑」的依据。
+ */
+export const emptyDungeonFixture: Schemas["Dungeon"] = {
+  name: "",
+  rooms: [],
+  profile: "",
+  current_room_index: -1,
+  setup_entities: false,
+  image: emptyImage,
 };

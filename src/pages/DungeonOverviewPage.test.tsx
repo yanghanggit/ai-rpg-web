@@ -3,12 +3,13 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
-import { generateMockDungeon } from "../mocks/dungeons";
+import { enterMockDungeon, generateMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
+import { readMockActorEntity } from "../mocks/items";
 import { server } from "../mocks/node";
 import { addMockRosterMember } from "../mocks/roster";
 import { sseResponse } from "../mocks/sseResponse";
-import DungeonPage from "./DungeonPage";
+import DungeonOverviewPage from "./DungeonOverviewPage";
 
 function renderDungeon() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -16,7 +17,8 @@ function renderDungeon() {
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/game/webdev/Game1/dungeon"]}>
         <Routes>
-          <Route path="/game/:userName/:gameName/dungeon" element={<DungeonPage />} />
+          <Route path="/game/:userName/:gameName/dungeon" element={<DungeonOverviewPage />} />
+          <Route path="/game/:userName/:gameName/dungeon/room" element={<p>副本房间页占位</p>} />
           <Route path="/game/:userName/:gameName/home" element={<p>家园页占位</p>} />
         </Routes>
       </MemoryRouter>
@@ -39,7 +41,7 @@ const taskWith = (jobId: number, status: string) =>
     sseResponse([JSON.stringify({ job_id: jobId, status, error: null })]),
   );
 
-describe("副本页 · 可用副本（静态模型数据）", () => {
+describe("副本总览 · 可用副本（静态模型数据）", () => {
   it("展示副本列表：名字、房间数与整体设定", async () => {
     renderDungeon();
 
@@ -57,7 +59,7 @@ describe("副本页 · 可用副本（静态模型数据）", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "副本信息" });
     expect(within(dialog).getByText("义庄前院")).toBeInTheDocument();
-    expect(within(dialog).getByText("探索")).toBeInTheDocument();
+    expect(within(dialog).getByText("开场")).toBeInTheDocument();
     expect(within(dialog).getByText("停柩房")).toBeInTheDocument();
     expect(within(dialog).getByText("战斗")).toBeInTheDocument();
     // 战斗房间列出敌人的 HP / ATK / DEF
@@ -84,7 +86,7 @@ describe("副本页 · 可用副本（静态模型数据）", () => {
   });
 });
 
-describe("副本页 · 队伍名单", () => {
+describe("副本总览 · 队伍名单", () => {
   it("展示当前队伍（玩家）与可加入的同伴", async () => {
     renderDungeon();
 
@@ -177,7 +179,7 @@ describe("副本页 · 队伍名单", () => {
   });
 });
 
-describe("副本页 · 道具管理（出征前整理行装）", () => {
+describe("副本总览 · 道具管理（出征前整理行装）", () => {
   it("与家园页同一个浮窗：可以移道具，但**没有**工坊合成入口", async () => {
     renderDungeon();
 
@@ -201,5 +203,86 @@ describe("副本页 · 道具管理（出征前整理行装）", () => {
     expect(within(dialog).queryByRole("button", { name: "合成消耗品" })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "制造装备" })).not.toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: "制作时装" })).not.toBeInTheDocument();
+  });
+});
+
+describe("副本总览 · 进入副本（最终确认）", () => {
+  it("确认浮窗展示队伍与背包，确认后发起进入并切到副本房间页", async () => {
+    addMockRosterMember("角色.顾知秋");
+    server.use(
+      http.post(api("/api/home/enter_dungeon/v1/"), async ({ request }) => {
+        expect(await request.json()).toEqual({
+          user_name: "webdev",
+          game_name: "Game1",
+          dungeon_name: "副本.荒村义庄",
+        });
+        return HttpResponse.json({ message: "mock 已进入副本" });
+      }),
+    );
+    renderDungeon();
+
+    fireEvent.click(await screen.findByRole("button", { name: "进入副本：荒村义庄" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "进入副本" });
+    // 起点取自 rooms[0]（不是「第一个开场房间」）
+    expect(within(dialog).getByText("义庄前院")).toBeInTheDocument();
+    expect(within(dialog).getByText("开场")).toBeInTheDocument();
+
+    // 队伍：玩家本人 + 名单里的同伴，各带战斗属性
+    expect(
+      await within(dialog).findByRole("heading", { name: "队伍（2 人）" }),
+    ).toBeInTheDocument();
+    expect(within(dialog).getByText("无名")).toBeInTheDocument();
+    expect(within(dialog).getByText("（玩家）")).toBeInTheDocument();
+    expect(within(dialog).getByText(/HP 18\/18/)).toBeInTheDocument();
+
+    // 背包：与「道具管理」同一套道具行（名字 ×N + 中文类型 chip）
+    expect(within(dialog).getByRole("heading", { name: "背包（2 件）" })).toBeInTheDocument();
+    expect(within(dialog).getByText("缠麻短刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("吗啡针剂 ×2")).toBeInTheDocument();
+    expect(within(dialog).getByText("消耗品")).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: "确认进入" }));
+
+    expect(await screen.findByText("副本房间页占位")).toBeInTheDocument();
+  });
+
+  it("队伍里有已死亡的角色：确认按钮禁用并说明原因（后端会直接 500）", async () => {
+    addMockRosterMember("角色.顾知秋");
+    // 只覆盖一件事：给名单里的同伴挂上 DeathComponent
+    server.use(
+      http.get(api("/api/entities/v1/:userName/:gameName/details"), ({ request }) => {
+        const names = new URL(request.url).searchParams.getAll("entities");
+        const entities = names.flatMap((name) => {
+          const entity = readMockActorEntity(name);
+          if (entity === null) {
+            return [];
+          }
+          if (name === "角色.顾知秋") {
+            entity.components.push({ name: "DeathComponent", data: { name } });
+          }
+          return [entity];
+        });
+        return HttpResponse.json({ entities });
+      }),
+    );
+    renderDungeon();
+
+    fireEvent.click(await screen.findByRole("button", { name: "进入副本：荒村义庄" }));
+    const dialog = await screen.findByRole("dialog", { name: "进入副本" });
+
+    expect(await within(dialog).findByText("已死亡，无法参战")).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: "确认进入" })).toBeDisabled();
+  });
+
+  it("已有副本进行中：进入按钮禁用，并给出回到副本的入口", async () => {
+    enterMockDungeon("副本.荒村义庄");
+    renderDungeon();
+
+    expect(await screen.findByRole("button", { name: "进入副本：荒村义庄" })).toBeDisabled();
+    expect(
+      await screen.findByRole("button", { name: "回到副本：副本.荒村义庄" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/退出副本后才能进入新的副本/)).toBeInTheDocument();
   });
 });

@@ -363,6 +363,11 @@ ul.items li {
   font-size: 0.85rem;
 }
 
+/* 出征前点验：名字占满左侧，把属性 / 死亡提示挤到右边对齐 */
+.party-preview .item-name {
+  flex: 1;
+}
+
 .item-amount {
   display: inline-flex;
   align-items: baseline;
@@ -564,11 +569,16 @@ ul.entity-browser > li .chip-button {
   font-size: 0.75rem;
 }
 
-/* 副本页 · 队伍名单：两段内容**上下排**（当前队伍在上、可加入的同伴在下），
-   与「道具管理」的背包 / 储物箱同一思路 */
+/* 副本页 · 队伍名单：两段内容在宽屏**左右排**（当前队伍在左、可加入的同伴在右），
+   窄屏自动退成上下排。
+
+   用与卡片同一个栅格参数（而非「各占一半」的固定两列）是为了让两段列宽与
+   副本卡片对齐：1180px 下副本卡是 3 列 ×380px，这里就占其中前两列（卡宽不变），
+   窄屏时才降成一列。 */
 .roster-sections {
   display: grid;
-  gap: 1.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+  gap: 1.25rem;
 }
 
 .roster h3 {
@@ -619,16 +629,41 @@ ul.roster-cards {
   list-style: none;
 }
 
-/* 副本卡片区：宏观信息，一卡一副本；描述超出卡片就省略，点卡片看全文。
-   窄屏单列、宽屏自动多列，不用在小窗口里滚动找内容。 */
+/* 副本卡片区：宏观信息，一卡一副本；描述超出卡片就省略，点卡片主体看全文。
+   窄屏单列、宽屏自动多列，不用在小窗口里滚动找内容。
+
+   卡片是「容器 + 主体按钮 + 操作行」三层：HTML 不允许 button 嵌套 button，
+   所以「看详情」与「进入副本」必须是平级的兄弟按钮（与角色卡片同一做法）。 */
 .dungeon-card {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: 0.6rem;
   padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
   border-radius: 12px;
+}
+
+/* 卡片主体：占满剩余空间，点哪里都能打开副本信息浮窗 */
+.dungeon-card .dungeon-card-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0;
+  border: 0;
+  background: none;
   text-align: left;
+}
+
+.dungeon-card-actions {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.dungeon-card-actions button {
+  padding: 0.35rem 0.9rem;
+  font-size: 0.9rem;
 }
 
 .dungeon-card-head {
@@ -641,6 +676,10 @@ ul.roster-cards {
 .dungeon-card-name {
   font-size: 1.05rem;
   font-weight: 600;
+}
+
+.dungeon-card .dungeon-card-main:hover:not(:disabled) .dungeon-card-name {
+  text-decoration: underline;
 }
 
 /* 整体设定最多三行，超出显示 …；全文在浮窗里 */

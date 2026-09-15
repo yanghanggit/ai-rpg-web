@@ -15,9 +15,9 @@
 ```text
 src/api/                 # 基础设施：传输层与契约适配，无业务功能
   schema.d.ts            #   生成物，只读
-  client.ts  query.ts  types.ts  serverInfo.ts
+  client.ts  query.ts  types.ts  serverInfo.ts  sse.ts  useTask.ts  describeApiError.ts
 src/pages/               # 路由级页面组件（每个 URL 一个）
-  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonPage.tsx  DevIndexPage.tsx
+  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx  DungeonRoomPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts
   blueprint/BlueprintDetails.tsx  blueprint/BlueprintInfoDialog.tsx  blueprint/useBlueprint.ts
@@ -84,6 +84,7 @@ pages ──┬──▶ features ──┬──▶ components
 
 - 只允许**上层依赖下层**：`api/` 不得 import `features/` 或 `pages/`；`components/` 不得 import `features/` 或 `pages/`。
 - **`features/` 之间不互相依赖**。需要共享时：与契约有关 → 下沉 `api/`；纯展示 → 下沉 `components/`；确实是新领域 → 新建 `<domain>`。
+- **唯一的例外：道具。** `features/items` 是「一件道具长什么样」的唯一实现——**解析**（`readItems` + `Item`）与**展示**（`ItemRow`，含名字 `×N`、中文类型 chip）都在那里，其它领域直接复用（现有使用者：`costume` 的穿/脱、`dungeon` 的出征点验），**不得另行解析、也不得另写一种样式**。理由：读 `ComponentSerialization.data` 是运行时逐字段校验，复制第二份等于把「字段名写错」的机会翻倍；展示分叉则会让同一种道具在两个浮窗里长得不一样。而且这是**单向**依赖（items 不反向依赖任何领域），不形成环。
 - `src/mocks/` 只被测试与 dev 入口引用，**不得进入生产代码**（`main.tsx` 中的引用由 `import.meta.env.DEV` 守卫，生产构建会被 tree-shake）。
 
 ## 四、命名之外的硬性约定

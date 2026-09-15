@@ -3,57 +3,17 @@ import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
 import CraftConfirmDialog from "./CraftConfirmDialog";
 import { collectMaterials } from "./collectMaterials";
-import type { Item, ItemType, MaterialTotal } from "./types";
+import ItemRow, { ITEM_TYPE_LABELS, itemText } from "./ItemRow";
+import type { MaterialTotal } from "./types";
 import { useCraftItem, type Workshop } from "./useCraftItem";
 import { useItemContainers } from "./useItemContainers";
 import { useMoveItem } from "./useMoveItem";
-
-const ITEM_TYPE_LABELS: Record<ItemType, string> = {
-  GearItem: "装备",
-  CostumeItem: "时装",
-  ConsumableItem: "消耗品",
-  MaterialItem: "材料",
-};
 
 const WORKSHOPS: { workshop: Workshop; label: string }[] = [
   { workshop: "consumable", label: "合成消耗品" },
   { workshop: "gear", label: "制造装备" },
   { workshop: "costume", label: "制作时装" },
 ];
-
-/** 显示名 + 数量后缀（`×N` 只在多于一件时出现）。 */
-function itemText(item: Item): string {
-  return item.count > 1 ? `${displayName(item.name)} ×${item.count}` : displayName(item.name);
-}
-
-/** 道具行：可移动的行带勾选框，不可移动的（储物箱里的时装）只标注。 */
-function ItemRow({
-  item,
-  selected,
-  onToggle,
-}: {
-  item: Item;
-  selected?: boolean;
-  onToggle?: () => void;
-}) {
-  return (
-    <li className="item-row">
-      {onToggle ? (
-        <input
-          type="checkbox"
-          checked={selected ?? false}
-          onChange={onToggle}
-          aria-label={`选择 ${item.name}`}
-        />
-      ) : (
-        <span className="chip">不可移动</span>
-      )}
-      <span className="mono item-name">{itemText(item)}</span>
-      <span className="chip">{ITEM_TYPE_LABELS[item.type]}</span>
-      <span className="muted item-desc">{item.description}</span>
-    </li>
-  );
-}
 
 /**
  * 道具管理浮窗。
@@ -197,6 +157,7 @@ export default function ItemManagerDialog({
                       ? () => setStorageSelection((previous) => toggle(previous, item.name))
                       : undefined
                   }
+                  note={movable ? undefined : "不可移动"}
                 />
               );
             })}

@@ -6,23 +6,9 @@
  * 两个接口都要求玩家在家园场景、成员是 NPC，否则返回 400——错误直接冒泡给页面。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ApiError, client, unwrap } from "../../api/client";
+import { client, unwrap } from "../../api/client";
+import { describeApiError } from "../../api/describeApiError";
 import { invalidateRoster } from "./invalidateRoster";
-
-/** 后端错误体形如 `{ detail: "..." }`；拿到就把这句话当作错误文案。 */
-function detailOf(body: unknown): string | null {
-  if (typeof body === "object" && body !== null && "detail" in body) {
-    return typeof body.detail === "string" && body.detail !== "" ? body.detail : null;
-  }
-  return null;
-}
-
-function describeError(error: unknown): string {
-  if (error instanceof ApiError) {
-    return detailOf(error.body) ?? error.message;
-  }
-  return error instanceof Error ? error.message : String(error);
-}
 
 export function useRosterAction(userName: string, gameName: string) {
   const queryClient = useQueryClient();
@@ -50,9 +36,9 @@ export function useRosterAction(userName: string, gameName: string) {
   // 两个动作共用一个错误位：新一轮操作前先清掉上一轮的结果，避免旧错误残留
   let error: string | null = null;
   if (add.isError) {
-    error = describeError(add.error);
+    error = describeApiError(add.error);
   } else if (remove.isError) {
-    error = describeError(remove.error);
+    error = describeApiError(remove.error);
   }
 
   return {

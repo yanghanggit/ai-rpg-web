@@ -36,8 +36,8 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
  * 「实体浏览器」打开 `EntityBrowserDialog`，把「场景 → 角色」mapping 一次性摊开，
  * 点名字即可打开对应的场景 / 角色信息浮窗——与点场景卡片等价，只是多一条宏观快捷入口。
- * 「副本」不属于浮窗：它切到 `DungeonPage`（`/game/:userName/:gameName/dungeon`）单独一屏，
- * 交接全部副本操作。
+ * 「副本」不属于浮窗：它切到 `DungeonOverviewPage`（`/game/:userName/:gameName/dungeon`）单独一屏，
+ * 交接副本总览、出征准备与「进入副本」；进入成功后会切到 `/dungeon/room`（副本进行中）。
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
  * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
