@@ -1,16 +1,25 @@
+import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
+import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
+import DungeonPanel from "../features/dungeon/DungeonPanel";
 import RosterPanel from "../features/dungeon/RosterPanel";
+import { useGenerateDungeon } from "../features/dungeon/useGenerateDungeon";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
 
 /**
  * 副本页：家园之外单独一屏，展开所有与副本相关的操作。
  *
- * 为什么是 page 而不是浮窗：副本操作是一组独立流程（队伍名单、生成 / 进入副本……），
+ * 为什么是 page 而不是浮窗：副本操作是一组独立流程（队伍名单、生成 / 查阅 / 进入副本……），
  * 内容会越滚越长，浮窗装不下，也容易和家园状态混淆。所以从家园页工具栏的「副本」
  * 按钮切过来，页面上再给「← 返回家园」切回去。
  *
- * 当前实现：队伍名单（`PartyRosterComponent` 的 add / remove）。
- * 玩家名由页面解析后传给 `RosterPanel`——页面是组合层，features 之间不互相依赖。
+ * 当前实现：
+ * - 「生成新副本」→ `POST /api/home/generate_dungeon/v1/`（异步 job，等任务完成再刷新列表）；
+ * - 「可用副本」列表 → `GET /api/home/dungeon-list/v1/`（磁盘上的静态模型数据），
+ *   点名字打开 `DungeonInfoDialog` 查阅，对应 TUI 的 `/list-dungeons` + `/dungeon @名`；
+ * - 队伍名单 → `PartyRosterComponent` 的 add / remove。
+ *
+ * 页面是组合层：玩家名解析后传给 `RosterPanel`（features 之间不互相依赖）。
  */
 export default function DungeonPage() {
   const { userName, gameName } = useParams();
@@ -30,18 +39,43 @@ export default function DungeonPage() {
 function Dungeon({ userName, gameName }: { userName: string; gameName: string }) {
   const navigate = useNavigate();
   const playerActor = usePlayerActor(userName, gameName);
+  const generate = useGenerateDungeon(userName, gameName);
+  // 正在查阅的副本（原始名）；非空即打开副本信息浮窗
+  const [infoDungeon, setInfoDungeon] = useState<string | null>(null);
+
+  let generateLabel = "生成新副本";
+  if (generate.isStarting) {
+    generateLabel = "提交中…";
+  } else if (generate.isRunning) {
+    generateLabel = "生成中…";
+  }
 
   return (
     <main className="page page--wide">
       <h1>副本</h1>
 
       <div className="toolbar">
+        <button
+          type="button"
+          disabled={generate.isStarting || generate.isRunning}
+          onClick={generate.start}
+        >
+          {generateLabel}
+        </button>
         <button type="button" onClick={() => navigate(`/game/${userName}/${gameName}/home`)}>
           ← 返回家园
         </button>
       </div>
 
+      {generate.error ? <p className="error">生成副本失败：{generate.error}</p> : null}
+
+      <DungeonPanel onSelect={setInfoDungeon} />
+
       <RosterPanel userName={userName} gameName={gameName} playerActor={playerActor.data ?? null} />
+
+      {infoDungeon ? (
+        <DungeonInfoDialog dungeonName={infoDungeon} onClose={() => setInfoDungeon(null)} />
+      ) : null}
     </main>
   );
 }

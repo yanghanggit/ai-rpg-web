@@ -26,6 +26,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   costume/StorageCostumeDialog.tsx  costume/useStorageCostumes.ts  costume/useCostumeAction.ts
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   dungeon/RosterPanel.tsx  dungeon/readPartyRoster.ts  dungeon/usePartyRoster.ts  dungeon/useRosterCandidates.ts  dungeon/useRosterAction.ts
+  dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeOverlay.tsx
 src/components/          # 通用展示逻辑（不含领域知识）
@@ -108,7 +109,7 @@ pages ──┬──▶ features ──┬──▶ components
 这是**游戏客户端**，不是表单系统。页面应该「像游戏一样可点」，所以设计准则是**尽量不用需要用户输入的控件**：
 
 - 能用点击解决的，就不要让用户打字。选择 / 切换 / 增删一律用按钮、chip、列表项完成。
-- **不要用「搜索框 / 筛选框 / 文本框」去解决列表变长的问题**。正确做法是**限高滚动列表**（必要时再做多列或分组），让规模由布局消化，而不是把负担转给玩家。
+- **不要用「搜索框 / 筛选框 / 文本框」去解决集合变长的问题**。让规模由**布局**消化：优先**卡片栅格**（一格一条、一行多张、自动换行），数量确实很大时再叠加**限高滚动**或分组。
 - 新增输入控件必须单独说明理由（属于「必须让用户给一个值」的情形），并在 review 时确认没有别的点选方案。
 
 现有**需要用户给值**的输入控件仅两处，均为不可替代的“给值”，不是自由输入：

@@ -402,3 +402,76 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
     },
   },
 ];
+
+/** 空文生图数据（GeneratedImage 的默认形态）。 */
+const emptyImage: Schemas["GeneratedImage"] = {
+  filename: "",
+  url: "",
+  prompt: "",
+  model: "",
+  local_path: "",
+};
+
+function dungeonActor(
+  name: string,
+  type: Schemas["ActorType"],
+  stats: Schemas["CharacterStats"],
+): Schemas["Actor"] {
+  return {
+    name,
+    type,
+    profile: "（mock）角色简介",
+    base_body: "（mock）基础身体",
+    system_message: "（mock）角色系统提示",
+    character_stats: stats,
+    components: [],
+  };
+}
+
+function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"] {
+  return {
+    name,
+    type: "Dungeon",
+    profile: `（mock）${name} 的场景简介。`,
+    system_message: "（mock）场景系统提示",
+    actors,
+    components: [],
+  };
+}
+
+/**
+ * 副本（**静态模型数据**）：`GET /api/home/dungeon-list/v1/` 返回的形状。
+ *
+ * 真实后端把副本存成磁盘 JSON（`game/config.py` 的 `DUNGEONS_DIR`），该接口读取全部文件。
+ * 这里给一个开场房间（探索）+ 一个战斗房间（含怪物），使「查阅」视图有意义。
+ */
+export const dungeonFixture: Schemas["Dungeon"] = {
+  name: "副本.荒村义庄",
+  profile: "（mock）荒村外的旧义庄：停柩不腐，夜里似有人影走动。",
+  created_at: "2026-09-11T12:00:00Z",
+  current_room_index: -1,
+  setup_entities: false,
+  image: emptyImage,
+  rooms: [
+    {
+      type: "opening",
+      initialized: false,
+      image: emptyImage,
+      stage: dungeonStage("场景.义庄前院", []),
+    },
+    {
+      type: "combat",
+      image: emptyImage,
+      combat: { name: "", state: 0, result: 0, rounds: [], retreated: false },
+      stage: dungeonStage("场景.停柩房", [
+        dungeonActor("怪物.纸人", "Monster", { hp: 9, max_hp: 9, attack: 3, defense: 1 }),
+        dungeonActor("怪物.棺中殭尸", "Monster", {
+          hp: 16,
+          max_hp: 16,
+          attack: 5,
+          defense: 2,
+        }),
+      ]),
+    },
+  ],
+};

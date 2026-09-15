@@ -3,9 +3,11 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
+import { generateMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
 import { addMockRosterMember } from "../mocks/roster";
+import { sseResponse } from "../mocks/sseResponse";
 import DungeonPage from "./DungeonPage";
 
 function renderDungeon() {
@@ -31,7 +33,58 @@ function rowButton(name: string, label: string): HTMLElement {
   return within(row).getByRole("button", { name: label });
 }
 
-describe("副本页 /game/:userName/:gameName/dungeon", () => {
+/** 让某个 job_id 的任务直接进入终态，避免测试真等 2 秒。 */
+const taskWith = (jobId: number, status: string) =>
+  http.get(api("/api/tasks/v1/watch/:jobId"), () =>
+    sseResponse([JSON.stringify({ job_id: jobId, status, error: null })]),
+  );
+
+describe("副本页 · 可用副本（静态模型数据）", () => {
+  it("展示副本列表：名字、房间数与整体设定", async () => {
+    renderDungeon();
+
+    expect(await screen.findByText("荒村义庄")).toBeInTheDocument();
+    expect(screen.getByText("2 个房间")).toBeInTheDocument();
+    expect(
+      screen.getByText("（mock）荒村外的旧义庄：停柩不腐，夜里似有人影走动。"),
+    ).toBeInTheDocument();
+  });
+
+  it("点副本卡片：浮窗展示房间、房间类型与敌人属性", async () => {
+    renderDungeon();
+
+    fireEvent.click(await screen.findByRole("button", { name: "查看副本：荒村义庄" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "副本信息" });
+    expect(within(dialog).getByText("义庄前院")).toBeInTheDocument();
+    expect(within(dialog).getByText("探索")).toBeInTheDocument();
+    expect(within(dialog).getByText("停柩房")).toBeInTheDocument();
+    expect(within(dialog).getByText("战斗")).toBeInTheDocument();
+    // 战斗房间列出敌人的 HP / ATK / DEF
+    expect(within(dialog).getByText("棺中殭尸")).toBeInTheDocument();
+    expect(within(dialog).getByText(/HP 16/)).toBeInTheDocument();
+    // 开场房间没有敌人
+    expect(within(dialog).getByText("（无敌人）")).toBeInTheDocument();
+  });
+
+  it("生成新副本：触发任务，完成后列表出现新副本", async () => {
+    server.use(
+      http.post(api("/api/home/generate_dungeon/v1/"), () => {
+        generateMockDungeon();
+        return HttpResponse.json({ job_id: 7, message: "mock 副本生成任务已启动" });
+      }),
+      taskWith(7, "succeeded"),
+    );
+    renderDungeon();
+
+    await screen.findByText("荒村义庄");
+    fireEvent.click(screen.getByRole("button", { name: "生成新副本" }));
+
+    expect(await screen.findByText("试炼之地1")).toBeInTheDocument();
+  });
+});
+
+describe("副本页 · 队伍名单", () => {
   it("展示当前队伍（玩家）与可加入的同伴", async () => {
     renderDungeon();
 

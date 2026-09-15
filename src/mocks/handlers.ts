@@ -9,6 +9,7 @@
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
 import type { ApiBody, Schemas } from "../api/types";
+import { generateMockDungeon, readMockDungeons } from "./dungeons";
 import {
   blueprintFixture,
   blueprintListFixture,
@@ -239,6 +240,27 @@ export const handlers = [
       return HttpResponse.json({ detail: result.error }, { status: 400 });
     }
     return HttpResponse.json({ message: `mock 已将 ${body.member_name} 从队伍移除` });
+  }),
+
+  // 副本列表：磁盘上的静态模型数据，客户端据此做「查阅」
+  http.get(api("/api/home/dungeon-list/v1/"), () =>
+    HttpResponse.json({ dungeons: readMockDungeons() }),
+  ),
+
+  // 生成副本：真实后端是异步 pipeline（只返回 job_id），mock 里同步追加一份并追一条叙事
+  http.post(api("/api/home/generate_dungeon/v1/"), () => {
+    const dungeon = generateMockDungeon();
+    appendMockSessionMessage({
+      type: "announce",
+      message: `（mock）已生成新副本：${dungeon.name}。`,
+      actor: "旁白",
+      stage: "场景.门厅",
+      content: `已生成新副本：${dungeon.name}。`,
+    });
+    return HttpResponse.json({
+      job_id: createMockTask(),
+      message: "mock 副本生成任务已启动",
+    });
   }),
 
   // 增量拉取：只返回 sequence_id 更大的消息
