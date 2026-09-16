@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";
 import { mergeSessionMessages } from "./mergeSessionMessages";
+import { sessionKey } from "./sessionKey";
 
 /** 会话消息端点路径：供前缀失效使用（游标在 key 里，无法用完整 key 匹配）。 */
 export const SESSION_MESSAGES_PATH = "/api/session_messages/v1/{user_name}/{game_name}/since";
@@ -38,7 +39,7 @@ export function useSessionMessages(
   // `hasLoaded` 表示"当前会话的累积已经吸收过至少一次响应"。不能拿 `isPending` 代替：
   // 合并是在下面的 effect 里完成的，所以 `isPending` 变 false 的那一帧 messages 还是空的，
   // 调用方（如未读计数）会据此把基线记错。
-  const session = `${userName}\u0000${gameName}`;
+  const session = sessionKey(userName, gameName);
   const [accumulated, setAccumulated] = useState<{
     session: string;
     messages: SessionMessage[];

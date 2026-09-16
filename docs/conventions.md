@@ -38,7 +38,8 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   entities/invalidateEntities.ts
   cards/CardItem.tsx  cards/readCard.ts  cards/readCards.ts  cards/types.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
-  session/useSessionMessages.ts  session/NarrativeOverlay.tsx
+  session/useSessionMessages.ts  session/NarrativeButton.tsx  session/NarrativeOverlay.tsx
+  session/sessionKey.ts  session/unreadBaselines.ts  session/useUnreadCount.ts
 src/components/          # 通用展示逻辑（不含领域知识）
   displayName.ts         #   服务器名字 → 显示名，名字显示的唯一规则入口
 src/mocks/               # mock fixtures / handlers / browser / node（测试与 dev 共用）

@@ -12,7 +12,7 @@
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../api/client";
-import { invalidateEntities } from "../entities/invalidateEntities";
+import { invalidateEntitiesAndMessages } from "../entities/invalidateEntities";
 import { invalidateDungeons } from "./invalidateDungeons";
 
 export function useAdvanceStage(userName: string, gameName: string) {
@@ -27,7 +27,8 @@ export function useAdvanceStage(userName: string, gameName: string) {
       ),
     onSuccess: () => {
       invalidateDungeons(queryClient);
-      invalidateEntities(queryClient);
+      // 后端在推进时就地追加叙事，所以口径与开场三个动作一致：不等 3s 轮询
+      invalidateEntitiesAndMessages(queryClient);
     },
   });
 }

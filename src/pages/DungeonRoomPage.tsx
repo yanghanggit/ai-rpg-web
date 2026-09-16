@@ -8,6 +8,7 @@ import OpeningRoomPanel from "../features/dungeon/OpeningRoomPanel";
 import { useDungeonRoom } from "../features/dungeon/useDungeonRoom";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useExitDungeon } from "../features/dungeon/useExitDungeon";
+import NarrativeButton from "../features/session/NarrativeButton";
 
 /**
  * 副本进行中（房间页）：**房间类型的共同框架**。
@@ -18,8 +19,12 @@ import { useExitDungeon } from "../features/dungeon/useExitDungeon";
  * 这一层只做所有房间都**相同**的事：
  * - 拉当前房间（`GET /api/dungeons/v1/{user}/{game}/room`）与运行中的副本（`/state`）；
  * - 标题 = **房间名**（`room.stage.name`；房间模型没有自己的名字）；
- * - 顶部动作区：「副本信息」（展示副本**进度**）与「离开副本」；
+ * - 顶部动作区：「副本信息」（展示副本**进度**）、「叙事」（与家园页共用 `NarrativeButton`）
+ *   与「离开副本」；
  * - 房间专属内容交给 `DungeonRoomBody`（按判别字段 `room.type` 分发）。
+ *
+ * 「叙事」放在这一层而不是某个房间体内：会话消息是**全局**的（本局所有事件），
+ * 战斗房间也会产生叙事，所以它不是开场房间独有的东西。
  *
  * 刻意**不**提供「返回副本总览」：按游戏逻辑，离开副本就是回家园（`→ /game/.../home`），
  * 副本进行中也没有别的去处。
@@ -91,6 +96,7 @@ function DungeonRoom({ userName, gameName }: { userName: string; gameName: strin
             >
               副本信息
             </button>
+            <NarrativeButton userName={userName} gameName={gameName} />
             <button type="button" disabled={exit.isBusy} onClick={exit.start}>
               {exit.isBusy ? "退出中…" : "离开副本"}
             </button>

@@ -15,9 +15,7 @@ import { useSwitchStage } from "../features/home/useSwitchStage";
 import ActorInfoDialog from "../features/identity/ActorInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
 import ItemManagerDialog from "../features/items/ItemManagerDialog";
-import NarrativeOverlay from "../features/session/NarrativeOverlay";
-import { useSessionMessages } from "../features/session/useSessionMessages";
-import { useUnreadCount } from "../features/session/useUnreadCount";
+import NarrativeButton from "../features/session/NarrativeButton";
 import StageInfoDialog from "../features/stage/StageInfoDialog";
 
 /**
@@ -41,8 +39,9 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
  * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
  *
- * 叙事不在这里展开（历史事件在浮层里看），所以页面上只留一个带「已看 / 总共」数字的
- * 通知按钮：右边大于左边就说明有新事件没看。
+ * 叙事不在这里展开（历史事件在浮层里看），页面上只留一个通知按钮——与副本房间页共用
+ * `NarrativeButton`（带「已看 / 总共」数字，右边大于左边即有新事件未看）。未读基线是
+ * 会话级的、跨屏存活的，所以进副本期间产生的事件回家园后仍会点亮这个按钮。
  *
  * 会话来自 URL（/game/:userName/:gameName/home），本页可被直接深链。
  */
@@ -80,7 +79,6 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   // 玩家角色名用于判断「当前在哪个场景」；缓存未命中时回退查询 group 端点
   const playerActor = usePlayerActor(userName, gameName);
   const currentStage = findStageOfActor(mapping, playerActor.data ?? null);
-  const session = useSessionMessages(userName, gameName);
   const logout = useLogout(userName, gameName);
   const costume = useCostumeAction(userName, gameName);
   const hasActors = actors.length > 0;
@@ -88,7 +86,6 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const isBusy =
     advance.isStarting || advance.isRunning || switchStage.isStarting || switchStage.isRunning;
 
-  const [isNarrativeOpen, setIsNarrativeOpen] = useState(false);
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
   // 正在查看的角色（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
@@ -99,11 +96,6 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
   const [isEntityBrowserOpen, setIsEntityBrowserOpen] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
-
-  // 通知按钮上的两个数字：已看 / 总共。右大于左即"有新事件没看"
-  const total = session.messages.length;
-  const unread = useUnreadCount(total, session.hasLoaded, isNarrativeOpen);
-  const seen = total - unread;
 
   // 人数直接写在按钮上，页面上就不再需要那句解释文案
   let buttonLabel = `推进一步 · ${actors.length} 个角色`;
@@ -158,15 +150,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           副本
         </button>
 
-        <button
-          type="button"
-          className={unread > 0 ? "count-button count-button--unread" : "count-button"}
-          title={unread > 0 ? `有 ${unread} 条新事件未查看` : "没有新事件"}
-          aria-label={`查看叙事事件（已看 ${seen} 条，共 ${total} 条）`}
-          onClick={() => setIsNarrativeOpen(true)}
-        >
-          叙事 {seen} / {total}
-        </button>
+        <NarrativeButton userName={userName} gameName={gameName} />
         <button type="button" onClick={() => setIsLogoutOpen(true)}>
           ← 返回上一级
         </button>
@@ -247,10 +231,6 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           </div>
         ) : null}
       </section>
-
-      {isNarrativeOpen ? (
-        <NarrativeOverlay messages={session.messages} onClose={() => setIsNarrativeOpen(false)} />
-      ) : null}
 
       {infoActor ? (
         <ActorInfoDialog

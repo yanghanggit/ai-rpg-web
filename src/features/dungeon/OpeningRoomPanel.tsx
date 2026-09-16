@@ -3,8 +3,6 @@ import { describeApiError } from "../../api/describeApiError";
 import type { Schemas } from "../../api/types";
 import { displayName } from "../../components/displayName";
 import CardItem from "../cards/CardItem";
-import NarrativeOverlay from "../session/NarrativeOverlay";
-import { useSessionMessages } from "../session/useSessionMessages";
 import { readStageInfo } from "../stage/readStageInfo";
 import { useStageEntity } from "../stage/useStageEntity";
 import AdvanceRoomDialog from "./AdvanceRoomDialog";
@@ -18,11 +16,14 @@ import { useOpeningParty } from "./useOpeningParty";
  *
  * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 进入下一关」：
  * - 场景环境叙述（当前场景的 `EnvironmentComponent`，副本初始化时生成）；
- * - 三个动作按钮 + 叙事入口；
+ * - 当前该做的动作按钮；
  * - 队伍准备：每个成员一段，奖励候选 3 张（各带「挑选」），牌组点开浮窗看。
  *
- * 这里**只放开场房间独有的东西**——标题、副本信息、离开副本属于外层框架
+ * 这里**只放开场房间独有的东西**——标题、副本信息、叙事入口、离开副本属于外层框架
  * （`DungeonRoomPage`），不在这一层重复。
+ *
+ * 注意这一层的「叙事」二字指场景环境叙述（`opening-narrative` 段），与按钮打开的
+ * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。
  *
  * 「挑选」不做二次确认：奖励标题写明「3 选 1，其余作废」，防误触靠**显式按钮**而不是弹窗
  * （与队伍名单的「加入 / 移出」同一套心智）。
@@ -41,14 +42,11 @@ export default function OpeningRoomPanel({
   const actions = useOpeningActions(userName, gameName);
   const advance = useAdvanceStage(userName, gameName);
   const run = useDungeonRun(userName, gameName);
-  const session = useSessionMessages(userName, gameName);
 
   // 正在看牌组的成员（原始名）；非空即打开牌组浮窗
   const [deckMember, setDeckMember] = useState<string | null>(null);
   // 是否打开「进入下一关」确认框
   const [isAdvanceOpen, setIsAdvanceOpen] = useState(false);
-  // 是否打开叙事浮层
-  const [isNarrativeOpen, setIsNarrativeOpen] = useState(false);
 
   const narrative =
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
@@ -84,9 +82,6 @@ export default function OpeningRoomPanel({
         ) : null}
         <button type="button" onClick={() => setIsAdvanceOpen(true)}>
           进入下一关
-        </button>
-        <button type="button" onClick={() => setIsNarrativeOpen(true)}>
-          叙事
         </button>
       </div>
 
@@ -165,10 +160,6 @@ export default function OpeningRoomPanel({
             setIsAdvanceOpen(false);
           }}
         />
-      ) : null}
-
-      {isNarrativeOpen ? (
-        <NarrativeOverlay messages={session.messages} onClose={() => setIsNarrativeOpen(false)} />
       ) : null}
     </>
   );

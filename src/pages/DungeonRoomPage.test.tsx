@@ -68,14 +68,25 @@ describe("副本房间 · 共同框架", () => {
     expect(await screen.findByRole("heading", { name: "义庄前院" })).toBeInTheDocument();
   });
 
-  it("顶部动作区只有「副本信息」与「离开副本」（没有返回副本总览的入口）", async () => {
+  it("顶部动作区：副本信息 / 叙事 / 离开副本（没有返回副本总览的入口）", async () => {
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
     await screen.findByRole("heading", { name: "义庄前院" });
     expect(screen.getByRole("button", { name: "副本信息" })).toBeInTheDocument();
+    // 叙事入口在共同框架（不分房间类型），与家园页共用同一个组件
+    expect(screen.getByRole("button", { name: /查看叙事事件/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "离开副本" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /返回副本总览/ })).not.toBeInTheDocument();
+  });
+
+  it("叙事入口：打开浮层看这一局的事件", async () => {
+    enterMockDungeon("副本.荒村义庄");
+    renderRoom();
+
+    fireEvent.click(await screen.findByRole("button", { name: /查看叙事事件/ }));
+
+    expect(await screen.findByRole("dialog", { name: "全部叙事" })).toBeInTheDocument();
   });
 
   it("副本信息：展示副本进度，并标出队伍当前所在的房间", async () => {
@@ -146,7 +157,7 @@ describe("副本房间 · 开场房间", () => {
     // 奖励依赖初始化，所以这时不给这个按钮
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "进入下一关" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "叙事" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /查看叙事事件/ })).toBeInTheDocument();
   });
 
   it("初始化 → 生成奖励：每个成员出现 3 张候选卡（各带「挑选」）", async () => {
@@ -217,13 +228,13 @@ describe("副本房间 · 开场房间", () => {
     expect(within(dialog).getByText("不可出牌")).toBeInTheDocument();
   });
 
-  it("叙事入口：打开浮层看这一局的事件", async () => {
+  it("叙事入口不再放在开场房间体内（它是共同框架的一部分）", async () => {
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
-    fireEvent.click(await screen.findByRole("button", { name: "叙事" }));
-
-    expect(await screen.findByRole("dialog", { name: "全部叙事" })).toBeInTheDocument();
+    // 叙事按钮只有一个（在顶部动作区），开场房间不再各自渲染一份
+    await screen.findByRole("heading", { name: "义庄前院" });
+    expect(screen.getAllByRole("button", { name: /查看叙事事件/ })).toHaveLength(1);
   });
 
   it("进入下一关：确认框列出下一间与准备状态，确认后落到战斗房间", async () => {
