@@ -732,7 +732,7 @@ ol.dungeon-rooms {
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 
 /* 环境叙述：这一屏的正文开场白（房间名由页面标题给出）。
-   页面是宽屏页（奖励候选要并排比较），但散文限宽——可读行长与全站文字页一致。
+   页面是宽屏页（队伍卡横排），但散文限宽——可读行长与全站文字页一致。
    始终占位的固定区：加载中 / 空也保留高度，避免下方按钮与内容跳动。 */
 .opening-narrative {
   max-width: 42rem;
@@ -745,14 +745,17 @@ ol.dungeon-rooms {
   margin: 0;
 }
 
-/* 队伍准备里每个成员一段（段头复用 .section-head） */
-.opening-member .section-head {
-  margin-top: 1.75rem;
+/* 队伍成员卡：卡头的角色名可点开角色信息；卡内按钮并排（覆盖 .card-actions 的整行按钮）。
+   横排卡片就是「队伍站位」的 UX 雏形。 */
+.actor-card .card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
 }
 
-.opening-member .section-head h3 {
-  margin: 0;
-  font-size: 1.1rem;
+.actor-card .card-actions button {
+  width: auto;
+  flex: 1 1 auto;
 }
 
 /* 卡牌：奖励（Spoils）候选与牌组共用（栅格参数与副本卡 / 角色卡一致，宽度自然对齐） */
@@ -763,6 +766,11 @@ ul.card-tiles {
   margin: 0.75rem 0 0;
   padding: 0;
   list-style: none;
+}
+
+/* 奖励浮窗里竖排：一次只看一个成员的候选，纵向逐张读比并排更好 */
+ul.card-tiles--stack {
+  grid-template-columns: 1fr;
 }
 
 .card-tile {

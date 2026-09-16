@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it, vi } from "vitest";
+import { displayName } from "../components/displayName";
 import { enterMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
@@ -77,11 +78,20 @@ const failingInit = (spy: () => void) =>
 /** 进入开场房间会自动初始化；等它完成（`生成奖励` 出现即代表 `initialized=true`）。 */
 const waitForInit = () => screen.findByRole("button", { name: "生成奖励" });
 
-/** 走完「（自动）初始化 → 生成奖励」，进入可挑卡的状态。 */
-async function prepareSpoils() {
+/** 走完「（自动）初始化 → 生成奖励」，角色卡上出现「奖励」按钮即就绪。 */
+async function generateSpoils() {
   fireEvent.click(await waitForInit());
-  // 生成奖励也是任务，等候选卡真的出来再交给用例
-  await screen.findAllByRole("button", { name: /^挑选 / });
+  await screen.findAllByRole("button", { name: "奖励" });
+}
+
+/** 打开某个成员的奖励浮窗：点其角色卡上的「奖励」按钮。 */
+async function openSpoils(memberName: string) {
+  const card = screen.getByRole("button", { name: displayName(memberName) }).closest("article");
+  if (!(card instanceof HTMLElement)) {
+    throw new Error(`找不到 ${memberName} 的角色卡`);
+  }
+  fireEvent.click(within(card).getByRole("button", { name: "奖励" }));
+  return screen.findByRole("dialog", { name: "奖励" });
 }
 
 describe("副本房间 · 共同框架", () => {
@@ -200,6 +210,19 @@ describe("副本房间 · 开场房间", () => {
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(2));
   });
 
+  it("队伍区：标题是「队伍」、玩家卡片标「玩家」，不再有「3 选 1」提示", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒村义庄");
+    renderRoom();
+
+    expect(await screen.findByRole("heading", { name: "队伍" })).toBeInTheDocument();
+    // 玩家徽章叫「玩家」，不叫「你」
+    expect(await screen.findByText("玩家")).toBeInTheDocument();
+    expect(screen.queryByText("你")).not.toBeInTheDocument();
+    // 旧的奖励提示句已删掉
+    expect(screen.queryByText(/3 选 1/)).not.toBeInTheDocument();
+  });
+
   it("进入开场房间自动初始化一次；完成前不给「生成奖励」", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
@@ -210,17 +233,22 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.queryByRole("button", { name: "初始化开场" })).not.toBeInTheDocument();
   });
 
-  it("生成奖励：每个成员出现 3 张候选卡（各带「挑选」）", async () => {
+  it("生成奖励：不摊在页面上，角色卡出现「奖励」按钮，弹窗里竖排 3 张候选", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
-    await prepareSpoils();
+    await generateSpoils();
 
-    expect(await screen.findByRole("button", { name: "挑选 火折子" })).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
-    expect(screen.getByText("奖励 3 选 1，挑走一张后其余作废")).toBeInTheDocument();
-    // 生成后奖励按钮收起（同一时间只给「当前该做的那一步」）
+    // 奖励不在页面上展开，只在卡上留一个按钮
+    expect(screen.getByRole("button", { name: "奖励" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
+
+    const dialog = await openSpoils("角色.无名");
+    expect(within(dialog).getByRole("button", { name: "挑选 火折子" })).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
+
+    // 生成后「生成奖励」按钮收起
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
 
@@ -228,15 +256,16 @@ describe("副本房间 · 开场房间", () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
-    await prepareSpoils();
+    await generateSpoils();
     expect(await screen.findByText("牌组 3 张")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "挑选 火折子" }));
+    const dialog = await openSpoils("角色.无名");
+    fireEvent.click(within(dialog).getByRole("button", { name: "挑选 火折子" }));
 
     // 牌组 +1；候选仍在（供回看），但「挑选」按钮消失
     expect(await screen.findByText("牌组 4 张")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
-    expect(screen.getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
+    expect(within(dialog).getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
     // 组件保留作为守卫：生成按钮不再回来
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
@@ -246,22 +275,37 @@ describe("副本房间 · 开场房间", () => {
     addMockRosterMember("角色.顾知秋");
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
-    await prepareSpoils();
+    await generateSpoils();
 
-    // 两个人各 3 张候选
-    expect(await screen.findAllByRole("button", { name: /^挑选 / })).toHaveLength(6);
+    // 两个人各有一个「奖励」按钮
+    expect(screen.getAllByRole("button", { name: "奖励" })).toHaveLength(2);
 
-    const qiuzhiSection = screen.getByRole("heading", { name: "顾知秋" }).closest("section");
-    if (!(qiuzhiSection instanceof HTMLElement)) {
-      throw new Error("找不到顾知秋那一段");
-    }
-    fireEvent.click(within(qiuzhiSection).getByRole("button", { name: "挑选 镇棺符" }));
+    const qiuzhi = await openSpoils("角色.顾知秋");
+    fireEvent.click(within(qiuzhi).getByRole("button", { name: "挑选 镇棺符" }));
 
-    // 顾知秋已领取（候选保留、按钮消失），玩家那边还是 3 张待挑
+    // 顾知秋已领取（候选保留、按钮消失）
     expect(
-      await within(qiuzhiSection).findByText("（已领取，以下为本次候选，仅供参考）"),
+      await within(qiuzhi).findByText("（已领取，以下为本次候选，仅供参考）"),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
+    fireEvent.click(within(qiuzhi).getByRole("button", { name: "关闭" }));
+
+    // 玩家那边还是 3 张待挑
+    const player = await openSpoils("角色.无名");
+    expect(within(player).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
+  });
+
+  it("角色卡片：点名字开角色信息（副本里不提供时装入口）", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒村义庄");
+    renderRoom();
+
+    fireEvent.click(await screen.findByRole("button", { name: "无名" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    await within(dialog).findByText("属性");
+    // 副本进行中家园接口会被拒，所以隐藏时装区
+    expect(within(dialog).queryByRole("heading", { name: "时装" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /时装/ })).not.toBeInTheDocument();
   });
 
   it("牌组浮窗：点开看这个成员现在有哪些牌", async () => {

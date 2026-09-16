@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { describeApiError } from "../../api/describeApiError";
 import type { Schemas } from "../../api/types";
 import { displayName } from "../../components/displayName";
-import CardItem from "../cards/CardItem";
+import ActorInfoDialog from "../identity/ActorInfoDialog";
 import { readStageInfo } from "../stage/readStageInfo";
 import { useStageEntity } from "../stage/useStageEntity";
 import AdvanceRoomDialog from "./AdvanceRoomDialog";
 import DeckDialog from "./DeckDialog";
+import SpoilsDialog from "./SpoilsDialog";
 import { useAdvanceStage } from "./useAdvanceStage";
 import { useDungeonRun } from "./useDungeonRun";
 import { useOpeningActions } from "./useOpeningActions";
@@ -18,7 +19,9 @@ import { useOpeningParty } from "./useOpeningParty";
  * - 场景环境叙述（当前场景的 `EnvironmentComponent`）：**始终占位**的固定区（加载中 / 空也保留
  *   高度，避免下方按钮与内容跳动），放在动作按钮上方；
  * - 当前该做的动作按钮；
- * - 队伍准备：每个成员一段，奖励候选 3 张（各带「挑选」），牌组点开浮窗看。
+ * - **队伍**：横排的角色卡（顺序即后端给的队伍顺序，玩家在前），点卡上的名字开角色信息浮窗、
+ *   卡上有「查看牌组」；有奖励时多一个「奖励」按钮，点开在浮窗里**竖排**候选卡挑选。
+ *   横排卡片就是「队伍站位」的 UX 雏形。
  *
  * **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务；
  * 失败不自动重试，把「初始化开场」按钮留给玩家手动重试（服务端要求先初始化才能推进 / 退出）。
@@ -29,8 +32,8 @@ import { useOpeningParty } from "./useOpeningParty";
  * 注意这一层的「叙事」二字指场景环境叙述（`opening-narrative` 段），与按钮打开的
  * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。
  *
- * 「挑选」不做二次确认：奖励标题写明「3 选 1，其余作废」，防误触靠**显式按钮**而不是弹窗
- * （与队伍名单的「加入 / 移出」同一套心智）。
+ * **奖励渐进式披露**：不摊在页面上，角色卡上只留「奖励」按钮，点开才展开候选卡。「挑选」
+ * 不做二次确认，防误触靠卡片上的显式按钮（与队伍名单的「加入 / 移出」同一套心智）。
  */
 export default function OpeningRoomPanel({
   userName,
@@ -54,6 +57,10 @@ export default function OpeningRoomPanel({
 
   // 正在看牌组的成员（原始名）；非空即打开牌组浮窗
   const [deckMember, setDeckMember] = useState<string | null>(null);
+  // 正在看奖励的成员（原始名）；非空即打开奖励浮窗
+  const [spoilsMember, setSpoilsMember] = useState<string | null>(null);
+  // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
+  const [infoActor, setInfoActor] = useState<string | null>(null);
   // 是否打开「进入下一关」确认框
   const [isAdvanceOpen, setIsAdvanceOpen] = useState(false);
 
@@ -78,9 +85,10 @@ export default function OpeningRoomPanel({
     (member) => member.spoils !== null && !member.spoils.claimed,
   );
   const deckCards = party.party.find((member) => member.name === deckMember)?.deck ?? [];
+  const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 
-  // 开场动作失败的原因（三个动作共用一条文案位置：它们本就串行）
-  const actionError = actions.init.error ?? actions.spoils.error ?? actions.pickCard.error;
+  // 页面级动作失败的原因（初始化 / 生成奖励）；领卡失败在奖励浮窗内显示
+  const actionError = actions.init.error ?? actions.spoils.error;
 
   return (
     <>
@@ -126,60 +134,69 @@ export default function OpeningRoomPanel({
 
       <section aria-labelledby="opening-party-heading">
         <div className="section-head">
-          <h2 id="opening-party-heading">队伍准备</h2>
-          <span className="muted">奖励 3 选 1，挑走一张后其余作废</span>
+          <h2 id="opening-party-heading">队伍</h2>
         </div>
 
         {party.isPending ? <p className="muted">加载中…</p> : null}
 
-        {party.party.map((member) => (
-          <section key={member.name} className="opening-member">
-            <div className="section-head">
-              <h3>
-                {displayName(member.name)}
-                {member.player ? <span className="badge">你</span> : null}
-              </h3>
-              <span className="muted">牌组 {member.deck.length} 张</span>
-              <button type="button" onClick={() => setDeckMember(member.name)}>
-                查看牌组
-              </button>
-            </div>
+        {/* 横排的角色卡：顺序沿用后端给的队伍顺序（玩家在前），就是「站位」的 UX 雏形 */}
+        <div className="cards">
+          {party.party.map((member) => (
+            <article key={member.name} className="card actor-card">
+              <div className="card-head">
+                {/* 点名字开角色信息（与家园页的角色 chip 同一交互） */}
+                <button
+                  type="button"
+                  className="chip chip-button mono"
+                  onClick={() => setInfoActor(member.name)}
+                >
+                  {displayName(member.name)}
+                </button>
+                {member.player ? <span className="badge">玩家</span> : null}
+              </div>
 
-            {member.spoils === null ? (
-              <p className="muted">（尚未生成奖励）</p>
-            ) : (
-              <>
-                {member.spoils.claimed ? (
-                  <p className="muted">（已领取，以下为本次候选，仅供参考）</p>
-                ) : null}
-                <ul className="card-tiles">
-                  {member.spoils.cards.map((card) => (
-                    <CardItem
-                      key={card.uuid}
-                      card={card}
-                      action={
-                        member.spoils?.claimed ? null : (
-                          <button
-                            type="button"
-                            disabled={actions.isBusy}
-                            aria-label={`挑选 ${card.name}`}
-                            onClick={() => actions.pickCard.start(member.name, card.name)}
-                          >
-                            挑选
-                          </button>
-                        )
-                      }
-                    />
-                  ))}
-                </ul>
-              </>
-            )}
-          </section>
-        ))}
+              <p className="muted">牌组 {member.deck.length} 张</p>
+
+              <div className="card-actions">
+                <button type="button" onClick={() => setDeckMember(member.name)}>
+                  查看牌组
+                </button>
+                {/* 奖励候选不摊在页面上：有奖励时卡上多一个「奖励」按钮，点开浮窗看 */}
+                {member.spoils === null ? null : (
+                  <button type="button" onClick={() => setSpoilsMember(member.name)}>
+                    奖励
+                  </button>
+                )}
+              </div>
+            </article>
+          ))}
+        </div>
       </section>
 
       {deckMember === null ? null : (
         <DeckDialog memberName={deckMember} cards={deckCards} onClose={() => setDeckMember(null)} />
+      )}
+
+      {spoilsMember === null || spoilsOf === null ? null : (
+        <SpoilsDialog
+          memberName={spoilsMember}
+          spoils={spoilsOf}
+          busy={actions.isBusy}
+          error={actions.pickCard.error}
+          onPick={(cardName) => actions.pickCard.start(spoilsMember, cardName)}
+          onClose={() => setSpoilsMember(null)}
+        />
+      )}
+
+      {infoActor === null ? null : (
+        <ActorInfoDialog
+          userName={userName}
+          gameName={gameName}
+          actorName={infoActor}
+          // 副本进行中家园接口会被拒，角色信息里不提供穿/脱时装
+          costumeEnabled={false}
+          onClose={() => setInfoActor(null)}
+        />
       )}
 
       {isAdvanceOpen ? (

@@ -10,12 +10,16 @@ import { useActorEntity } from "./useActorEntity";
  * 展示该角色实体上必要的组件信息（Identity / Appearance / CharacterStats，玩家另有
  * PlayerComponent，穿着时装则有 WornCostumeComponent），并提供穿/脱时装入口。
  * `data` 的逐字段校验见 `readActorInfo`——字段缺失就显示占位，不猜。
+ *
+ * `costumeEnabled`：副本进行中家园接口会被后端拒绝，所以副本里关掉穿/脱时装入口
+ * （与 `ItemManagerDialog` 的 `craftEnabled` 同一手法：同一个浮窗给不同场景用，靠能力开关区分）。
  */
 export default function ActorInfoDialog({
   userName,
   gameName,
   actorName,
   busy = false,
+  costumeEnabled = true,
   costumeBusy = false,
   costumeError = null,
   onWearCostume,
@@ -27,11 +31,13 @@ export default function ActorInfoDialog({
   actorName: string;
   /** 家园页已有 pipeline 动作在跑时为 true。 */
   busy?: boolean;
+  /** 是否提供穿/脱时装入口；副本进行中传 false（家园接口会被拒）。 */
+  costumeEnabled?: boolean;
   /** 穿/脱时装任务在跑时为 true。 */
   costumeBusy?: boolean;
   costumeError?: string | null;
-  onWearCostume: () => void;
-  onRemoveCostume: () => void;
+  onWearCostume?: () => void;
+  onRemoveCostume?: () => void;
   onClose: () => void;
 }) {
   const entity = useActorEntity(userName, gameName, actorName);
@@ -89,36 +95,40 @@ export default function ActorInfoDialog({
             <p className="muted">（无外观数据）</p>
           )}
 
-          <h3>时装</h3>
-          {info.worn_costume ? (
-            <dl className="facts">
-              <dt>穿着中</dt>
-              <dd>
-                {displayName(info.worn_costume.name)}
-                {info.worn_costume.description ? ` —— ${info.worn_costume.description}` : ""}
-              </dd>
-            </dl>
-          ) : (
-            <p className="muted">（未穿戴时装）</p>
-          )}
+          {costumeEnabled ? (
+            <>
+              <h3>时装</h3>
+              {info.worn_costume ? (
+                <dl className="facts">
+                  <dt>穿着中</dt>
+                  <dd>
+                    {displayName(info.worn_costume.name)}
+                    {info.worn_costume.description ? ` —— ${info.worn_costume.description}` : ""}
+                  </dd>
+                </dl>
+              ) : (
+                <p className="muted">（未穿戴时装）</p>
+              )}
 
-          <div className="modal-actions">
-            {info.worn_costume ? (
-              <>
-                <button type="button" disabled={actionsDisabled} onClick={onWearCostume}>
-                  换一件时装
-                </button>
-                <button type="button" disabled={actionsDisabled} onClick={onRemoveCostume}>
-                  脱下时装
-                </button>
-              </>
-            ) : (
-              <button type="button" disabled={actionsDisabled} onClick={onWearCostume}>
-                穿时装
-              </button>
-            )}
-          </div>
-          {costumeError ? <p className="error">时装操作失败：{costumeError}</p> : null}
+              <div className="modal-actions">
+                {info.worn_costume ? (
+                  <>
+                    <button type="button" disabled={actionsDisabled} onClick={onWearCostume}>
+                      换一件时装
+                    </button>
+                    <button type="button" disabled={actionsDisabled} onClick={onRemoveCostume}>
+                      脱下时装
+                    </button>
+                  </>
+                ) : (
+                  <button type="button" disabled={actionsDisabled} onClick={onWearCostume}>
+                    穿时装
+                  </button>
+                )}
+              </div>
+              {costumeError ? <p className="error">时装操作失败：{costumeError}</p> : null}
+            </>
+          ) : null}
         </>
       ) : null}
     </Modal>
