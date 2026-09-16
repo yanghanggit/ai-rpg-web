@@ -34,7 +34,6 @@ export default function DungeonPanel({
     <section aria-labelledby="dungeon-list-heading">
       <div className="section-head">
         <h2 id="dungeon-list-heading">可用副本</h2>
-        <span className="muted">服务器上已生成的副本 · 点卡片查看静态数据</span>
       </div>
 
       {dungeons.isPending ? <p className="muted">加载中…</p> : null}

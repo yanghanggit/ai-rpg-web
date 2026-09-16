@@ -1,14 +1,17 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { enterMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
 import { addMockRosterMember } from "../mocks/roster";
 import { sseResponse } from "../mocks/sseResponse";
 import DungeonRoomPage from "./DungeonRoomPage";
+
+/** 开场房间的标题：副本名 (当前/总数) 房间名。 */
+const OPENING_HEADING = "荒村义庄 (1/2) 义庄前院";
 
 function renderRoom() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -24,21 +27,19 @@ function renderRoom() {
   );
 }
 
-/** 让某个 job_id 的任务直接进入终态，避免测试真等 2 秒。 */
-const taskWith = (jobId: number, status: string) =>
-  http.get(api("/api/tasks/v1/watch/:jobId"), () =>
-    sseResponse([JSON.stringify({ job_id: jobId, status, error: null })]),
-  );
-
-/** 一直停在 `doing` 的任务流（不结束），用来观察「退出中…」这一态。 */
-const stuckTask = (jobId: number) =>
-  http.get(api("/api/tasks/v1/watch/:jobId"), () =>
-    sseResponse(
-      (async function* () {
-        yield JSON.stringify({ job_id: jobId, status: "doing", error: null });
-        await new Promise(() => {});
-      })(),
-    ),
+/**
+ * 让**任意** job_id 的等待立刻成功。
+ *
+ * 不能改成覆盖 POST 端点：mock 的状态变化发生在 handler 里（初始化、奖励、挑卡），
+ * 覆盖掉就什么都没发生。所以只把「等任务」这一步压成瞬时，其余照旧。
+ *
+ * 进入开场房间会自动初始化，所以几乎每个开场用例都要它——否则要真等 2 秒。
+ */
+const instantTasks = () =>
+  http.get(api("/api/tasks/v1/watch/:jobId"), ({ params }) =>
+    sseResponse([
+      JSON.stringify({ job_id: Number(params.jobId), status: "succeeded", error: null }),
+    ]),
   );
 
 /** 覆盖退出接口，让任务 id 固定（mock 自己发号，测试无法预测）。 */
@@ -48,31 +49,58 @@ const exitWith = (jobId: number) =>
   );
 
 /**
- * 让**任意** job_id 的等待立刻成功。
+ * 按 job_id 分派任务终态：指定的 id 可停在 `doing`，其余立即成功。
  *
- * 不能改成覆盖 POST 端点：mock 的状态变化发生在 handler 里（初始化、奖励、挑卡），
- * 覆盖掉就什么都没发生。所以只把「等任务」这一步压成瞬时，其余照旧。
+ * 退出用例要「初始化先成功、退出一直跑」，单一的 `instantTasks` / 全 `doing` 都做不到。
  */
-const instantTasks = () =>
-  http.get(api("/api/tasks/v1/watch/:jobId"), ({ params }) =>
-    sseResponse([
-      JSON.stringify({ job_id: Number(params.jobId), status: "succeeded", error: null }),
-    ]),
-  );
+const tasksWithStuck = (stuckJobId: number) =>
+  http.get(api("/api/tasks/v1/watch/:jobId"), ({ params }) => {
+    const jobId = Number(params.jobId);
+    if (jobId === stuckJobId) {
+      return sseResponse(
+        (async function* () {
+          yield JSON.stringify({ job_id: jobId, status: "doing", error: null });
+          await new Promise(() => {});
+        })(),
+      );
+    }
+    return sseResponse([JSON.stringify({ job_id: jobId, status: "succeeded", error: null })]);
+  });
+
+/** 覆盖开场初始化接口，让自动初始化直接失败（用来测重试与守卫）。 */
+const failingInit = (spy: () => void) =>
+  http.post(api("/api/dungeon/opening/init/v1/"), () => {
+    spy();
+    return HttpResponse.json({ detail: "mock 初始化失败" }, { status: 500 });
+  });
+
+/** 进入开场房间会自动初始化；等它完成（`生成奖励` 出现即代表 `initialized=true`）。 */
+const waitForInit = () => screen.findByRole("button", { name: "生成奖励" });
+
+/** 走完「（自动）初始化 → 生成奖励」，进入可挑卡的状态。 */
+async function prepareSpoils() {
+  fireEvent.click(await waitForInit());
+  // 生成奖励也是任务，等候选卡真的出来再交给用例
+  await screen.findAllByRole("button", { name: /^挑选 / });
+}
 
 describe("副本房间 · 共同框架", () => {
-  it("标题就是房间名（不是「开场」这类类型名）", async () => {
+  it("标题 = 副本名 (当前/总数) 房间名（不是「开场」这类类型名）", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
-    expect(await screen.findByRole("heading", { name: "义庄前院" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: OPENING_HEADING })).toBeInTheDocument();
+    // 只有房间名，没有单独的房间类型标签
+    expect(screen.queryByText("开场")).not.toBeInTheDocument();
   });
 
   it("顶部动作区：副本信息 / 叙事 / 离开副本（没有返回副本总览的入口）", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
-    await screen.findByRole("heading", { name: "义庄前院" });
+    await screen.findByRole("heading", { name: OPENING_HEADING });
     expect(screen.getByRole("button", { name: "副本信息" })).toBeInTheDocument();
     // 叙事入口在共同框架（不分房间类型），与家园页共用同一个组件
     expect(screen.getByRole("button", { name: /查看叙事事件/ })).toBeInTheDocument();
@@ -81,6 +109,7 @@ describe("副本房间 · 共同框架", () => {
   });
 
   it("叙事入口：打开浮层看这一局的事件", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
@@ -90,6 +119,7 @@ describe("副本房间 · 共同框架", () => {
   });
 
   it("副本信息：展示副本进度，并标出队伍当前所在的房间", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
@@ -105,23 +135,26 @@ describe("副本房间 · 共同框架", () => {
   });
 
   it("离开副本：任务跑着的时候按钮变「退出中…」并禁用", async () => {
-    server.use(exitWith(9), stuckTask(9));
+    server.use(exitWith(9), tasksWithStuck(9));
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
+    // 远离开场房间的退出守卫：先等自动初始化完成
+    await waitForInit();
 
-    fireEvent.click(await screen.findByRole("button", { name: "离开副本" }));
+    fireEvent.click(screen.getByRole("button", { name: "离开副本" }));
 
     expect(await screen.findByRole("button", { name: "退出中…" })).toBeDisabled();
     // 还没结束，人还留在房间页
-    expect(screen.getByRole("heading", { name: "义庄前院" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: OPENING_HEADING })).toBeInTheDocument();
   });
 
   it("离开副本：任务终态后回家园（后端在任务里已经把人传回去）", async () => {
-    server.use(exitWith(9), taskWith(9, "succeeded"));
+    server.use(exitWith(9), tasksWithStuck(-1));
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
+    await waitForInit();
 
-    fireEvent.click(await screen.findByRole("button", { name: "离开副本" }));
+    fireEvent.click(screen.getByRole("button", { name: "离开副本" }));
 
     expect(await screen.findByText("家园页占位")).toBeInTheDocument();
   });
@@ -137,30 +170,47 @@ describe("副本房间 · 共同框架", () => {
   });
 });
 
-/** 走完「初始化 → 生成奖励」，进入可挑卡的状态。 */
-async function prepareSpoils() {
-  fireEvent.click(await screen.findByRole("button", { name: "初始化开场" }));
-  fireEvent.click(await screen.findByRole("button", { name: "生成奖励" }));
-  // 两个动作都是任务，等候选卡真的出来再交给用例
-  await screen.findAllByRole("button", { name: /^挑选 / });
-}
-
 describe("副本房间 · 开场房间", () => {
-  it("标题是房间名，正文给场景环境叙述；未初始化时只放「初始化开场」", async () => {
+  it("自动初始化失败时：显示原因、保留可点的「初始化开场」，并锁住推进与退出", async () => {
+    const initSpy = vi.fn();
+    server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
-    expect(await screen.findByRole("heading", { name: "义庄前院" })).toBeInTheDocument();
-    // 场景环境（EnvironmentComponent.narrative）——房间的正文开场白
-    expect(await screen.findByText(/义庄前院 的环境叙述/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "初始化开场" })).toBeInTheDocument();
-    // 奖励依赖初始化，所以这时不给这个按钮
-    expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "进入下一关" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /查看叙事事件/ })).toBeInTheDocument();
+    // 环境叙述固定区始终在（正文由 EnvironmentComponent 的 narrative 提供）
+    const narrative = await screen.findByRole("region", { name: "环境叙述" });
+    expect(await within(narrative).findByText(/义庄前院 的环境叙述/)).toBeInTheDocument();
+
+    // 自动初始化只发一次；失败后不自动重试
+    expect(await screen.findByText(/开场动作失败/)).toBeInTheDocument();
+    expect(initSpy).toHaveBeenCalledTimes(1);
+
+    // 「初始化开场」保留为手动重试入口
+    const retry = screen.getByRole("button", { name: "初始化开场" });
+    expect(retry).toBeEnabled();
+
+    // 未初始化 → 服务端不允许推进 / 退出，两个按钮都禁用并说明原因
+    expect(screen.getByRole("button", { name: "进入下一关" })).toBeDisabled();
+    expect(screen.getByText("开场房间尚未初始化，无法进入下一关。")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "离开副本" })).toBeDisabled();
+    expect(screen.getByText("开场房间尚未初始化，无法离开副本。")).toBeInTheDocument();
+
+    // 手动重试会再发一次初始化
+    fireEvent.click(retry);
+    await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(2));
   });
 
-  it("初始化 → 生成奖励：每个成员出现 3 张候选卡（各带「挑选」）", async () => {
+  it("进入开场房间自动初始化一次；完成前不给「生成奖励」", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒村义庄");
+    renderRoom();
+
+    // 自动初始化完成后才出现「生成奖励」，且「初始化开场」收起
+    await waitForInit();
+    expect(screen.queryByRole("button", { name: "初始化开场" })).not.toBeInTheDocument();
+  });
+
+  it("生成奖励：每个成员出现 3 张候选卡（各带「挑选」）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
@@ -215,6 +265,7 @@ describe("副本房间 · 开场房间", () => {
   });
 
   it("牌组浮窗：点开看这个成员现在有哪些牌", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
@@ -229,26 +280,28 @@ describe("副本房间 · 开场房间", () => {
   });
 
   it("叙事入口不再放在开场房间体内（它是共同框架的一部分）", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
     // 叙事按钮只有一个（在顶部动作区），开场房间不再各自渲染一份
-    await screen.findByRole("heading", { name: "义庄前院" });
+    await screen.findByRole("heading", { name: OPENING_HEADING });
     expect(screen.getAllByRole("button", { name: /查看叙事事件/ })).toHaveLength(1);
   });
 
-  it("进入下一关：确认框列出下一间与准备状态，确认后落到战斗房间", async () => {
+  it("进入下一关：确认框列出下一间与奖励状态，确认后落到战斗房间", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
+    await waitForInit();
 
-    fireEvent.click(await screen.findByRole("button", { name: "进入下一关" }));
+    fireEvent.click(screen.getByRole("button", { name: "进入下一关" }));
 
     const dialog = await screen.findByRole("dialog", { name: "进入下一关" });
     // 下一间是战斗房间，名字与类型都摊开
     expect(within(dialog).getByText("停柩房")).toBeInTheDocument();
     expect(within(dialog).getByText("战斗")).toBeInTheDocument();
-    // 准备状态只提示、不阻止
-    expect(within(dialog).getByText(/初始化 未完成/)).toBeInTheDocument();
+    // 奖励只提示、不阻止（初始化是硬前置，已由按钮禁用把关）
     expect(within(dialog).getByText(/奖励 暂无候选/)).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "进入下一关" }));
@@ -259,14 +312,16 @@ describe("副本房间 · 开场房间", () => {
 
   it("进入下一关失败时把后端原因显示在确认框里", async () => {
     server.use(
+      instantTasks(),
       http.post(api("/api/dungeon/progress/advance_stage/v1/"), () =>
         HttpResponse.json({ detail: "副本已全部通关，请返回营地" }, { status: 409 }),
       ),
     );
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
+    await waitForInit();
 
-    fireEvent.click(await screen.findByRole("button", { name: "进入下一关" }));
+    fireEvent.click(screen.getByRole("button", { name: "进入下一关" }));
     const dialog = await screen.findByRole("dialog", { name: "进入下一关" });
     fireEvent.click(within(dialog).getByRole("button", { name: "进入下一关" }));
 

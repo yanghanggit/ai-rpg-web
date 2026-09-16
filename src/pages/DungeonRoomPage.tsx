@@ -18,13 +18,19 @@ import NarrativeButton from "../features/session/NarrativeButton";
  *
  * 这一层只做所有房间都**相同**的事：
  * - 拉当前房间（`GET /api/dungeons/v1/{user}/{game}/room`）与运行中的副本（`/state`）；
- * - 标题 = **房间名**（`room.stage.name`；房间模型没有自己的名字）；
+ * - 标题 = **副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自
+ *   `/state`（房间模型没有自己的名字，界面上的房间名就是 `room.stage.name`）；
+ *   `/state` 还没回来时先只显示房间名，避免标题卡在「加载中」。
  * - 顶部动作区：「副本信息」（展示副本**进度**）、「叙事」（与家园页共用 `NarrativeButton`）
  *   与「离开副本」；
  * - 房间专属内容交给 `DungeonRoomBody`（按判别字段 `room.type` 分发）。
  *
  * 「叙事」放在这一层而不是某个房间体内：会话消息是**全局**的（本局所有事件），
  * 战斗房间也会产生叙事，所以它不是开场房间独有的东西。
+ *
+ * 「离开副本」要**显式判 room.type**：服务端要求开场房间先完成初始化才能退出（否则 409），
+ * 所以 `opening && !initialized` 时直接禁用；`combat` 仍沿用「不提前禁用、错误原样显示」
+ * 的老口径（战斗未结束退出由后端拦）。
  *
  * 刻意**不**提供「返回副本总览」：按游戏逻辑，离开副本就是回家园（`→ /game/.../home`），
  * 副本进行中也没有别的去处。
@@ -85,33 +91,86 @@ function DungeonRoom({ userName, gameName }: { userName: string; gameName: strin
       ) : null}
 
       {room.isSuccess ? (
-        <>
-          <h1>{displayName(room.data.stage.name)}</h1>
-
-          <div className="toolbar">
-            <button
-              type="button"
-              disabled={run.data === undefined}
-              onClick={() => setIsInfoOpen(true)}
-            >
-              副本信息
-            </button>
-            <NarrativeButton userName={userName} gameName={gameName} />
-            <button type="button" disabled={exit.isBusy} onClick={exit.start}>
-              {exit.isBusy ? "退出中…" : "离开副本"}
-            </button>
-          </div>
-
-          {exit.error ? <p className="error">离开副本失败：{exit.error}</p> : null}
-
-          <DungeonRoomBody room={room.data} userName={userName} gameName={gameName} />
-        </>
+        <RoomContent
+          room={room.data}
+          dungeon={run.data?.dungeon ?? null}
+          userName={userName}
+          gameName={gameName}
+          exitBusy={exit.isBusy}
+          exitError={exit.error}
+          onExit={exit.start}
+          onOpenInfo={() => setIsInfoOpen(true)}
+          canOpenInfo={run.data !== undefined}
+        />
       ) : null}
 
       {isInfoOpen && run.data ? (
         <DungeonInfoDialog dungeon={run.data.dungeon} onClose={() => setIsInfoOpen(false)} />
       ) : null}
     </main>
+  );
+}
+
+/**
+ * 房间页正文：标题 = 「副本名 (当前/总数) 房间名」（副本未就绪时只留房间名）。
+ *
+ * 「离开副本」按 `room.type` 分支：开场房间未初始化时禁用（服务端 409），
+ * 战斗房间不预判（战斗未结束退出由后端拦）。
+ */
+function RoomContent({
+  room,
+  dungeon,
+  userName,
+  gameName,
+  exitBusy,
+  exitError,
+  onExit,
+  onOpenInfo,
+  canOpenInfo,
+}: {
+  room: Schemas["DungeonRoomResponse"]["room"];
+  dungeon: Schemas["Dungeon"] | null;
+  userName: string;
+  gameName: string;
+  exitBusy: boolean;
+  exitError: string | null;
+  onExit: () => void;
+  onOpenInfo: () => void;
+  canOpenInfo: boolean;
+}) {
+  const progress =
+    dungeon !== null &&
+    dungeon.current_room_index >= 0 &&
+    dungeon.current_room_index < dungeon.rooms.length
+      ? ` (${dungeon.current_room_index + 1}/${dungeon.rooms.length})`
+      : "";
+  const dungeonName = dungeon === null ? "" : displayName(dungeon.name);
+
+  // 服务端要求：开场房间先初始化完才能退出。初始化进行中 / 失败时也还没 initialized，一并拦住。
+  const isExitBlocked = room.type === "opening" && !room.initialized;
+
+  return (
+    <>
+      <h1>
+        {dungeonName}
+        {progress} {displayName(room.stage.name)}
+      </h1>
+
+      <div className="toolbar">
+        <button type="button" disabled={!canOpenInfo} onClick={onOpenInfo}>
+          副本信息
+        </button>
+        <NarrativeButton userName={userName} gameName={gameName} />
+        <button type="button" disabled={exitBusy || isExitBlocked} onClick={onExit}>
+          {exitBusy ? "退出中…" : "离开副本"}
+        </button>
+      </div>
+
+      {isExitBlocked ? <p className="muted">开场房间尚未初始化，无法离开副本。</p> : null}
+      {exitError ? <p className="error">离开副本失败：{exitError}</p> : null}
+
+      <DungeonRoomBody room={room} userName={userName} gameName={gameName} />
+    </>
   );
 }
 

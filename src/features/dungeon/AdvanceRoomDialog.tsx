@@ -8,13 +8,12 @@ import { ROOM_TYPE_LABELS } from "./readDungeonInfo";
  *
  * 为什么要有：推进**不可逆**——副本只向前，进了下一间就回不来，所以这是一步要确认的动作。
  *
- * 里面列一句准备状态，**只提示、不阻止**：后端允许空手推进（`advance_stage` 对开场房间
- * 没有「必须已初始化 / 已挑卡」的前置），所以客户端不替它拦，只把事实摆出来让玩家自己决定。
+ * 里面列一句奖励状态，**只提示、不阻止**：后端不要求必须领完奖励才能推进。
+ * （开场房初始化是另一回事：它现在是**硬前置**，未初始化时根本打不开这个框，见 OpeningRoomPanel。）
  */
 export default function AdvanceRoomDialog({
   currentRoomName,
   nextRoom,
-  initialized,
   spoilsPending,
   busy,
   error,
@@ -25,7 +24,6 @@ export default function AdvanceRoomDialog({
   currentRoomName: string;
   /** 下一间房间；`null` = 没有下一间（后端会 409「副本已全部通关」）。 */
   nextRoom: Schemas["DungeonRoomResponse"]["room"] | null;
-  initialized: boolean;
   /** 是否还有**未领取**的奖励（Spoils）候选（没有就说明尚未生成或已领完）。 */
   spoilsPending: boolean;
   busy: boolean;
@@ -56,10 +54,7 @@ export default function AdvanceRoomDialog({
           )}
         </dd>
         <dt>开场准备</dt>
-        <dd>
-          初始化 {initialized ? "已完成" : "未完成"} · 奖励{" "}
-          {spoilsPending ? "还有候选待挑" : "暂无候选"}
-        </dd>
+        <dd>奖励 {spoilsPending ? "还有候选待挑" : "暂无候选"}</dd>
       </dl>
 
       {error ? <p className="error">进入下一关失败：{error}</p> : null}
