@@ -16,15 +16,15 @@ import { useOpeningParty } from "./useOpeningParty";
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
  *
- * 三块内容，对应玩家的实际流程「初始化 → 生成卡池 → 挑卡 → 进入下一关」：
+ * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 进入下一关」：
  * - 场景环境叙述（当前场景的 `EnvironmentComponent`，副本初始化时生成）；
  * - 三个动作按钮 + 叙事入口；
- * - 队伍准备：每个成员一段，卡池候选 3 张（各带「挑选」），牌组点开浮窗看。
+ * - 队伍准备：每个成员一段，奖励候选 3 张（各带「挑选」），牌组点开浮窗看。
  *
  * 这里**只放开场房间独有的东西**——标题、副本信息、离开副本属于外层框架
  * （`DungeonRoomPage`），不在这一层重复。
  *
- * 「挑选」不做二次确认：卡池标题写明「3 选 1，其余作废」，防误触靠**显式按钮**而不是弹窗
+ * 「挑选」不做二次确认：奖励标题写明「3 选 1，其余作废」，防误触靠**显式按钮**而不是弹窗
  * （与队伍名单的「加入 / 移出」同一套心智）。
  */
 export default function OpeningRoomPanel({
@@ -57,26 +57,29 @@ export default function OpeningRoomPanel({
   const currentIndex = dungeon?.current_room_index ?? -1;
   const nextRoom = dungeon === null ? null : (dungeon.rooms[currentIndex + 1] ?? null);
 
-  const poolReady = party.party.some((member) => member.pool !== null);
+  const spoilsGenerated = party.party.some((member) => member.spoils !== null);
+  const spoilsPending = party.party.some(
+    (member) => member.spoils !== null && !member.spoils.claimed,
+  );
   const deckCards = party.party.find((member) => member.name === deckMember)?.deck ?? [];
 
   // 开场动作失败的原因（三个动作共用一条文案位置：它们本就串行）
-  const actionError = actions.init.error ?? actions.pool.error ?? actions.pick.error;
+  const actionError = actions.init.error ?? actions.spoils.error ?? actions.pickCard.error;
 
   return (
     <>
       {narrative === null ? null : <p className="opening-narrative">{narrative}</p>}
 
       <div className="toolbar">
-        {/* 初始化与卡池是顺序动作：做完就不再出现，页面上永远只有「当前该做的那一步」 */}
+        {/* 初始化与奖励是顺序动作：做完就不再出现，页面上永远只有「当前该做的那一步」 */}
         {room.initialized ? null : (
           <button type="button" disabled={actions.isBusy} onClick={actions.init.start}>
             {actions.init.isBusy ? "初始化中…" : "初始化开场"}
           </button>
         )}
-        {room.initialized && !poolReady ? (
-          <button type="button" disabled={actions.isBusy} onClick={actions.pool.start}>
-            {actions.pool.isBusy ? "生成中…" : "生成卡池"}
+        {room.initialized && !spoilsGenerated ? (
+          <button type="button" disabled={actions.isBusy} onClick={actions.spoils.start}>
+            {actions.spoils.isBusy ? "生成中…" : "生成奖励"}
           </button>
         ) : null}
         <button type="button" onClick={() => setIsAdvanceOpen(true)}>
@@ -93,7 +96,7 @@ export default function OpeningRoomPanel({
       <section aria-labelledby="opening-party-heading">
         <div className="section-head">
           <h2 id="opening-party-heading">队伍准备</h2>
-          <span className="muted">卡池 3 选 1，挑走一张后其余作废</span>
+          <span className="muted">奖励 3 选 1，挑走一张后其余作废</span>
         </div>
 
         {party.isPending ? <p className="muted">加载中…</p> : null}
@@ -111,28 +114,34 @@ export default function OpeningRoomPanel({
               </button>
             </div>
 
-            {member.pool === null ? (
-              // 卡池是一次性给**全体**成员的，所以「别人还有候选、这个人没有」只可能是这个人已经挑过
-              <p className="muted">{poolReady ? "（已挑过，卡池已清空）" : "（尚未生成卡池）"}</p>
+            {member.spoils === null ? (
+              <p className="muted">（尚未生成奖励）</p>
             ) : (
-              <ul className="card-tiles">
-                {member.pool.map((card) => (
-                  <CardItem
-                    key={card.uuid}
-                    card={card}
-                    action={
-                      <button
-                        type="button"
-                        disabled={actions.isBusy}
-                        aria-label={`挑选 ${card.name}`}
-                        onClick={() => actions.pick.start(member.name, card.name)}
-                      >
-                        挑选
-                      </button>
-                    }
-                  />
-                ))}
-              </ul>
+              <>
+                {member.spoils.claimed ? (
+                  <p className="muted">（已领取，以下为本次候选，仅供参考）</p>
+                ) : null}
+                <ul className="card-tiles">
+                  {member.spoils.cards.map((card) => (
+                    <CardItem
+                      key={card.uuid}
+                      card={card}
+                      action={
+                        member.spoils?.claimed ? null : (
+                          <button
+                            type="button"
+                            disabled={actions.isBusy}
+                            aria-label={`挑选 ${card.name}`}
+                            onClick={() => actions.pickCard.start(member.name, card.name)}
+                          >
+                            挑选
+                          </button>
+                        )
+                      }
+                    />
+                  ))}
+                </ul>
+              </>
             )}
           </section>
         ))}
@@ -147,7 +156,7 @@ export default function OpeningRoomPanel({
           currentRoomName={room.stage.name}
           nextRoom={nextRoom}
           initialized={room.initialized}
-          poolReady={poolReady}
+          spoilsPending={spoilsPending}
           busy={advance.isPending}
           error={advance.isError ? describeApiError(advance.error) : null}
           onConfirm={() => advance.mutate()}

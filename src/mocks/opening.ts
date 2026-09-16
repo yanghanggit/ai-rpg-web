@@ -1,27 +1,33 @@
 /**
- * mock 用的内存「本次副本开局」状态：队伍快照、牌组、卡池、开场是否已初始化。
+ * mock 用的内存「本次副本开局」状态：队伍快照、牌组、奖励（Spoils）、开场是否已初始化。
  *
  * 真实后端里这些都不是独立的数据结构，而是**实体上的组件**：
  * - 队伍：`enter_dungeon` 时给玩家与名单成员挂 `PartyMemberComponent`（此后名单不可改）；
- * - 牌组：各成员的 `DeckComponent`；卡池：`SpoilsComponent`（生成后才有，挑一张即整个清掉）；
+ * - 牌组：各成员的 `DeckComponent`；奖励：`SpoilsComponent`（生成后才有，领一张即整个清掉）；
  * - 开场是否初始化：`OpeningRoom.initialized`（属于副本房间，所以 `/room` 的响应要带上它）。
  *
- * mock 里按同一语义维护这几份状态，让 `pnpm dev:mock` 下「初始化 → 生成卡池 → 挑卡 →
+ * mock 里按同一语义维护这几份状态，让 `pnpm dev:mock` 下「初始化 → 生成奖励 → 领卡 →
  * 进入下一关」整条链路可走。组件的**拼装**在这里，副本本身的状态在 `./dungeons`，
  * 两者由 handler 接线（真实后端也是 API 层把两边读出来拼成响应）。
  */
 import type { Schemas } from "../api/types";
-import { cardPoolFixture, deckFixtures, defaultDeckFixture } from "./fixtures";
+import { deckFixtures, defaultDeckFixture, spoilsFixture } from "./fixtures";
 import { readMockActorEntity } from "./items";
 
 type RawCard = Record<string, unknown>;
+
+/** mock 里的 Spoils 状态：候选 + 是否已领取。 */
+interface MockSpoils {
+  cards: RawCard[];
+  claimed: boolean;
+}
 
 /** 进副本时固化的队伍（含玩家，顺序同名单）。 */
 let party: string[] = [];
 /** 各成员的牌组。 */
 let decks = new Map<string, RawCard[]>();
-/** 各成员的卡池；没有条目表示尚未生成。 */
-let pools = new Map<string, RawCard[]>();
+/** 各成员的奖励（Spoils）；没有条目表示尚未生成。 */
+let spoils = new Map<string, MockSpoils>();
 /** 开场是否已初始化（叙事 + 牌库）。 */
 let initialized = false;
 
@@ -38,15 +44,20 @@ export function readMockOpeningInitialized(): boolean {
   return initialized;
 }
 
+/** 已持有 SpoilsComponent 的成员名（用于“奖励已生成”幂等守卫）。 */
+export function readMockSpoilsHolders(): string[] {
+  return [...spoils.keys()];
+}
+
 /**
- * 进副本：固化队伍并给每人装上初始牌组（卡池清空、开场回到未初始化）。
+ * 进副本：固化队伍并给每人装上初始牌组（奖励清空、开场回到未初始化）。
  *
  * @param members 队伍成员（含玩家，顺序同名单）。
  */
 export function enterMockOpeningParty(members: readonly string[]): void {
   party = [...members];
   decks = new Map(members.map((name) => [name, clone(deckFixtures[name] ?? defaultDeckFixture)]));
-  pools = new Map();
+  spoils = new Map();
   initialized = false;
 }
 
@@ -54,7 +65,7 @@ export function enterMockOpeningParty(members: readonly string[]): void {
 export function leaveMockOpening(): void {
   party = [];
   decks = new Map();
-  pools = new Map();
+  spoils = new Map();
   initialized = false;
 }
 
@@ -75,9 +86,12 @@ export function withMockOpeningComponents(
     name: "DeckComponent",
     data: { name: entity.name, cards: clone(decks.get(entity.name) ?? []) },
   });
-  const pool = pools.get(entity.name);
-  if (pool !== undefined) {
-    components.push({ name: "SpoilsComponent", data: { name: entity.name, cards: clone(pool) } });
+  const reward = spoils.get(entity.name);
+  if (reward !== undefined) {
+    components.push({
+      name: "SpoilsComponent",
+      data: { name: entity.name, cards: clone(reward.cards), claimed: reward.claimed },
+    });
   }
   return { name: entity.name, components };
 }
@@ -99,34 +113,37 @@ export function initMockOpening(): void {
   initialized = true;
 }
 
-/** 卡池生成：给每个成员各装一份候选卡（后端 `CARD_POOL_SIZE = 3`）。 */
-export function generateMockCardPool(): void {
-  pools = new Map(party.map((name) => [name, clone(cardPoolFixture)]));
+/** 奖励（Spoils）生成：给每个成员各装一份候选卡（后端 `SPOILS_CARD_COUNT = 3`）。 */
+export function generateMockSpoils(): void {
+  spoils = new Map(party.map((name) => [name, { cards: clone(spoilsFixture), claimed: false }]));
 }
 
 /**
- * 从某人的卡池挑一张卡加入其牌库，并**清空整个卡池**（后端的 3 选 1 语义）。
+ * 从某人的奖励（Spoils）中领一张卡加入其牌库，并把该奖励标记为已领取（`claimed=true`，候选保留供回看）。
  *
  * 返回 `{ ok: false, error }` 时与后端一样只说明原因，不改任何状态。
  */
-export function pickMockCard(
+export function pickMockSpoilsCard(
   actorName: string,
   cardName: string,
 ): { ok: true } | { ok: false; error: string } {
   if (!party.includes(actorName)) {
-    return { ok: false, error: `角色 ${actorName} 不是队伍成员，无法从卡池挑卡` };
+    return { ok: false, error: `角色 ${actorName} 不是队伍成员，无法从 Spoils 领卡` };
   }
-  const pool = pools.get(actorName);
-  if (pool === undefined) {
-    return { ok: false, error: `角色 ${actorName} 尚无卡池（SpoilsComponent），请先生成卡池` };
+  const reward = spoils.get(actorName);
+  if (reward === undefined) {
+    return { ok: false, error: `角色 ${actorName} 尚无奖励（SpoilsComponent），请先生成奖励` };
   }
-  const index = pool.findIndex((card) => card.name === cardName);
-  const selected = pool[index];
+  if (reward.claimed) {
+    return { ok: false, error: `角色 ${actorName} 已领取过奖励，无法重复领取` };
+  }
+  const index = reward.cards.findIndex((card) => card.name === cardName);
+  const selected = reward.cards[index];
   if (index === -1 || selected === undefined) {
-    return { ok: false, error: `角色 ${actorName} 卡池中找不到卡牌 '${cardName}'` };
+    return { ok: false, error: `角色 ${actorName} 的 Spoils 中找不到卡牌 '${cardName}'` };
   }
   decks.set(actorName, [...(decks.get(actorName) ?? []), clone(selected)]);
-  pools.delete(actorName);
+  spoils.set(actorName, { cards: reward.cards, claimed: true });
   return { ok: true };
 }
 

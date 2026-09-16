@@ -494,7 +494,7 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
  * 卡牌载荷（后端 `Card.model_dump()` 的形状：`DeckComponent` / `SpoilsComponent` 的 `cards`）。
  *
  * 牌名**不带** `类型.` 前缀——后端卡牌名就是叙事化的牌名（原型见 `demo/card_prototypes.py`，
- * 由 Agent 在开场/卡池阶段润色），所以展示时也不走 `displayName`。
+ * 由 Agent 在开场/奖励（Spoils）阶段润色），所以展示时也不走 `displayName`。
  */
 function mockCard(name: string, overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -576,8 +576,8 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
 
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
 
-/** 卡池候选（后端 `CARD_POOL_SIZE = 3`，3 选 1）。 */
-export const cardPoolFixture: Record<string, unknown>[] = [
+/** 奖励（Spoils）候选（后端 `SPOILS_CARD_COUNT = 3`，3 选 1）。 */
+export const spoilsFixture: Record<string, unknown>[] = [
   cardFixtures.spark,
   cardFixtures.paper,
   cardFixtures.ward,

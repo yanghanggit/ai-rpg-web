@@ -4,7 +4,7 @@ import { readCards } from "./readCards";
 const card = { name: "卡.剖棺", target_type: "single", damage: 3 };
 
 describe("readCards", () => {
-  it("按组件名读出牌组 / 卡池里的卡", () => {
+  it("按组件名读出牌组 / 奖励（Spoils）里的卡", () => {
     const components = [
       { name: "CharacterStatsComponent", data: { name: "角色.无名" } },
       { name: "DeckComponent", data: { name: "角色.无名", cards: [card] } },

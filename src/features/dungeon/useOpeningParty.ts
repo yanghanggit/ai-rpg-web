@@ -1,14 +1,14 @@
 /**
- * 副本开场的**队伍状态**：每个成员的牌组（`DeckComponent`）与卡池（`SpoilsComponent`）。
+ * 副本开场的**队伍状态**：每个成员的牌组（`DeckComponent`）与奖励（`SpoilsComponent`）。
  *
  * 两步取数（与 `useEnterPreview` 同一手法，不需要新接口）：
  * 1. group 端点按 `PartyMemberComponent` 拿到**副本内的队伍**——进副本那一刻固化，含玩家自己，
  *    之后不会变（家园接口在副本进行中一律被拒）；
- * 2. 一次 details 把各成员的全部组件取回，再按组件名解析出牌组与卡池。
+ * 2. 一次 details 把各成员的全部组件取回，再按组件名解析出牌组与奖励。
  *
- * 牌组 / 卡池的解析复用 `features/cards`（「卡牌长什么样」的唯一实现，与 `features/items` 同构）。
- * 卡池用 `null` 表示**尚未生成**（组件不存在），与「生成了但是空的」区分开——界面据此决定
- * 还能不能点「生成卡池」。
+ * 牌组 / 奖励的解析复用 `features/cards`（「卡牌长什么样」的唯一实现，与 `features/items` 同构）。
+ * 奖励用 `null` 表示**尚未生成**（组件不存在），与「生成了但是空的」区分开——界面据此决定
+ * 还能不能点「生成奖励」。
  */
 import { $api } from "../../api/query";
 import { readCards } from "../cards/readCards";
@@ -22,8 +22,8 @@ export interface OpeningPartyMember {
   /** 是不是玩家控制的角色（界面标「（你）」）。 */
   player: boolean;
   deck: Card[];
-  /** `null` = 尚未生成卡池。 */
-  pool: Card[] | null;
+  /** `null` = 尚未生成奖励（Spoils）；否则给出本次候选与是否已领取。 */
+  spoils: { cards: Card[]; claimed: boolean } | null;
 }
 
 export function useOpeningParty(userName: string, gameName: string) {
@@ -59,13 +59,20 @@ export function useOpeningParty(userName: string, gameName: string) {
     if (entity === undefined) {
       return [];
     }
-    const hasPool = entity.components.some((component) => component.name === "SpoilsComponent");
+    const spoilsComp = entity.components.find((component) => component.name === "SpoilsComponent");
+    const spoilsData = spoilsComp?.data as { claimed?: boolean } | undefined;
     return [
       {
         name,
         player: entity.components.some((component) => component.name === "PlayerComponent"),
         deck: readCards(entity.components, "DeckComponent"),
-        pool: hasPool ? readCards(entity.components, "SpoilsComponent") : null,
+        spoils:
+          spoilsComp === undefined
+            ? null
+            : {
+                cards: readCards(entity.components, "SpoilsComponent"),
+                claimed: spoilsData?.claimed === true,
+              },
       },
     ];
   });

@@ -7,7 +7,7 @@ import type { Card } from "../cards/types";
  * 某个队伍成员的牌组浮窗（只读）。
  *
  * 牌组会长（初始就有、挑卡后再加），所以不摊在页面上，点「查看牌组」才展开；
- * 卡池只有 3 张候选，是当场的决策对象，所以留在页面上。
+ * 奖励（Spoils）只有 3 张候选，是当场的决策对象，所以留在页面上。
  */
 export default function DeckDialog({
   memberName,

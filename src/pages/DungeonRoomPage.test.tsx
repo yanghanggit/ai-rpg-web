@@ -50,7 +50,7 @@ const exitWith = (jobId: number) =>
 /**
  * 让**任意** job_id 的等待立刻成功。
  *
- * 不能改成覆盖 POST 端点：mock 的状态变化发生在 handler 里（初始化、卡池、挑卡），
+ * 不能改成覆盖 POST 端点：mock 的状态变化发生在 handler 里（初始化、奖励、挑卡），
  * 覆盖掉就什么都没发生。所以只把「等任务」这一步压成瞬时，其余照旧。
  */
 const instantTasks = () =>
@@ -126,10 +126,10 @@ describe("副本房间 · 共同框架", () => {
   });
 });
 
-/** 走完「初始化 → 生成卡池」，进入可挑卡的状态。 */
-async function prepareCardPool() {
+/** 走完「初始化 → 生成奖励」，进入可挑卡的状态。 */
+async function prepareSpoils() {
   fireEvent.click(await screen.findByRole("button", { name: "初始化开场" }));
-  fireEvent.click(await screen.findByRole("button", { name: "生成卡池" }));
+  fireEvent.click(await screen.findByRole("button", { name: "生成奖励" }));
   // 两个动作都是任务，等候选卡真的出来再交给用例
   await screen.findAllByRole("button", { name: /^挑选 / });
 }
@@ -143,48 +143,49 @@ describe("副本房间 · 开场房间", () => {
     // 场景环境（EnvironmentComponent.narrative）——房间的正文开场白
     expect(await screen.findByText(/义庄前院 的环境叙述/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "初始化开场" })).toBeInTheDocument();
-    // 卡池依赖初始化，所以这时不给这个按钮
-    expect(screen.queryByRole("button", { name: "生成卡池" })).not.toBeInTheDocument();
+    // 奖励依赖初始化，所以这时不给这个按钮
+    expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "进入下一关" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "叙事" })).toBeInTheDocument();
   });
 
-  it("初始化 → 生成卡池：每个成员出现 3 张候选卡（各带「挑选」）", async () => {
+  it("初始化 → 生成奖励：每个成员出现 3 张候选卡（各带「挑选」）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
 
-    await prepareCardPool();
+    await prepareSpoils();
 
     expect(await screen.findByRole("button", { name: "挑选 火折子" })).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
-    expect(screen.getByText("卡池 3 选 1，挑走一张后其余作废")).toBeInTheDocument();
-    // 生成后卡池按钮收起（同一时间只给「当前该做的那一步」）
-    expect(screen.queryByRole("button", { name: "生成卡池" })).not.toBeInTheDocument();
+    expect(screen.getByText("奖励 3 选 1，挑走一张后其余作废")).toBeInTheDocument();
+    // 生成后奖励按钮收起（同一时间只给「当前该做的那一步」）
+    expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
 
-  it("挑卡：挑走的那张进牌组，整个卡池清空（其余作废）", async () => {
+  it("领卡：领走的那张进牌组，候选保留并标记已领取（不能再生成）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
-    await prepareCardPool();
+    await prepareSpoils();
     expect(await screen.findByText("牌组 3 张")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "挑选 火折子" }));
 
-    // 牌组 +1，卡池整份消失（连未被选中的那两张也没了）
+    // 牌组 +1；候选仍在（供回看），但「挑选」按钮消失
     expect(await screen.findByText("牌组 4 张")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
-    // 全队都没卡池了：界面回到「可以再生成一轮」——这是后端自己的语义（守卫只看有没有人还持有卡池）
-    expect(await screen.findByRole("button", { name: "生成卡池" })).toBeInTheDocument();
+    expect(screen.getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
+    // 组件保留作为守卫：生成按钮不再回来
+    expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
 
-  it("挑卡是按成员各自算的：给顾知秋挑卡不影响玩家的卡池", async () => {
+  it("领卡是按成员各自算的：给顾知秋领卡不影响玩家的奖励", async () => {
     server.use(instantTasks());
     addMockRosterMember("角色.顾知秋");
     enterMockDungeon("副本.荒村义庄");
     renderRoom();
-    await prepareCardPool();
+    await prepareSpoils();
 
     // 两个人各 3 张候选
     expect(await screen.findAllByRole("button", { name: /^挑选 / })).toHaveLength(6);
@@ -195,8 +196,10 @@ describe("副本房间 · 开场房间", () => {
     }
     fireEvent.click(within(qiuzhiSection).getByRole("button", { name: "挑选 镇棺符" }));
 
-    // 顾知秋的卡池清空，玩家那边还是 3 张
-    expect(await within(qiuzhiSection).findByText("（已挑过，卡池已清空）")).toBeInTheDocument();
+    // 顾知秋已领取（候选保留、按钮消失），玩家那边还是 3 张待挑
+    expect(
+      await within(qiuzhiSection).findByText("（已领取，以下为本次候选，仅供参考）"),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
   });
 
@@ -235,7 +238,7 @@ describe("副本房间 · 开场房间", () => {
     expect(within(dialog).getByText("战斗")).toBeInTheDocument();
     // 准备状态只提示、不阻止
     expect(within(dialog).getByText(/初始化 未完成/)).toBeInTheDocument();
-    expect(within(dialog).getByText(/卡池 暂无候选/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/奖励 暂无候选/)).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "进入下一关" }));
 

@@ -732,7 +732,7 @@ ol.dungeon-rooms {
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 
 /* 环境叙述：这一屏的正文开场白（房间名由页面标题给出）。
-   页面是宽屏页（卡池要并排比较），但散文限宽——可读行长与全站文字页一致。 */
+   页面是宽屏页（奖励候选要并排比较），但散文限宽——可读行长与全站文字页一致。 */
 .opening-narrative {
   max-width: 42rem;
   margin: 1.5rem 0 0;
@@ -749,7 +749,7 @@ ol.dungeon-rooms {
   font-size: 1.1rem;
 }
 
-/* 卡牌：卡池候选与牌组共用（栅格参数与副本卡 / 角色卡一致，宽度自然对齐） */
+/* 卡牌：奖励（Spoils）候选与牌组共用（栅格参数与副本卡 / 角色卡一致，宽度自然对齐） */
 ul.card-tiles {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));

@@ -15,7 +15,7 @@ export default function AdvanceRoomDialog({
   currentRoomName,
   nextRoom,
   initialized,
-  poolReady,
+  spoilsPending,
   busy,
   error,
   onConfirm,
@@ -26,8 +26,8 @@ export default function AdvanceRoomDialog({
   /** 下一间房间；`null` = 没有下一间（后端会 409「副本已全部通关」）。 */
   nextRoom: Schemas["DungeonRoomResponse"]["room"] | null;
   initialized: boolean;
-  /** 是否还有待挑的卡池候选（没有就说明尚未生成或已挑完）。 */
-  poolReady: boolean;
+  /** 是否还有**未领取**的奖励（Spoils）候选（没有就说明尚未生成或已领完）。 */
+  spoilsPending: boolean;
   busy: boolean;
   error: string | null;
   onConfirm: () => void;
@@ -57,8 +57,8 @@ export default function AdvanceRoomDialog({
         </dd>
         <dt>开场准备</dt>
         <dd>
-          初始化 {initialized ? "已完成" : "未完成"} · 卡池{" "}
-          {poolReady ? "还有候选待挑" : "暂无候选"}
+          初始化 {initialized ? "已完成" : "未完成"} · 奖励{" "}
+          {spoilsPending ? "还有候选待挑" : "暂无候选"}
         </dd>
       </dl>
 

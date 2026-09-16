@@ -1,7 +1,7 @@
 /**
  * 「触发 → 等任务 → 失效刷新」：job 模式动作的**唯一实现**。
  *
- * 后端绝大多数动作接口（advance / switch_stage / craft / 副本的 init、卡池、挑卡、退出……）
+ * 后端绝大多数动作接口（advance / switch_stage / craft / 副本的 init、生成奖励、领卡、退出……）
  * 只返回 `job_id` 而**不是**新状态，真正的状态变化发生在任务里。所以每个动作都是同样三步，
  * 且失败有四种来源（提交失败 / 任务失败 / 任务超时 / SSE 断开）。这段逻辑以前在
  * `useHomeAdvance`、`useSwitchStage`、`useCraftItem`、`useGenerateDungeon`、`useExitDungeon`

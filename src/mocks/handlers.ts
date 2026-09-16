@@ -36,11 +36,12 @@ import {
   wearMockCostume,
 } from "./items";
 import {
-  generateMockCardPool,
+  generateMockSpoils,
   initMockOpening,
-  pickMockCard,
+  pickMockSpoilsCard,
   readMockOpeningInitialized,
   readMockPartyEntities,
+  readMockSpoilsHolders,
   withMockOpeningComponents,
 } from "./opening";
 import {
@@ -93,7 +94,7 @@ export const handlers = [
     if (conditions.includes("PartyRosterComponent")) {
       return HttpResponse.json({ entities: readMockRosterEntities() });
     }
-    // 副本内的队伍（进副本时固化）：持 PartyMemberComponent 的成员，带牌组 / 卡池
+    // 副本内的队伍（进副本时固化）：持 PartyMemberComponent 的成员，带牌组 / 奖励（Spoils）
     if (conditions.includes("PartyMemberComponent")) {
       return HttpResponse.json({ entities: readMockPartyEntities() });
     }
@@ -316,26 +317,36 @@ export const handlers = [
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 开场初始化任务已启动" });
   }),
 
-  // 生成卡池：依赖开场已初始化；幂等（已有卡池则后端拒绝）
-  http.post(api("/api/dungeon/opening/generate_card_pool/v1/"), () => {
+  // 生成奖励（Spoils）：依赖开场已初始化；幂等（已有奖励则后端拒绝，与后端同一守卫）
+  http.post(api("/api/dungeon/opening/generate_spoils/v1/"), () => {
     if (!readMockOpeningInitialized()) {
       return HttpResponse.json(
         { detail: "开场房间尚未初始化（叙事 + 牌库），请先调用开场初始化接口" },
         { status: 409 },
       );
     }
-    generateMockCardPool();
-    return HttpResponse.json({ job_id: createMockTask(), message: "mock 卡池生成任务已启动" });
+    const holders = readMockSpoilsHolders();
+    if (holders.length > 0) {
+      return HttpResponse.json(
+        {
+          detail: `奖励已生成（[${holders.map((name) => `'${name}'`).join(", ")}] 已持有 SpoilsComponent），无需重复生成`,
+        },
+        { status: 409 },
+      );
+    }
+    generateMockSpoils();
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 奖励生成任务已启动" });
   }),
 
-  // 挑卡：挑完清空整个卡池（3 选 1），与后端同一语义
-  http.post(api("/api/dungeon/opening/pick_card_from_pool/v1/"), async ({ request }) => {
-    const body = (await request.json()) as ApiBody<"/api/dungeon/opening/pick_card_from_pool/v1/">;
-    const result = pickMockCard(body.actor_name, body.card_name);
+  // 领卡（Spoils 子操作 pick_card）：领完标记 claimed=true（组件与候选保留），与后端同一语义
+  http.post(api("/api/dungeon/opening/pick_spoils/pick_card/v1/"), async ({ request }) => {
+    const body =
+      (await request.json()) as ApiBody<"/api/dungeon/opening/pick_spoils/pick_card/v1/">;
+    const result = pickMockSpoilsCard(body.actor_name, body.card_name);
     if (!result.ok) {
       return HttpResponse.json({ detail: result.error }, { status: 409 });
     }
-    return HttpResponse.json({ job_id: createMockTask(), message: "mock 挑卡任务已启动" });
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 领卡任务已启动" });
   }),
 
   // 进入下一关：**同步**接口（后端就地推进关卡），mock 里同步换房间
