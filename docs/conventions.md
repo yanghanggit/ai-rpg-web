@@ -106,16 +106,19 @@ pages ──┬──▶ features ──┬──▶ components
 - **Provider 只在 `main.tsx` 装配**（`QueryClientProvider`、`BrowserRouter`），页面不自己创建，便于测试用 `MemoryRouter` 替换。
 - **端口只有一个来源**：dev / mock 端口写在 `scripts/devPorts.mjs`，别处一律 import（`vite.config.ts`、`scripts/screenshot.mjs`）；注释里也不写数字，具体端口见 [dev-setup.md](dev-setup.md)。由 `pnpm lint` 强制。
 
-## 五、布局与响应式（手机 / 桌面）
+## 五、布局与响应式（只做桌面）
 
-同一套 DOM 同时适配手机与桌面，**靠 CSS 媒体查询，不写两套页面**：
+**本项目只保证桌面网页**，手机 / 平板（无论横竖屏）不做兼容，也不加「请横屏使用」门槛。
 
-- 页面外层统一用 `.page`（窄栏、居中，宽屏不铺满）。需要横向空间的页面加 `.page--wide`，它在 `@media (min-width: 900px)` 才放宽到 1180px。
-- 多列一律交给 CSS Grid：`repeat(auto-fill, minmax(min(Npx, 100%), 1fr))`。`min(Npx, 100%)` 保证窄屏不撑破容器（不出现横向滚动），宽屏自动多列。**不要写固定列数**。
-- 需要宽屏多列时用「窄屏单列 / 宽屏多列」的网格容器（如 `.entry-layout`、`.link-grid`），不要把内容写两遍。
+- **最小支持宽度 = 1024px，唯一基线。** 这是本节所有断点的取值来源：媒体查询统一用 `@media (min-width: 1024px)`，不要出现别的断点数字。比 1024px 更窄的视口只保证「不横向溢出」，不保证排法好看。
+- 页面外层统一用 `.page`（窄栏、居中，宽屏不铺满）。需要横向空间的页面加 `.page--wide`，它在 `@media (min-width: 1024px)` 放宽到 1180px。
+- 多列一律交给 CSS Grid：`repeat(auto-fill, minmax(min(Npx, 100%), 1fr))`。`min(Npx, 100%)` 是**防横向溢出**的兜底（与手机兼容无关，任何宽度都保留），列数随可用宽度自动变化。**不要写固定列数**。
+- 需要桌面多列时用网格容器（如 `.entry-layout`、`.link-grid`），不要把内容写两遍。
 - 文字类页面保持窄栏（控制可读行长）；长值（URL、UUID）用 `overflow-wrap: anywhere` 防溢出。
 
-新增页面默认 `.page`；只有确实需要更多横向空间才加 `.page--wide`，并在宽屏下给出多列排法。
+新增页面默认 `.page`；只有确实需要更多横向空间才加 `.page--wide`，并给出桌面多列排法。
+
+**为什么不做手机**：手机横屏的可用宽度只有 667–932px、可用高度只有 ~390px，要好看必须按「短边」而不是「宽度」重排，并逐页压缩到一屏内，成本远高于桌面收益。若将来要加回来，入口是**门槛（竖屏提示）+ 按短边重排**这一整套，而不是调大 / 调小断点。
 
 ## 六、交互基调：游戏客户端，输入控件要克制
 
@@ -142,7 +145,7 @@ pages ──┬──▶ features ──┬──▶ components
 | dev 端口字面量只出现在 `scripts/devPorts.mjs` | `scripts/checkDevPorts.mjs` | `pnpm lint` / `pnpm check:ports` |
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
 | 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
-| 手机 / 桌面均可用的排法 | 靠 review（CSS 无断言），可用 `pnpm screenshot` 拍图核对 | — |
+| 桌面排法（最小支持宽度 1024px） | 靠 review（CSS 无断言），可用 `pnpm screenshot` 拍图核对 | — |
 | 不滥用输入控件（游戏客户端） | 靠 review（无工具可强制） | — |
 | 不做无感智能兼容（起不来就失败） | 靠 review（无工具可强制） | — |
 | 行为正确 | Vitest + MSW | `pnpm test:run` |

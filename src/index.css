@@ -31,8 +31,12 @@ body {
   line-height: 1.6;
 }
 
-/* 页面容器：默认是「阅读宽度」的窄栏，窄屏自动占满、宽屏居中，不会横向滚动。
-   普通页面（启动屏）就用这个；需要横向空间的页面加 `.page--wide`。 */
+/* 本项目**只保证桌面**，最小支持宽度是 1024px（唯一基线，见 docs/conventions.md §五）。
+   比这更窄的视口不做兼容——只靠栅格的 `min(Npx, 100%)` 兜底不横向溢出，
+   不为手机 / 竖屏另写排法，也不加「请横屏」门槛。
+
+   页面容器：默认是「阅读宽度」的窄栏，居中且不会横向滚动。
+   普通文字页（启动屏）就用这个；需要横向空间的页面加 `.page--wide`。 */
 .page {
   width: 100%;
   max-width: 720px;
@@ -40,32 +44,34 @@ body {
   padding: 2.5rem 1.25rem;
 }
 
-@media (min-width: 900px) {
+/* 桌面基线以内（≥1024px，本项目的主战场）：页边距放宽，
+   需要更多横向空间的页面加宽，交给下面的栅格排多列。 */
+@media (min-width: 1024px) {
   .page {
     padding: 4rem 2rem;
   }
 
-  /* 宽屏下需要更多横向空间的页面：家园卡片排多列、入口左右双栏、开发索引多列 */
+  /* 需要更多横向空间的页面：家园卡片排多列、入口左右双栏、开发索引多列 */
   .page--wide {
     max-width: 1180px;
   }
 }
 
-/* 入口页布局：窄屏上下堆叠，宽屏左右双栏（左表单 / 右蓝图详情） */
+/* 入口页布局：桌面基线以上左右双栏（左表单 / 右蓝图详情） */
 .entry-layout {
   display: grid;
   gap: 2rem 3rem;
   align-items: start;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 1024px) {
   .entry-layout {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
   }
 }
 
-/* 开发索引的深链列表：宽屏排成多列 */
-@media (min-width: 900px) {
+/* 开发索引的深链列表：桌面基线以上排成多列 */
+@media (min-width: 1024px) {
   .link-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -105,7 +111,7 @@ body {
 
 .facts dd {
   margin: 0;
-  /* 宽屏/窄屏都安全：长值（URL、UUID）在需要时断行，不会撑破容器 */
+  /* 任何宽度下都安全：长值（URL、UUID）在需要时断行，不会撑破容器 */
   overflow-wrap: anywhere;
 }
 
@@ -288,17 +294,6 @@ ul.items li {
   box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
 }
 
-/* 窄屏：浮窗尽量占满可用宽度与高度，少留遮罩边 */
-@media (max-width: 480px) {
-  .overlay {
-    padding: 0.75rem;
-  }
-
-  .overlay-panel {
-    max-height: 92vh;
-  }
-}
-
 .overlay-head {
   display: flex;
   align-items: baseline;
@@ -346,7 +341,7 @@ ul.items li {
   color: var(--muted);
 }
 
-/* 道具行：勾选 / 类型标签 / 名称 / 描述 横排，窄屏换行 */
+/* 道具行：勾选 / 类型标签 / 名称 / 描述 横排，放不下时自动换行 */
 .item-row {
   display: flex;
   flex-wrap: wrap;
@@ -421,7 +416,7 @@ ol.session .what {
 /* 场景卡片：本页的主要信息与操作入口，给足尺寸 */
 .cards {
   display: grid;
-  /* min(320px, 100%)：窄屏不撑破容器；宽屏按可用宽度自动排 2~3 列 */
+  /* min(320px, 100%) 保证容器再窄也不横向溢出；桌面按可用宽度自动排多列 */
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
   gap: 1.5rem;
   margin-top: 1.25rem;
@@ -507,7 +502,7 @@ ol.session .what {
 }
 
 /* 实体浏览器：每个场景一行 —— 左侧场景名（key），右侧横排角色（list of value）。
-   按钮内边距与行距都放大，手机上也好点。 */
+   按钮内边距与行距放大，点击 / 阅读都更松弛。 */
 .entity-stage {
   justify-self: start;
   padding: 0.45rem 0.9rem;
@@ -569,12 +564,11 @@ ul.entity-browser > li .chip-button {
   font-size: 0.75rem;
 }
 
-/* 副本页 · 队伍名单：两段内容在宽屏**左右排**（当前队伍在左、可加入的同伴在右），
-   窄屏自动退成上下排。
+/* 副本页 · 队伍名单：两段内容各占若干列（当前队伍在左、可加入的同伴在右）。
 
    用与卡片同一个栅格参数（而非「各占一半」的固定两列）是为了让两段列宽与
    副本卡片对齐：1180px 下副本卡是 3 列 ×380px，这里就占其中前两列（卡宽不变），
-   窄屏时才降成一列。 */
+   视口变窄时列数自然减少。 */
 .roster-sections {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
@@ -619,7 +613,7 @@ ul.entity-browser > li .chip-button {
 }
 
 /* 角色卡片栅格：尺寸与「可用副本」卡片**完全一致**（同为 min 320px、同间距），
-   所以上下两处的卡片宽度是对齐的；窄屏单列、宽屏自动多列。 */
+   所以上下两处的卡片宽度是对齐的；列数由可用宽度自动决定。 */
 ul.roster-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
@@ -630,7 +624,7 @@ ul.roster-cards {
 }
 
 /* 副本卡片区：宏观信息，一卡一副本；描述超出卡片就省略，点卡片主体看全文。
-   窄屏单列、宽屏自动多列，不用在小窗口里滚动找内容。
+   列数由可用宽度自动决定。
 
    卡片是「容器 + 主体按钮 + 操作行」三层：HTML 不允许 button 嵌套 button，
    所以「看详情」与「进入副本」必须是平级的兄弟按钮（与角色卡片同一做法）。 */
@@ -732,7 +726,7 @@ ol.dungeon-rooms {
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 
 /* 环境叙述：这一屏的正文开场白（房间名由页面标题给出）。
-   页面是宽屏页（队伍卡横排），但散文限宽——可读行长与全站文字页一致。
+   页面是宽幅页（队伍卡横排），但散文限宽——可读行长与全站文字页一致。
    始终占位的固定区：加载中 / 空也保留高度，避免下方按钮与内容跳动。 */
 .opening-narrative {
   max-width: 42rem;

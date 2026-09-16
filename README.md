@@ -26,7 +26,7 @@ pnpm gen:api              # 拉后端 /openapi.json 生成 TS 类型（需后端
 pnpm dev
 ```
 
-局域网 / 手机真机访问、Mock 模式、深链调试见 [`docs/dev-setup.md`](docs/dev-setup.md)。
+局域网 / 其他设备访问、Mock 模式、深链调试见 [`docs/dev-setup.md`](docs/dev-setup.md)。
 
 ## 怎么用
 

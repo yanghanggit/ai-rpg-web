@@ -103,6 +103,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
   world_entities: [
     { name: "世界.玩家行动审计系统", system_message: "（mock）", components: [] },
     { name: "世界.副本生成系统", system_message: "（mock）", components: [] },
+    { name: "世界.插图提示词", system_message: "（mock）", components: [] },
     {
       name: "世界.储物箱",
       system_message: "（mock）",
@@ -403,15 +404,6 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   },
 ];
 
-/** 空文生图数据（GeneratedImage 的默认形态）。 */
-const emptyImage: Schemas["GeneratedImage"] = {
-  filename: "",
-  url: "",
-  prompt: "",
-  model: "",
-  local_path: "",
-};
-
 function dungeonActor(
   name: string,
   type: Schemas["ActorType"],
@@ -451,17 +443,17 @@ export const dungeonFixture: Schemas["Dungeon"] = {
   created_at: "2026-09-11T12:00:00Z",
   current_room_index: -1,
   setup_entities: false,
-  image: emptyImage,
+  image: null,
   rooms: [
     {
       type: "opening",
       initialized: false,
-      image: emptyImage,
+      image: null,
       stage: dungeonStage("场景.义庄前院", []),
     },
     {
       type: "combat",
-      image: emptyImage,
+      image: null,
       combat: { name: "", state: 0, result: 0, rounds: [], retreated: false },
       stage: dungeonStage("场景.停柩房", [
         dungeonActor("怪物.纸人", "Monster", { hp: 9, max_hp: 9, attack: 3, defense: 1 }),
@@ -487,7 +479,7 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
   profile: "",
   current_room_index: -1,
   setup_entities: false,
-  image: emptyImage,
+  image: null,
 };
 
 /**

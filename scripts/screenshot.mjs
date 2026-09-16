@@ -12,7 +12,7 @@
  * 用法（`pnpm screenshot ...`）：
  *   pnpm screenshot /game/webdev/Game1/dungeon
  *   pnpm screenshot /game/webdev/Game1/dungeon --mock                            # mock 模式
- *   pnpm screenshot /game/webdev/Game1/dungeon --size 390x844 --click "进入副本：荒村义庄"
+ *   pnpm screenshot /game/webdev/Game1/dungeon --size 1024x768 --click "进入副本：荒村义庄"
  *   pnpm screenshot /game/webdev/Game1/dungeon --base http://192.168.1.5:<本机 dev 端口>   # 局域网真机
  *
  * 端口不在这里写死：默认地址由 scripts/devPorts.mjs 派生（`vite.config.ts` 也从那里取）。
@@ -49,7 +49,7 @@ const USAGE = `用真实浏览器给页面截图：导航 → 等待 → （可�
   --base <url>       显式指定地址（如局域网真机）；与 --mock 二选一
                      都不给则拍 ${localBaseUrl(DEV_PORT)}（pnpm dev）
   --out <file>       输出文件，默认 screenshots/<路径末段>-<宽>x<高>.png
-  --size <宽x高>     视口尺寸，默认 ${DEFAULT_SIZE}；手机用 390x844
+  --size <宽x高>     视口尺寸，默认 ${DEFAULT_SIZE}；本项目只保证桌面（最小宽度 1024）
   --click <文本>     截图前点一下这个按钮（按 aria-label 或按钮文字匹配）
                      用 | 分隔可连点多下，如：--click "加入|进入副本：荒村义庄"
   --wait <ms>        导航后等待，默认 ${DEFAULT_WAIT_MS}（等 React 挂载与接口返回）
@@ -261,7 +261,7 @@ async function main() {
 
   const [width, height] = options.size.split("x").map(Number);
   if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
-    throw new Error(`--size 应为「宽x高」，如 390x844（收到 ${options.size}）`);
+    throw new Error(`--size 应为「宽x高」，如 1024x768（收到 ${options.size}）`);
   }
 
   const url = options.target.startsWith("http")
@@ -293,7 +293,7 @@ async function main() {
 
     try {
       // 用 Emulation 定视口，而不是 --window-size：后者在 headless 下有最小宽度，
-      // 想验 390px 的手机会被悄悄放大（也就验不出横向溢出）。
+      // 想验 1024px 这类较窄的桌面会被悄悄放大（也就验不出横向溢出）。
       await cdp.send("Emulation.setDeviceMetricsOverride", {
         width,
         height,

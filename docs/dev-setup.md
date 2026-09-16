@@ -32,7 +32,7 @@
 
 ## 局域网 / 真机访问（用明确 IP，不用 localhost）
 
-适用场景：后端监听 `0.0.0.0`，希望用本机网卡 IP 访问，或让手机 / 其他设备访问本前端。
+适用场景：后端监听 `0.0.0.0`，希望用本机网卡 IP 访问，或让同局域网的其他设备访问本前端。
 
 ### 1. 查本机网卡 IP
 
@@ -90,8 +90,8 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 # 桌面默认（1280x900），输出 screenshots/dungeon-1280x900.png
 pnpm screenshot /game/webdev/Game1/dungeon
 
-# 手机视口 + 点开确认浮窗
-pnpm screenshot /game/webdev/Game1/dungeon --size 390x844 --click "进入副本：荒村义庄"
+# 指定视口（本项目最小支持宽度 1024px）+ 点开确认浮窗
+pnpm screenshot /game/webdev/Game1/dungeon --size 1024x768 --click "进入副本：荒村义庄"
 
 # mock 模式（pnpm dev:mock 固定跑在自己的端口，不必再手填 --base）
 pnpm screenshot /game/webdev/Game1/dungeon --mock
@@ -103,7 +103,7 @@ pnpm screenshot /game/webdev/Game1/dungeon --mock
 两个容易踩的坑，脚本已经处理：
 
 - **不要用 `chrome --headless --screenshot`**：它在 load 事件就落笔，而首屏要等 React 挂载、mock 模式还要等 MSW 的 service worker 接管，拍出来是**空白页**（`--virtual-time-budget` 在 headless=new 下也救不回来）。
-- **不要用 `--window-size` 定视口**：headless 下有最小宽度，想验 390px 会被悄悄放大，也就验不出横向溢出。脚本走 CDP 的 `Emulation.setDeviceMetricsOverride`。
+- **不要用 `--window-size` 定视口**：headless 下有最小宽度，想验 1024px 这类较窄的桌面宽度会被悄悄放大，也就验不出横向溢出。脚本走 CDP 的 `Emulation.setDeviceMetricsOverride`。
 
 ## 调试深层页面
 
