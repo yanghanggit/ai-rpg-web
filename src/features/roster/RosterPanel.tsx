@@ -4,7 +4,7 @@ import { useRosterAction } from "./useRosterAction";
 import { useRosterCandidates } from "./useRosterCandidates";
 
 /**
- * 副本的「队伍名单」面板。
+ * 「队伍名单」面板（队伍编成领域 `features/roster` 的展示入口）。
  *
  * 名单是进入副本前的预选同伴（`PartyRosterComponent`，挂在玩家实体上），为空即独自冒险。
  * 候选口径是「持 `NPCComponent` 且不是玩家」——玩家的蓝图类型往往也是 NPC，

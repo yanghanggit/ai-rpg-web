@@ -3,9 +3,9 @@
  *
  * 点验需要三样东西，而它们**在一次 details 里就能全拿到**（后端 `serialize_entities`
  * 返回实体的全部组件）：
- * - 队伍：玩家 + `PartyRosterComponent.members` 逐个角色实体 → `readPartyMember`；
+ * - 队伍：玩家 + `PartyRosterComponent.members` 逐个角色实体 → `features/roster` 的 `readPartyMember`；
  * - 背包：玩家实体的 `InventoryComponent`；
- * - 名单本身：`usePartyRoster`（同一领域的 hook）。
+ * - 名单本身：`features/roster` 的 `usePartyRoster`。
  *
  * details 的实体名依赖名单，所以等名单查询成功后再发（与 `items/useItemContainers`
  * 等储物箱名字解析出来再查 details 是同一个模式），避免用空名单先发一次无用请求。
@@ -16,8 +16,8 @@
  */
 import { $api } from "../../api/query";
 import { readItems } from "../items/readItems";
-import { readPartyMember } from "./readPartyMember";
-import { usePartyRoster } from "./usePartyRoster";
+import { readPartyMember } from "../roster/readPartyMember";
+import { usePartyRoster } from "../roster/usePartyRoster";
 
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
 

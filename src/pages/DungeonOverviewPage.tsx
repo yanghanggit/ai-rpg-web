@@ -7,7 +7,6 @@ import { useCostumeAction } from "../features/costume/useCostumeAction";
 import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
 import DungeonPanel from "../features/dungeon/DungeonPanel";
 import EnterDungeonDialog from "../features/dungeon/EnterDungeonDialog";
-import RosterPanel from "../features/dungeon/RosterPanel";
 import { useDungeonList } from "../features/dungeon/useDungeonList";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useEnterDungeon } from "../features/dungeon/useEnterDungeon";
@@ -15,6 +14,7 @@ import { useGenerateDungeon } from "../features/dungeon/useGenerateDungeon";
 import ActorInfoDialog from "../features/identity/ActorInfoDialog";
 import { usePlayerActor } from "../features/identity/usePlayerActor";
 import ItemManagerDialog from "../features/items/ItemManagerDialog";
+import RosterPanel from "../features/roster/RosterPanel";
 
 /**
  * 副本总览页：**宏观阅览副本 + 做准备 + 决定是否进入**，不承担副本内的流程。
