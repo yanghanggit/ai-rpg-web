@@ -33,6 +33,7 @@ function actor(
     system_message: "（mock）角色系统提示",
     character_stats: { hp: 15, max_hp: 15, attack: 3, defense: 1 },
     components,
+    assets: {},
   };
 }
 
@@ -82,6 +83,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
         ]),
       ],
       components: [],
+      assets: {},
     },
     {
       name: "场景.一楼客房",
@@ -90,6 +92,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       system_message: "（mock）",
       actors: [actor("角色.小厮", "NPC")],
       components: [],
+      assets: {},
     },
     {
       name: "场景.二楼卧室",
@@ -98,6 +101,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       system_message: "（mock）",
       actors: [],
       components: [],
+      assets: {},
     },
   ],
   world_entities: [
@@ -417,6 +421,7 @@ function dungeonActor(
     system_message: "（mock）角色系统提示",
     character_stats: stats,
     components: [],
+    assets: {},
   };
 }
 
@@ -428,6 +433,7 @@ function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"
     system_message: "（mock）场景系统提示",
     actors,
     components: [],
+    assets: {},
   };
 }
 
@@ -443,17 +449,15 @@ export const dungeonFixture: Schemas["Dungeon"] = {
   created_at: "2026-09-11T12:00:00Z",
   current_room_index: -1,
   setup_entities: false,
-  image: null,
+  assets: {},
   rooms: [
     {
       type: "opening",
       initialized: false,
-      image: null,
       stage: dungeonStage("场景.义庄前院", []),
     },
     {
       type: "combat",
-      image: null,
       combat: { name: "", state: 0, result: 0, rounds: [], retreated: false },
       stage: dungeonStage("场景.停柩房", [
         dungeonActor("怪物.纸人", "Monster", { hp: 9, max_hp: 9, attack: 3, defense: 1 }),
@@ -479,7 +483,7 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
   profile: "",
   current_room_index: -1,
   setup_entities: false,
-  image: null,
+  assets: {},
 };
 
 /**
