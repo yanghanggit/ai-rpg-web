@@ -491,7 +491,7 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
  * 构造一份战斗数据（`Combat`）：战斗 mock 与战斗房间测试共用。
  *
  * 默认是「刚进战斗房间」的形态（`state = NONE`、无回合），各 phase 用例按需覆盖。
- * 状态取值见 `features/dungeon/combatPhase.ts::COMBAT_STATE`。
+ * 状态取值见 `features/dungeon/combat/combatPhase.ts::COMBAT_STATE`。
  */
 export function combatFixture(overrides: Partial<Schemas["Combat"]> = {}): Schemas["Combat"] {
   return {

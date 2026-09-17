@@ -1,7 +1,7 @@
 import { useState } from "react";
-import type { Schemas } from "../../api/types";
-import { displayName } from "../../components/displayName";
-import CardItem from "../cards/CardItem";
+import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
+import CardItem from "../../cards/CardItem";
 import CombatRoster from "./CombatRoster";
 import CombatRoundLog from "./CombatRoundLog";
 import CombatStatus from "./CombatStatus";

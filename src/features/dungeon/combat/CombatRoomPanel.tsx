@@ -1,5 +1,5 @@
-import { describeApiError } from "../../api/describeApiError";
-import type { Schemas } from "../../api/types";
+import { describeApiError } from "../../../api/describeApiError";
+import type { Schemas } from "../../../api/types";
 import CombatInitPanel from "./CombatInitPanel";
 import CombatPostPanel from "./CombatPostPanel";
 import CombatRoundStartPanel from "./CombatRoundStartPanel";

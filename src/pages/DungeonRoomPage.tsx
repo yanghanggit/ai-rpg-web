@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { describeApiError } from "../api/describeApiError";
 import type { Schemas } from "../api/types";
 import { displayName } from "../components/displayName";
-import CombatRoomPanel from "../features/dungeon/CombatRoomPanel";
+import CombatRoomPanel from "../features/dungeon/combat/CombatRoomPanel";
 import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
 import OpeningRoomPanel from "../features/dungeon/OpeningRoomPanel";
 import { useDungeonRoom } from "../features/dungeon/useDungeonRoom";

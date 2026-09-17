@@ -1,5 +1,5 @@
-import type { Schemas } from "../../api/types";
-import { displayName } from "../../components/displayName";
+import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
 import { COMBAT_STATE } from "./combatPhase";
 
 /** 战斗状态 → 界面说法（与 TUI `/info` 的 `CombatState.name` 对应）。 */

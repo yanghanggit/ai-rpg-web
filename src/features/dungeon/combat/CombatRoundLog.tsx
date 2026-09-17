@@ -1,4 +1,4 @@
-import type { Schemas } from "../../api/types";
+import type { Schemas } from "../../../api/types";
 
 function LogSection({
   title,

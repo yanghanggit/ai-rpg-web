@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Schemas } from "../../api/types";
-import { cardFixtures } from "../../mocks/fixtures";
+import type { Schemas } from "../../../api/types";
+import { cardFixtures } from "../../../mocks/fixtures";
 import {
   classifyFaction,
   computeHandBlock,

@@ -13,10 +13,10 @@
  * 「进入下一关」复用 `useAdvanceStage`。
  */
 import type { QueryClient } from "@tanstack/react-query";
-import { client, unwrap } from "../../api/client";
-import { useJobAction } from "../../api/useJobAction";
-import { invalidateEntitiesAndMessages } from "../entities/invalidateEntities";
-import { invalidateDungeons } from "./invalidateDungeons";
+import { client, unwrap } from "../../../api/client";
+import { useJobAction } from "../../../api/useJobAction";
+import { invalidateEntitiesAndMessages } from "../../entities/invalidateEntities";
+import { invalidateDungeons } from "../invalidateDungeons";
 
 export function useCombatActions(userName: string, gameName: string) {
   const body = { user_name: userName, game_name: gameName };

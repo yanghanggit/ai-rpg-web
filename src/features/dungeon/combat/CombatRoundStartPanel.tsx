@@ -1,4 +1,4 @@
-import type { Schemas } from "../../api/types";
+import type { Schemas } from "../../../api/types";
 import CombatRoster from "./CombatRoster";
 import CombatStatus from "./CombatStatus";
 import type { Combatant } from "./readCombat";

@@ -15,7 +15,7 @@
  * 判据集中在这里一份，Panel 只消费结果；TUI 的 `_detect_transition`（「本动作是否结束回合」）
  * 在 web 里退化成「数据变了，派生结果就变了」，不用显式写转移逻辑。
  */
-import type { Schemas } from "../../api/types";
+import type { Schemas } from "../../../api/types";
 
 type Combat = Schemas["Combat"];
 

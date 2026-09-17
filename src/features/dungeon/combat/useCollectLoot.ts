@@ -8,8 +8,8 @@
  * 所以不失效 dungeons。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { client, unwrap } from "../../api/client";
-import { invalidateEntitiesAndMessages } from "../entities/invalidateEntities";
+import { client, unwrap } from "../../../api/client";
+import { invalidateEntitiesAndMessages } from "../../entities/invalidateEntities";
 
 export function useCollectLoot(userName: string, gameName: string) {
   const queryClient = useQueryClient();

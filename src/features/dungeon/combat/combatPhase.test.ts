@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { combatFixture, roundFixture } from "../../mocks/fixtures";
+import { combatFixture, roundFixture } from "../../../mocks/fixtures";
 import { COMBAT_STATE, deriveCombatPhase } from "./combatPhase";
 
 describe("deriveCombatPhase", () => {

@@ -1,12 +1,12 @@
-import { describeApiError } from "../../api/describeApiError";
-import type { Schemas } from "../../api/types";
-import ItemRow from "../items/ItemRow";
-import type { Item } from "../items/types";
+import { describeApiError } from "../../../api/describeApiError";
+import type { Schemas } from "../../../api/types";
+import ItemRow from "../../items/ItemRow";
+import type { Item } from "../../items/types";
+import { useAdvanceStage } from "../useAdvanceStage";
 import CombatRoster from "./CombatRoster";
 import CombatRoundLog from "./CombatRoundLog";
 import CombatStatus from "./CombatStatus";
 import type { Combatant } from "./readCombat";
-import { useAdvanceStage } from "./useAdvanceStage";
 
 /** 胜负 → 结语与配色。 */
 function resultLabel(result: number): { text: string; className: string } {

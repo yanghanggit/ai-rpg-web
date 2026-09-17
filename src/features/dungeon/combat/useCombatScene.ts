@@ -11,11 +11,11 @@
  * 战斗动作刷新；而场景映射在 `advance_stage` 后并不会失效，直接依赖它会读到旧场景。
  * 参数名一律用**原始实体名**（比较 / API / key 都用原值，显示才走 `displayName`）。
  */
-import { $api } from "../../api/query";
-import type { Schemas } from "../../api/types";
-import { hasComponent } from "../entities/ecs";
-import { readItems } from "../items/readItems";
-import type { Item } from "../items/types";
+import { $api } from "../../../api/query";
+import type { Schemas } from "../../../api/types";
+import { hasComponent } from "../../entities/ecs";
+import { readItems } from "../../items/readItems";
+import type { Item } from "../../items/types";
 import { type Combatant, readCombatant } from "./readCombat";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";

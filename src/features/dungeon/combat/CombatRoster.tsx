@@ -1,4 +1,4 @@
-import { displayName } from "../../components/displayName";
+import { displayName } from "../../../components/displayName";
 import type { Combatant } from "./readCombat";
 
 /** 阵营 / 身份 → 界面标签，与 TUI `role_label` 一致（玩家 / 队友 / 怪物）。 */
