@@ -338,7 +338,7 @@ export const handlers = [
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 奖励生成任务已启动" });
   }),
 
-  // 领卡（Spoils 子操作 pick_card）：领完标记 claimed=true（组件与候选保留），与后端同一语义
+  // 领卡（Spoils 子操作 pick_card）：从 candidate_cards 出队并记入 claimed_cards（组件保留），与后端同一语义
   http.post(api("/api/dungeon/opening/pick_spoils/pick_card/v1/"), async ({ request }) => {
     const body =
       (await request.json()) as ApiBody<"/api/dungeon/opening/pick_spoils/pick_card/v1/">;

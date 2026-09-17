@@ -9,8 +9,8 @@ import type { Card } from "../cards/types";
  * 奖励是当场要做的决策，但不再摊在页面上——角色卡上只留一个「奖励」按钮，点开才展开，
  * 与「先看到角色、再看到奖励卡」的渐进式流程一致。
  *
- * 领卡**按成员各自算**：`claimed=true` 后候选保留供回看，这时不再给「挑选」按钮，
- * 只标一句提示（组件本身由页面作为「已生成」守卫保留）。
+ * 领卡**按成员各自算**：「领过一次」后不再给「挑选」按钮（后端当前也只允许领一张），
+ * 并分别列出已领取与待领取候选供回看（组件本身由页面作为「已生成」守卫保留）。
  */
 export default function SpoilsDialog({
   memberName,
@@ -22,8 +22,8 @@ export default function SpoilsDialog({
 }: {
   /** 角色原始名（标题副标题显示用）。 */
   memberName: string;
-  /** 该成员的奖励：候选 + 是否已领取。 */
-  spoils: { cards: Card[]; claimed: boolean };
+  /** 该成员的奖励：待领取候选 + 已领取两个队列。 */
+  spoils: { candidateCards: Card[]; claimedCards: Card[] };
   /** 领卡任务在跑时为 true：禁用所有「挑选」（同一条后端管道一次只放一个）。 */
   busy: boolean;
   /** 领卡失败的原因（展示在浮窗内，不落到页面动作区）。 */
@@ -31,22 +31,37 @@ export default function SpoilsDialog({
   onPick: (cardName: string) => void;
   onClose: () => void;
 }) {
+  const { candidateCards, claimedCards } = spoils;
+  const hasClaimed = claimedCards.length > 0;
+
   return (
     <Modal
       title="奖励"
-      meta={`${displayName(memberName)} · ${spoils.cards.length} 张`}
+      meta={`${displayName(memberName)} · 候选 ${candidateCards.length} 张`}
       onClose={onClose}
     >
-      {spoils.claimed ? <p className="muted">（已领取，以下为本次候选，仅供参考）</p> : null}
+      {hasClaimed ? <p className="muted">（已领取，以下为本次候选，仅供参考）</p> : null}
       {error ? <p className="error">领卡失败：{error}</p> : null}
 
+      {hasClaimed ? (
+        <>
+          <p className="muted">已领取 {claimedCards.length} 张：</p>
+          <ul className="card-tiles card-tiles--stack">
+            {claimedCards.map((card) => (
+              <CardItem key={card.uuid} card={card} action={null} />
+            ))}
+          </ul>
+          <p className="muted">待领取候选 {candidateCards.length} 张：</p>
+        </>
+      ) : null}
+
       <ul className="card-tiles card-tiles--stack">
-        {spoils.cards.map((card) => (
+        {candidateCards.map((card) => (
           <CardItem
             key={card.uuid}
             card={card}
             action={
-              spoils.claimed ? null : (
+              hasClaimed ? null : (
                 <button
                   type="button"
                   disabled={busy}

@@ -22,8 +22,8 @@ export interface OpeningPartyMember {
   /** 是不是玩家控制的角色（界面标「（你）」）。 */
   player: boolean;
   deck: Card[];
-  /** `null` = 尚未生成奖励（Spoils）；否则给出本次候选与是否已领取。 */
-  spoils: { cards: Card[]; claimed: boolean } | null;
+  /** `null` = 尚未生成奖励（Spoils）；否则给出两个队列：待领取候选与已领取。 */
+  spoils: { candidateCards: Card[]; claimedCards: Card[] } | null;
 }
 
 export function useOpeningParty(userName: string, gameName: string) {
@@ -60,7 +60,6 @@ export function useOpeningParty(userName: string, gameName: string) {
       return [];
     }
     const spoilsComp = entity.components.find((component) => component.name === "SpoilsComponent");
-    const spoilsData = spoilsComp?.data as { claimed?: boolean } | undefined;
     return [
       {
         name,
@@ -70,8 +69,8 @@ export function useOpeningParty(userName: string, gameName: string) {
           spoilsComp === undefined
             ? null
             : {
-                cards: readCards(entity.components, "SpoilsComponent"),
-                claimed: spoilsData?.claimed === true,
+                candidateCards: readCards(entity.components, "SpoilsComponent", "candidate_cards"),
+                claimedCards: readCards(entity.components, "SpoilsComponent", "claimed_cards"),
               },
       },
     ];

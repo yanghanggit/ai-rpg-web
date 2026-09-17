@@ -3,7 +3,8 @@
  *
  * 真实后端里这些都不是独立的数据结构，而是**实体上的组件**：
  * - 队伍：`enter_dungeon` 时给玩家与名单成员挂 `PartyMemberComponent`（此后名单不可改）；
- * - 牌组：各成员的 `DeckComponent`；奖励：`SpoilsComponent`（生成后才有，领一张即整个清掉）；
+ * - 牌组：各成员的 `DeckComponent`；奖励：`SpoilsComponent`（生成后才有，内部两个队列：
+ *   `candidate_cards` 待领取、`claimed_cards` 已领取；当前 gameplay 只允许领一张）；
  * - 开场是否初始化：`OpeningRoom.initialized`（属于副本房间，所以 `/room` 的响应要带上它）。
  *
  * mock 里按同一语义维护这几份状态，让 `pnpm dev:mock` 下「初始化 → 生成奖励 → 领卡 →
@@ -16,10 +17,10 @@ import { readMockActorEntity } from "./items";
 
 type RawCard = Record<string, unknown>;
 
-/** mock 里的 Spoils 状态：候选 + 是否已领取。 */
+/** mock 里的 Spoils 状态：待领取候选 + 已领取两个队列。 */
 interface MockSpoils {
-  cards: RawCard[];
-  claimed: boolean;
+  candidateCards: RawCard[];
+  claimedCards: RawCard[];
 }
 
 /** 进副本时固化的队伍（含玩家，顺序同名单）。 */
@@ -90,7 +91,11 @@ export function withMockOpeningComponents(
   if (reward !== undefined) {
     components.push({
       name: "SpoilsComponent",
-      data: { name: entity.name, cards: clone(reward.cards), claimed: reward.claimed },
+      data: {
+        name: entity.name,
+        candidate_cards: clone(reward.candidateCards),
+        claimed_cards: clone(reward.claimedCards),
+      },
     });
   }
   return { name: entity.name, components };
@@ -113,14 +118,17 @@ export function initMockOpening(): void {
   initialized = true;
 }
 
-/** 奖励（Spoils）生成：给每个成员各装一份候选卡（后端 `SPOILS_CARD_COUNT = 3`）。 */
+/** 奖励（Spoils）生成：给每个成员各装一份候选卡（后端 `SPOILS_CARD_COUNT = 3`）；已领取队列为空。 */
 export function generateMockSpoils(): void {
-  spoils = new Map(party.map((name) => [name, { cards: clone(spoilsFixture), claimed: false }]));
+  spoils = new Map(
+    party.map((name) => [name, { candidateCards: clone(spoilsFixture), claimedCards: [] }]),
+  );
 }
 
 /**
- * 从某人的奖励（Spoils）中领一张卡加入其牌库，并把该奖励标记为已领取（`claimed=true`，候选保留供回看）。
+ * 从某人的奖励（Spoils）中领一张卡加入其牌库：从 `candidate_cards` 出队并追加进 `claimed_cards`。
  *
+ * 与后端同一语义（当前只允许领一张，组件与候选保留供回看）。
  * 返回 `{ ok: false, error }` 时与后端一样只说明原因，不改任何状态。
  */
 export function pickMockSpoilsCard(
@@ -134,16 +142,19 @@ export function pickMockSpoilsCard(
   if (reward === undefined) {
     return { ok: false, error: `角色 ${actorName} 尚无奖励（SpoilsComponent），请先生成奖励` };
   }
-  if (reward.claimed) {
+  if (reward.claimedCards.length > 0) {
     return { ok: false, error: `角色 ${actorName} 已领取过奖励，无法重复领取` };
   }
-  const index = reward.cards.findIndex((card) => card.name === cardName);
-  const selected = reward.cards[index];
+  const index = reward.candidateCards.findIndex((card) => card.name === cardName);
+  const selected = reward.candidateCards[index];
   if (index === -1 || selected === undefined) {
     return { ok: false, error: `角色 ${actorName} 的 Spoils 中找不到卡牌 '${cardName}'` };
   }
   decks.set(actorName, [...(decks.get(actorName) ?? []), clone(selected)]);
-  spoils.set(actorName, { cards: reward.cards, claimed: true });
+  spoils.set(actorName, {
+    candidateCards: reward.candidateCards.filter((_, i) => i !== index),
+    claimedCards: [...reward.claimedCards, clone(selected)],
+  });
   return { ok: true };
 }
 

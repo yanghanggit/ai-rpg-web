@@ -82,7 +82,10 @@ export default function OpeningRoomPanel({
 
   const spoilsGenerated = party.party.some((member) => member.spoils !== null);
   const spoilsPending = party.party.some(
-    (member) => member.spoils !== null && !member.spoils.claimed,
+    (member) =>
+      member.spoils !== null &&
+      member.spoils.candidateCards.length > 0 &&
+      member.spoils.claimedCards.length === 0,
   );
   const deckCards = party.party.find((member) => member.name === deckMember)?.deck ?? [];
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;

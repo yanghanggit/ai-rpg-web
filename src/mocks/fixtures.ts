@@ -487,7 +487,8 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
 };
 
 /**
- * 卡牌载荷（后端 `Card.model_dump()` 的形状：`DeckComponent` / `SpoilsComponent` 的 `cards`）。
+ * 卡牌载荷（后端 `Card.model_dump()` 的形状：`DeckComponent` 的 `cards`、`SpoilsComponent`
+ * 的 `candidate_cards` / `claimed_cards`）。
  *
  * 牌名**不带** `类型.` 前缀——后端卡牌名就是叙事化的牌名（原型见 `demo/card_prototypes.py`，
  * 由 Agent 在开场/奖励（Spoils）阶段润色），所以展示时也不走 `displayName`。

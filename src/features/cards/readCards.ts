@@ -3,18 +3,22 @@ import { readCard } from "./readCard";
 import type { Card } from "./types";
 
 /**
- * 从序列化组件里读出牌组（`DeckComponent`）或奖励（`SpoilsComponent`）的卡牌。
+ * 从序列化组件里读出卡牌数组。
  *
- * 两者的载荷形状相同（`data.cards`），只是语义不同：牌组是已有的牌，奖励是 3 张候选。
- * `data.cards` 缺失或不是数组时安全返回空数组（组件尚未生成是常态）。
+ * 载荷字段名由 `field` 指定（默认 `cards`）：
+ * - `DeckComponent` → `cards`；
+ * - `SpoilsComponent` → `candidate_cards`（待领取）/ `claimed_cards`（已领取）。
+ *
+ * `data[field]` 缺失或不是数组时安全返回空数组（组件尚未生成是常态）。
  */
 export function readCards(
   components: Schemas["ComponentSerialization"][],
   componentName: string,
+  field = "cards",
 ): Card[] {
   const data = components.find((component) => component.name === componentName)?.data;
-  if (data === undefined || !Array.isArray(data.cards)) {
+  if (data === undefined || !Array.isArray(data[field])) {
     return [];
   }
-  return data.cards.map(readCard).filter((card): card is Card => card !== undefined);
+  return data[field].map(readCard).filter((card): card is Card => card !== undefined);
 }
