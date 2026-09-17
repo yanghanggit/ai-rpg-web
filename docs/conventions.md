@@ -96,6 +96,7 @@ pages ──┬──▶ features ──┬──▶ components
 - 只允许**上层依赖下层**：`api/` 不得 import `features/` 或 `pages/`；`components/` 不得 import `features/` 或 `pages/`。
 - **`features/` 之间不互相依赖**。需要共享时：与契约有关 → 下沉 `api/`；纯展示 → 下沉 `components/`；确实是新领域 → 新建 `<domain>`。
 - **唯一的例外：道具。** `features/items` 是「一件道具长什么样」的唯一实现——**解析**（`readItems` + `Item`）与**展示**（`ItemRow`，含名字 `×N`、中文类型 chip）都在那里，其它领域直接复用（现有使用者：`costume` 的穿/脱、`dungeon` 的出征点验），**不得另行解析、也不得另写一种样式**。理由：读 `ComponentSerialization.data` 是运行时逐字段校验，复制第二份等于把「字段名写错」的机会翻倍；展示分叉则会让同一种道具在两个浮窗里长得不一样。而且这是**单向**依赖（items 不反向依赖任何领域），不形成环。
+- **第二个共享基础领域：实体 / 组件。** `features/entities` 是「实体与组件载荷怎么读」的唯一实现——通用访问（`ecs.ts`：`getComponent` / `hasComponent` / 字段读取 `readString|readNumber|readBoolean`）与跨领域共用的类型化读取器（`readCharacterStats`）都集中在那里；查询失效口径（`invalidateEntities.ts`）也已在此。其它领域直接复用（现有使用者：`identity` / `stage` / `dungeon` / `cards` / `items` / `blueprint` / `costume` / `home`），**不得各自再写 `isRecord` / `findComponent` / `readStats`**。理由同上：`ComponentSerialization.data` 是 `Dict[str, Any]`，逐字段校验的副本越多，字段名写错的机会越多。依赖同样是**单向**的（entities 不反向依赖任何领域），不形成环。领域专属的组件读取器（手牌 / 牌堆 / 时装…）仍留在各自领域，不进 `ecs.ts`。
 - `src/mocks/` 只被测试与 dev 入口引用，**不得进入生产代码**（`main.tsx` 中的引用由 `import.meta.env.DEV` 守卫，生产构建会被 tree-shake）。
 
 ## 四、命名之外的硬性约定

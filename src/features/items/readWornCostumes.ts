@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { getComponentData } from "../entities/ecs";
 import { readItem } from "./readItem";
 import type { WornCostume } from "./types";
 
@@ -12,9 +13,7 @@ import type { WornCostume } from "./types";
 export function readWornCostumes(entities: Schemas["EntitySerialization"][]): WornCostume[] {
   const worn: WornCostume[] = [];
   for (const entity of entities) {
-    const data = entity.components.find(
-      (component) => component.name === "WornCostumeComponent",
-    )?.data;
+    const data = getComponentData(entity, "WornCostumeComponent");
     if (data === undefined) {
       continue;
     }

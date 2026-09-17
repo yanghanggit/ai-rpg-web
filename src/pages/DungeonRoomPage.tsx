@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { describeApiError } from "../api/describeApiError";
 import type { Schemas } from "../api/types";
 import { displayName } from "../components/displayName";
+import CombatRoomPanel from "../features/dungeon/CombatRoomPanel";
 import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
 import OpeningRoomPanel from "../features/dungeon/OpeningRoomPanel";
 import { useDungeonRoom } from "../features/dungeon/useDungeonRoom";
@@ -193,6 +194,6 @@ function DungeonRoomBody({
     case "opening":
       return <OpeningRoomPanel userName={userName} gameName={gameName} room={room} />;
     case "combat":
-      return <p className="muted">战斗房间界面尚未实现。</p>;
+      return <CombatRoomPanel userName={userName} gameName={gameName} room={room} />;
   }
 }

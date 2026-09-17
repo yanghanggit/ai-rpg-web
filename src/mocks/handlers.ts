@@ -10,6 +10,19 @@ import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
 import type { ApiBody, Schemas } from "../api/types";
 import {
+  advanceMockMonsterTurn,
+  collectMockLoot,
+  drawMockCards,
+  equipMockGear,
+  initMockCombat,
+  passMockTurn,
+  playMockCards,
+  readMockCombatActorEntity,
+  retreatMockCombat,
+  useMockConsumable,
+  withMockCombatComponents,
+} from "./combat";
+import {
   advanceMockDungeon,
   enterMockDungeon,
   exitMockDungeon,
@@ -116,8 +129,15 @@ export const handlers = [
       }
       const actor = readMockActorEntity(name);
       if (actor) {
-        // 副本内的成员还带 PartyMemberComponent / DeckComponent（可能还有 SpoilsComponent）
-        entities.push(withMockOpeningComponents(actor));
+        // 副本内的成员还带 PartyMemberComponent / DeckComponent（可能还有 SpoilsComponent）；
+        // 战斗房间的参战者再补上战斗组件（能量 / 手牌 / 牌堆 / 死亡 / 战利品）
+        entities.push(withMockCombatComponents(withMockOpeningComponents(actor)));
+        continue;
+      }
+      const monster = readMockCombatActorEntity(name);
+      if (monster) {
+        // 副本怪物只在战斗房间里存在，家园的 readMockActorEntity 认不出
+        entities.push(withMockCombatComponents(monster));
         continue;
       }
       const stage = readMockStageEntity(name);
@@ -355,6 +375,79 @@ export const handlers = [
       return HttpResponse.json({ detail: "副本已全部通关，请返回营地" }, { status: 409 });
     }
     return HttpResponse.json({ message: "已前进到下一关" });
+  }),
+
+  // ── 战斗房间：改变性动作只返回 job_id（领取战利品除外，它是同步接口） ──
+
+  http.post(api("/api/dungeon/combat/init/v1/"), () => {
+    const result = initMockCombat();
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: "mock 战斗初始化任务已启动" });
+  }),
+
+  http.post(api("/api/dungeon/combat/draw_cards/v1/"), () => {
+    const result = drawMockCards();
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: result.message });
+  }),
+
+  http.post(api("/api/dungeon/combat/play_cards/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/dungeon/combat/play_cards/v1/">;
+    // 怪物由服务端自动决策（MonsterPrePlaySystem），玩家按指定卡牌出牌
+    const result =
+      readMockCombatActorEntity(body.actor_name) !== null
+        ? advanceMockMonsterTurn()
+        : playMockCards(body.actor_name, body.card_name, body.targets ?? []);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: result.message });
+  }),
+
+  http.post(api("/api/dungeon/combat/pass_turn/v1/"), () => {
+    const result = passMockTurn();
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: result.message });
+  }),
+
+  http.post(api("/api/dungeon/combat/use_consumable/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/dungeon/combat/use_consumable/v1/">;
+    const result = useMockConsumable(body.item_name, body.targets ?? []);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: result.message });
+  }),
+
+  http.post(api("/api/dungeon/combat/equip_gear/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/dungeon/combat/equip_gear/v1/">;
+    const result = equipMockGear(body.item_name);
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: result.message });
+  }),
+
+  http.post(api("/api/dungeon/combat/collect_loot/v1/"), () => {
+    const result = collectMockLoot();
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 409 });
+    }
+    return HttpResponse.json({ message: result.message });
+  }),
+
+  http.post(api("/api/dungeon/combat/retreat/v1/"), () => {
+    const result = retreatMockCombat();
+    if (!result.ok) {
+      return HttpResponse.json({ detail: result.message }, { status: 400 });
+    }
+    return HttpResponse.json({ job_id: createMockTask(), message: result.message });
   }),
 
   // 退出副本：真实后端是异步任务（只返回 job_id），且状态变化由任务完成；

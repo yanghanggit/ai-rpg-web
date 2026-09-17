@@ -488,6 +488,65 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
 };
 
 /**
+ * 构造一份战斗数据（`Combat`）：战斗 mock 与战斗房间测试共用。
+ *
+ * 默认是「刚进战斗房间」的形态（`state = NONE`、无回合），各 phase 用例按需覆盖。
+ * 状态取值见 `features/dungeon/combatPhase.ts::COMBAT_STATE`。
+ */
+export function combatFixture(overrides: Partial<Schemas["Combat"]> = {}): Schemas["Combat"] {
+  return {
+    name: "（mock）停柩房战斗",
+    state: 0,
+    result: 0,
+    rounds: [],
+    retreated: false,
+    ...overrides,
+  };
+}
+
+/**
+ * 构造一个战斗回合（`Round`）：默认「回合已开、尚未抓牌」的空白回合。
+ *
+ * 字段名与后端 `models/combat.py::Round` 一致；`current_actor` 用 `null`（而非省略）表示
+ * 「无行动角色」，与序列化后的形状一致。
+ */
+export function roundFixture(overrides: Partial<Schemas["Round"]> = {}): Schemas["Round"] {
+  return {
+    completed_actors: [],
+    action_order: [],
+    current_actor: null,
+    is_completed: false,
+    draw_completed: false,
+    cards_log: [],
+    cards_narrative: [],
+    consumable_log: [],
+    consumable_narrative: [],
+    consumable_use_count: 0,
+    gear_log: [],
+    gear_narrative: [],
+    gear_equip_count: 0,
+    artifact_log: [],
+    artifact_narrative: [],
+    ...overrides,
+  };
+}
+
+/**
+ * 构造一个战斗房间（`CombatRoom`）：`GET /api/dungeons/v1/{user}/{game}/room` 的 `room`。
+ *
+ * `stage` 省略时给一个空场景（测试只关心 `combat` 时不必提供参战者）。
+ */
+export function combatRoomFixture(
+  options: { stage?: Schemas["Stage"]; combat?: Partial<Schemas["Combat"]> } = {},
+): Schemas["CombatRoom"] {
+  return {
+    type: "combat",
+    stage: options.stage ?? dungeonStage("场景.停柩房", []),
+    combat: combatFixture(options.combat),
+  };
+}
+
+/**
  * 卡牌载荷（后端 `Card.model_dump()` 的形状：`DeckComponent` 的 `cards`、`SpoilsComponent`
  * 的 `candidate_cards` / `claimed_cards`）。
  *

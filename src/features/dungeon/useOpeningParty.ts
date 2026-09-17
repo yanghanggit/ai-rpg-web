@@ -13,6 +13,7 @@
 import { $api } from "../../api/query";
 import { readCards } from "../cards/readCards";
 import type { Card } from "../cards/types";
+import { hasComponent } from "../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
@@ -59,19 +60,18 @@ export function useOpeningParty(userName: string, gameName: string) {
     if (entity === undefined) {
       return [];
     }
-    const spoilsComp = entity.components.find((component) => component.name === "SpoilsComponent");
     return [
       {
         name,
-        player: entity.components.some((component) => component.name === "PlayerComponent"),
+        player: hasComponent(entity, "PlayerComponent"),
         deck: readCards(entity.components, "DeckComponent"),
-        spoils:
-          spoilsComp === undefined
-            ? null
-            : {
-                candidateCards: readCards(entity.components, "SpoilsComponent", "candidate_cards"),
-                claimedCards: readCards(entity.components, "SpoilsComponent", "claimed_cards"),
-              },
+        // `SpoilsComponent` 不存在 = 尚未生成奖励；存在则给出两个队列
+        spoils: hasComponent(entity, "SpoilsComponent")
+          ? {
+              candidateCards: readCards(entity.components, "SpoilsComponent", "candidate_cards"),
+              claimedCards: readCards(entity.components, "SpoilsComponent", "claimed_cards"),
+            }
+          : null,
       },
     ];
   });

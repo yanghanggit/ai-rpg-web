@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { isRecord } from "../entities/ecs";
 
 type Blueprint = Schemas["Blueprint"];
 
@@ -33,11 +34,6 @@ interface ContainerItem {
   type: string;
   count: number;
   description: string;
-}
-
-/** 把 unknown 收窄成"可以按字符串取值的对象"。数组也会通过，但取不到 items，自会被丢弃。 */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 /** 收窄成一件物品；缺关键字段就丢掉，不猜。 */

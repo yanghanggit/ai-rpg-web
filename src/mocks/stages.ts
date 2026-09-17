@@ -29,20 +29,39 @@ export function readMockStages(): Schemas["StagesStateResponse"] {
 /** 把玩家移到目标场景，返回原场景；找不到玩家时返回 `null`。 */
 export function moveMockPlayerToStage(targetStage: string): string | null {
   const player = blueprintFixture.player_actor;
-  let origin: string | null = null;
+  const origin = findMockStageOfActor(player);
+  moveMockActorsToStage(targetStage, [player]);
+  return origin;
+}
 
+/**
+ * 把一组角色移动到目标场景（目标场景不存在时新建）。
+ *
+ * 真实后端改的是各实体的 `ActorComponent.current_stage`；进副本 / 推进到新房间时，
+ * `./dungeons` 用它把队伍（与怪物）搬进当前场景。
+ */
+export function moveMockActorsToStage(targetStage: string, actors: readonly string[]): void {
+  const targetActors = mapping[targetStage] ?? [];
+  for (const actor of actors) {
+    for (const names of Object.values(mapping)) {
+      const index = names.indexOf(actor);
+      if (index !== -1) {
+        names.splice(index, 1);
+      }
+    }
+    targetActors.push(actor);
+  }
+  mapping[targetStage] = targetActors;
+}
+
+/** 查找角色当前所在场景；不在任何场景时返回 `null`。 */
+function findMockStageOfActor(actor: string): string | null {
   for (const [stage, actors] of Object.entries(mapping)) {
-    const index = actors.indexOf(player);
-    if (index !== -1) {
-      actors.splice(index, 1);
-      origin = stage;
+    if (actors.includes(actor)) {
+      return stage;
     }
   }
-
-  const targetActors = mapping[targetStage] ?? [];
-  targetActors.push(player);
-  mapping[targetStage] = targetActors;
-  return origin;
+  return null;
 }
 
 /** 复位成初始 fixture（测试之间隔离）。 */

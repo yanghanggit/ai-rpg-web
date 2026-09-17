@@ -1,8 +1,5 @@
+import { isRecord } from "../entities/ecs";
 import { ITEM_TYPES, type Item, type ItemType } from "./types";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
 
 function isItemType(value: unknown): value is ItemType {
   return typeof value === "string" && ITEM_TYPES.some((known) => known === value);

@@ -7,9 +7,16 @@
  * 「生成 → 列表变长 → 查阅静态数据」这条链路可见。
  */
 import type { Schemas } from "../api/types";
+import {
+  readMockCombat,
+  readMockCombatParticipants,
+  resetMockCombat,
+  resetMockCombatState,
+} from "./combat";
 import { blueprintFixture, dungeonFixture, emptyDungeonFixture } from "./fixtures";
-import { enterMockOpeningParty, leaveMockOpening } from "./opening";
+import { enterMockOpeningParty, leaveMockOpening, readMockPartyNames } from "./opening";
 import { readMockRosterNames } from "./roster";
+import { moveMockActorsToStage, resetMockStages } from "./stages";
 
 let dungeons: Schemas["Dungeon"][] = [structuredClone(dungeonFixture)];
 let generatedCount = 0;
@@ -49,16 +56,45 @@ export function readMockDungeonState(): Schemas["DungeonStateResponse"] {
   };
 }
 
-/**
- * 当前副本房间（`GET /api/dungeons/v1/{user}/{game}/room`）。
+/** 当前副本房间（`GET /api/dungeons/v1/{user}/{game}/room`）。
  *
  * 后端在 `current_room_index == -1`（没有进行中的房间）时返回 404，所以这里也用 `null`
- * 表示「没有」，由 handler 转成 404——客户端不靠空值兜底。
+ * 表示「没有」，由 handler 转成 404——客户端不靠空值兜底。战斗房间的 `combat` 用
+ * `./combat` 的实时状态覆盖，其余字段仍来自静态副本 fixture。
  */
 export function readMockDungeonRoom(): Schemas["DungeonRoomResponse"]["room"] | null {
   const dungeon = runningDungeon();
   const room = dungeon?.rooms[runningRoomIndex];
-  return room === undefined ? null : structuredClone(room);
+  if (room === undefined) {
+    return null;
+  }
+  if (room.type === "combat") {
+    return { type: "combat", stage: structuredClone(room.stage), combat: readMockCombat() };
+  }
+  return structuredClone(room);
+}
+
+/**
+ * 把队伍（战斗房间还包括怪物）搬进当前房间的场景，并在进入战斗房间时复位战斗。
+ *
+ * 对齐后端：`enter` / `advance_stage` 都会迁移队伍，且推进到战斗房间时把
+ * `combat.state` 置为 `INITIALIZATION`（见 `services/dungeon_advance_action.py`）。
+ */
+function syncMockRoomPlacement(): void {
+  const dungeon = runningDungeon();
+  const room = dungeon?.rooms[runningRoomIndex];
+  if (room === undefined) {
+    return;
+  }
+  if (room.type === "combat") {
+    const monsters = room.stage.actors
+      .filter((actor) => actor.type === "Monster")
+      .map((actor) => actor.name);
+    resetMockCombat(monsters);
+    moveMockActorsToStage(room.stage.name, readMockCombatParticipants());
+  } else {
+    moveMockActorsToStage(room.stage.name, readMockPartyNames());
+  }
 }
 
 /** 发起进入副本：与后端一样，已有副本在跑时拒绝；成功则同时固化队伍。 */
@@ -74,6 +110,8 @@ export function enterMockDungeon(name: string): { ok: true } | { ok: false; erro
   // 后端在同一步里把玩家与名单成员固化成队伍，所以这里也一行做完:
   // 分开两个模块自己调，迟早有一个调用点忘掉（测试就抓到过一次）。
   enterMockOpeningParty([blueprintFixture.player_actor, ...readMockRosterNames()]);
+  // 队伍被搬到第一间房的场景（战斗房间还要额外放上怪物并复位战斗）
+  syncMockRoomPlacement();
   return { ok: true };
 }
 
@@ -82,6 +120,9 @@ export function exitMockDungeon(): void {
   runningName = "";
   runningRoomIndex = -1;
   leaveMockOpening();
+  // 队伍回到家园场景、战斗状态清空
+  resetMockStages();
+  resetMockCombatState();
 }
 
 /**
@@ -95,6 +136,8 @@ export function advanceMockDungeon(): boolean {
     return false;
   }
   runningRoomIndex += 1;
+  // 推进到新房间：队伍迁移；若是战斗房间，战斗复位为 INITIALIZATION
+  syncMockRoomPlacement();
   return true;
 }
 
