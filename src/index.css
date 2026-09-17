@@ -776,6 +776,19 @@ ul.card-tiles--stack {
   border-radius: 12px;
 }
 
+/* 已领取的卡：绿边 + 淡绿底 + 「已领取」徽标，与候选卡一眼分开 */
+.card-tile--claimed {
+  border-color: var(--ok);
+  border-width: 2px;
+  background: color-mix(in srgb, var(--ok) 8%, transparent);
+}
+
+.badge--claimed {
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 600;
+}
+
 .card-tile-head {
   display: flex;
   flex-wrap: wrap;

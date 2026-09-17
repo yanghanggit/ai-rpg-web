@@ -48,7 +48,7 @@ export default function SpoilsDialog({
           <p className="muted">已领取 {claimedCards.length} 张：</p>
           <ul className="card-tiles card-tiles--stack">
             {claimedCards.map((card) => (
-              <CardItem key={card.uuid} card={card} action={null} />
+              <CardItem key={card.uuid} card={card} action={null} claimed />
             ))}
           </ul>
           <p className="muted">待领取候选 {candidateCards.length} 张：</p>

@@ -52,12 +52,26 @@ function statsText(card: Card): string {
  *
  * 牌名直接显示：**卡牌名不带 `类型.` 前缀**（后端 `Card.name` 就是叙事化的牌名，
  * 原型见 `demo/card_prototypes.py`），所以不走 `displayName`（那会把名字里的 `.` 当分隔符切掉）。
+ *
+ * `claimed` 标记「这张卡已经被领走」：同一张卡在候选与已领取两处出现时，已领取的那份要能一眼
+ * 认出来（加绿框 + 「已领取」徽标）。这是**卡牌状态**而不是流程动作，所以用布尔 prop 表达，
+ * 而不是让调用方自己拼 class。
  */
-export default function CardItem({ card, action }: { card: Card; action?: ReactNode }) {
+export default function CardItem({
+  card,
+  action,
+  claimed = false,
+}: {
+  card: Card;
+  action?: ReactNode;
+  /** 该卡已被领取：加视觉标记（区别于仍在候选里的同款卡）。 */
+  claimed?: boolean;
+}) {
   return (
-    <li className="card-tile">
+    <li className={claimed ? "card-tile card-tile--claimed" : "card-tile"}>
       <div className="card-tile-head">
         <span className="card-tile-name">{card.name}</span>
+        {claimed ? <span className="badge badge--claimed">已领取</span> : null}
         {flagLabels(card).map((label) => (
           <span key={label} className="badge">
             {label}
