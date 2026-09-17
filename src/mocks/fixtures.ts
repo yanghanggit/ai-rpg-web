@@ -13,6 +13,7 @@ import type { Schemas } from "../api/types";
 export const serverInfoFixture: Schemas["ServerInfoResponse"] = {
   service: "AI RPG DBG Game Server",
   base_url: "http://localhost:8000/",
+  assets_url_prefix: "/assets/image",
   description: "（mock）AI RPG DBG Game Server API Root Endpoint",
   status: "healthy",
   timestamp: "2026-09-11T12:00:00",
