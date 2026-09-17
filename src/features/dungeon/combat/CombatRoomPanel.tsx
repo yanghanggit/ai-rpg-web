@@ -5,7 +5,6 @@ import CombatPostPanel from "./CombatPostPanel";
 import CombatRoundStartPanel from "./CombatRoundStartPanel";
 import CombatTurnPanel from "./CombatTurnPanel";
 import { deriveCombatPhase } from "./combatPhase";
-import { useCollectLoot } from "./useCollectLoot";
 import { useCombatActions } from "./useCombatActions";
 import { useCombatScene } from "./useCombatScene";
 
@@ -13,11 +12,20 @@ import { useCombatScene } from "./useCombatScene";
  * 战斗房间的房间主体（`room.type === "combat"`）。
  *
  * 这是 web 端相对 TUI 多出来的**一层**：TUI 每个阶段是一个独立 Screen、靠 `switch_screen` 换屏；
- * 这里只做**按 `combat.state` 派生 phase → 渲染对应 Panel**。数据（参战者快照）与动作（七个
- * 战斗接口）都由本层持有，Panel 只做展示——避免每个阶段各自取数、快照互不一致。
+ * 这里只做**按 `combat.state` 派生 phase → 渲染对应 Panel**。共享的参战者快照与 7 个 job 动作
+ * 由本层持有，Panel 不做重复取数——避免每个阶段各自取数、快照互不一致（阶段专属动作见下）。
  *
  * 动作成功后失效刷新 → `room` 重取 → `deriveCombatPhase` 重新派生 → 自动切到下一个 Panel，
- * 不需要 TUI 的「锁输入 → 回车 → 切屏」。结算（`post`）暂留占位。
+ * 不需要 TUI 的「锁输入 → 回车 → 切屏」。
+ *
+ * **放东西的规则**（面板变复杂时照此扩展；**不要因此给 phase 加路由**——phase 是服务端派生状态，
+ * 不是导航状态）：
+ * - **共享的、必须唯一一份的**留在这里：参战者快照（`useCombatScene`：各阶段看同一份，避免快照
+ *   互不一致）与 7 个 job 动作（`useCombatActions`：共用后端同一把玩家锁，`isBusy` 必须合起来看）。
+ * - **只有某个阶段用的**跟着那个阶段走：结算的「收取战利品」（`useCollectLoot`）与「进入下一关」
+ *   （`useAdvanceStage`）都在 `CombatPostPanel` 里，本层不再认识它们。
+ * - 真到 props 读不动了，再考虑上 context 消钻井（最后手段，Panel 会不再纯 props）；若某阶段内部
+ *   长出**用户主动导航的子视图**，路由化那个子视图，而不是 phase。
  */
 export default function CombatRoomPanel({
   userName,
@@ -30,7 +38,6 @@ export default function CombatRoomPanel({
 }) {
   const scene = useCombatScene(userName, gameName, room);
   const actions = useCombatActions(userName, gameName);
-  const collect = useCollectLoot(userName, gameName);
 
   const phase = deriveCombatPhase(room.combat);
   const latest = room.combat.rounds.at(-1) ?? null;
@@ -77,9 +84,6 @@ export default function CombatRoomPanel({
           combatants={scene.combatants}
           combatPending={scene.isPending}
           loot={scene.loot}
-          onCollect={() => collect.mutate()}
-          collectBusy={collect.isPending}
-          collectError={collect.isError ? describeApiError(collect.error) : null}
         />
       )}
     </>
