@@ -20,8 +20,8 @@ import { useExitDungeon } from "./useExitDungeon";
  * - 标题 = **副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自
  *   `/state`（房间模型没有自己的名字，界面上的房间名就是 `room.stage.name`）；`/state` 还没回来
  *   时先只显示房间名，避免标题卡在「加载中」；
- * - 顶部**一个**「副本操作」入口按钮：原来的 副本信息 / 叙事 / 离开副本 三个按钮折进
- *   `RoomActionsDialog`（纵向列表）。**未读叙事信号上提到入口按钮**（变绿 + 角标），否则会被菜单吃掉；
+ * - 标题行右侧**一个**齿轮图标「副本操作」入口：原来的 副本信息 / 叙事 / 离开副本 三个按钮折进
+ *   `RoomActionsDialog`（纵向列表）。**未读叙事信号上提到这个齿轮**（变绿 + 角标），否则会被菜单吃掉；
  * - 「离开副本」是**任务接口**，而「回家」发生在任务内部（队伍被传回家园场景、副本被拆掉），
  *   所以在回调里触发、等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
  *
@@ -82,7 +82,6 @@ export default function RoomScaffold({
   const dungeonName = dungeon === null ? "" : displayName(dungeon.name);
 
   const unread = narrative.unread;
-  const entryLabel = exit.isBusy ? "退出中…" : "副本操作";
   const entryAria = exit.isBusy
     ? "副本操作（退出中）"
     : unread > 0
@@ -91,23 +90,25 @@ export default function RoomScaffold({
 
   return (
     <main className="page page--wide">
-      <h1>
-        {dungeonName}
-        {progress} {displayName(roomName)}
-      </h1>
-
-      <div className="toolbar">
+      {/* 标题行：齿轮图标紧贴标题右侧，留出正文空间（与卡片右上角 .card-info-button 同一套做法） */}
+      <div className="page-head">
+        <h1>
+          {dungeonName}
+          {progress} {displayName(roomName)}
+        </h1>
         <button
           type="button"
-          className={unread > 0 ? "count-button count-button--unread" : undefined}
+          className={unread > 0 ? "icon-button icon-button--unread" : "icon-button"}
           aria-haspopup="dialog"
           aria-label={entryAria}
+          title="副本操作"
           disabled={exit.isBusy}
           onClick={() => setPane("actions")}
         >
-          {entryLabel}
-          {!exit.isBusy && unread > 0 ? <span className="badge">{unread}</span> : null}
+          ⚙{unread > 0 ? <span className="icon-badge">{unread}</span> : null}
         </button>
+        {/* 图标按钮显示不下文字，退出中的反馈放在它旁边 */}
+        {exit.isBusy ? <span className="muted">退出中…</span> : null}
       </div>
 
       {exitBlocked && exitBlockedHint ? <p className="muted">{exitBlockedHint}</p> : null}

@@ -91,7 +91,7 @@ describe("副本房间 · 共同框架", () => {
     expect(screen.queryByText("开场")).not.toBeInTheDocument();
   });
 
-  it("顶部动作区折叠成「副本操作」入口；菜单里有三个动作，没有返回副本总览的入口", async () => {
+  it("标题右侧的「副本操作」齿轮入口；菜单里有三个动作，没有返回副本总览的入口", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
@@ -174,11 +174,11 @@ describe("副本房间 · 共同框架", () => {
     // 首屏没有事件：入口按钮不亮
     const entry = await screen.findByRole("button", { name: /副本操作/ });
     await waitForInit();
-    expect(entry).not.toHaveClass("count-button--unread");
+    expect(entry).not.toHaveClass("icon-button--unread");
 
     // 生成奖励 → 失效叙事 → 新事件到达：入口按钮变绿并带上未读数
     fireEvent.click(screen.getByRole("button", { name: "生成奖励" }));
-    await waitFor(() => expect(entry).toHaveClass("count-button--unread"));
+    await waitFor(() => expect(entry).toHaveClass("icon-button--unread"));
     expect(within(entry).getByText("1")).toBeInTheDocument();
 
     // 打开菜单里的「叙事」即视为已读，信号消失
@@ -186,7 +186,7 @@ describe("副本房间 · 共同框架", () => {
     fireEvent.click(within(menu).getByRole("button", { name: "叙事" }));
     await screen.findByRole("dialog", { name: "全部叙事" });
     fireEvent.click(screen.getByRole("button", { name: "关闭" }));
-    await waitFor(() => expect(entry).not.toHaveClass("count-button--unread"));
+    await waitFor(() => expect(entry).not.toHaveClass("icon-button--unread"));
   });
 
   it("离开副本：从菜单触发后入口变「退出中…」并禁用", async () => {

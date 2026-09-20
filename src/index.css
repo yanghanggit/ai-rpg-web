@@ -240,6 +240,61 @@ ul.items li {
   font-weight: 600;
 }
 
+/* 页面标题行：标题 + 紧贴其后的图标按钮（副本房间的「副本操作」齿轮） */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.page-head h1 {
+  margin: 0;
+}
+
+/* 标题旁的图标按钮：**无外框**（只看得见齿轮），尺寸保留以维持点击热区 */
+.icon-button {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 0;
+  line-height: 1;
+  /* 字号故意远大于按钮：⚙ 字形墨迹只占 em 的一半多一点（实测 ~0.58em），
+     字号小就会显得空。 */
+  font-size: 3rem;
+  color: var(--muted);
+  /* ⚙ 的墨迹整个在基线之上（实测 ink descent ≈ −1），比带下伸部的中文标题略低；
+     往上抬一丁点，让齿轮中心与标题中线对齐（随字号缩放）。 */
+  transform: translateY(-0.031em);
+}
+
+/* 有新叙事未看时齿轮变绿：与 .count-button--unread 同一套颜色 */
+.icon-button--unread {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+/* 齿轮右上角的未读数角标 */
+.icon-badge {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.4rem;
+  min-width: 1.25rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: var(--ok);
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
 /* 「副本操作」浮窗：纵向动作列表，每项一行（按钮在左、状态在右） */
 .action-list {
   display: flex;
