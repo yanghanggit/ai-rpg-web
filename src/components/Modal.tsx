@@ -13,17 +13,21 @@ import { type ReactNode, useEffect, useId, useRef } from "react";
 export default function Modal({
   title,
   meta,
+  size = "default",
   onClose,
   children,
 }: {
   title: string;
   /** 标题右侧的补充信息，如「共 12 条」。 */
   meta?: string;
+  /** 面板宽度变体；`sm` 给内容少的菜单类浮窗（避免右侧大片留白）。 */
+  size?: "default" | "sm";
   onClose: () => void;
   children: ReactNode;
 }) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const panelClass = size === "sm" ? "overlay-panel overlay-panel--sm" : "overlay-panel";
 
   // 打开时把焦点移进浮层：键盘用户不必先 Tab 穿过后面的整页内容
   useEffect(() => {
@@ -53,7 +57,7 @@ export default function Modal({
     <div className="overlay">
       <button type="button" className="overlay-backdrop" aria-label="关闭浮层" onClick={onClose} />
 
-      <div className="overlay-panel" role="dialog" aria-modal="true" aria-labelledby={titleId}>
+      <div className={panelClass} role="dialog" aria-modal="true" aria-labelledby={titleId}>
         <div className="overlay-head">
           <h2 id={titleId}>{title}</h2>
           {meta ? <span className="muted">{meta}</span> : null}

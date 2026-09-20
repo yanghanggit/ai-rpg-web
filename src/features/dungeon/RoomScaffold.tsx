@@ -5,6 +5,7 @@ import NarrativeOverlay from "../session/NarrativeOverlay";
 import { useNarrative } from "../session/useNarrative";
 import DungeonInfoDialog from "./DungeonInfoDialog";
 import RoomActionsDialog from "./RoomActionsDialog";
+import { readDungeonInfo } from "./readDungeonInfo";
 import { useDungeonRun } from "./useDungeonRun";
 import { useExitDungeon } from "./useExitDungeon";
 
@@ -80,6 +81,9 @@ export default function RoomScaffold({
       ? ` (${dungeon.current_room_index + 1}/${dungeon.rooms.length})`
       : "";
   const dungeonName = dungeon === null ? "" : displayName(dungeon.name);
+  // 菜单里「副本信息」右侧的进度（与 DungeonInfoDialog 同一个格式来源）
+  const infoProgress =
+    dungeon === null ? undefined : (readDungeonInfo(dungeon).progress ?? undefined);
 
   const unread = narrative.unread;
   const entryAria = exit.isBusy
@@ -119,6 +123,7 @@ export default function RoomScaffold({
       {pane === "actions" ? (
         <RoomActionsDialog
           canOpenInfo={run.data !== undefined}
+          infoMeta={infoProgress}
           exitBlocked={exitBlocked}
           exitBlockedHint={exitBlockedHint}
           exitBusy={exit.isBusy}

@@ -295,11 +295,10 @@ ul.items li {
   text-align: center;
 }
 
-/* 「副本操作」浮窗：纵向动作列表，每项一行（按钮在左、状态在右） */
+/* 「副本操作」浮窗：整行可点的动作列表（标签在左、状态在右，行间分隔线） */
 .action-list {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -307,13 +306,38 @@ ul.items li {
 
 ul.action-list li {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
+.action-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+/* 按钮撑满一行（左侧标签），点击区域大；悬停变绿 */
 ul.action-list li > button:first-child {
-  min-width: 6.5rem;
+  flex: 1;
+  padding: 0.7rem 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: 600;
+}
+
+ul.action-list li > button:first-child:hover:not(:disabled) {
+  color: var(--ok);
+}
+
+/* 每行右侧的状态（进度 / 已看 / …） */
+ul.action-list .action-meta {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+/* 有新叙事未看：状态变绿，与齿轮 / 家园页的未读信号同一颜色 */
+.action-meta--unread {
+  color: var(--ok);
+  font-weight: 600;
 }
 
 /* 小节标题行 */
@@ -368,6 +392,11 @@ ul.action-list li > button:first-child {
   border-radius: 12px;
   background: var(--bg);
   box-shadow: 0 20px 60px rgb(0 0 0 / 35%);
+}
+
+/* 内容少的菜单类浮窗：收窄面板，避免右侧大片留白 */
+.overlay-panel--sm {
+  width: min(100%, 26rem);
 }
 
 .overlay-head {
