@@ -17,6 +17,9 @@ async function enableMocking(): Promise<void> {
   }
   const { worker } = await import("./mocks/browser");
   await worker.start({ onUnhandledRequest: "warn" });
+  // 深链种子：在首屏渲染前把 URL 的 `?seed=...` 变成 mock 初始状态（详见 `./mocks/seedMockFromUrl`）
+  const { seedMockFromUrl } = await import("./mocks/seedMockFromUrl");
+  seedMockFromUrl();
 }
 
 const root = document.getElementById("root");

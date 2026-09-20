@@ -1,15 +1,22 @@
-import { Link } from "react-router";
-
 /**
  * 开发索引页（仅 dev 注册）。
  *
  * 把常用深链列成可点的清单：配合 `pnpm dev:mock` 用 mock 数据，
  * 或 `pnpm dev` 时用真实后端（需该 user/game 已存在）。
+ *
+ * 这里一律用**普通 `<a>`**（整页加载），而不是 react-router 的 `<Link>`：带 `?seed=` 的深链
+ * 需要重跑 `main.tsx::enableMocking` 才能把 mock 状态造出来（见 `mocks/seedMockFromUrl`），
+ * 而 SPA 跳转不会重跑 boot。顺带的好处是每次进来都是全新的 mock 内存态。
  */
 const links = [
   { to: "/", label: "启动屏 LaunchPage" },
   { to: "/entry", label: "玩家入口 EntryPage" },
   { to: "/game/webdev/Game1/home", label: "家园概览 HomeOverviewPage" },
+  { to: "/game/webdev/Game1/dungeon", label: "副本总览 DungeonOverviewPage" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:init", label: "战斗 · 初始化" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:round_start", label: "战斗 · 抓牌" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:turn", label: "战斗 · 出牌" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:post", label: "战斗 · 结算" },
 ];
 
 export default function DevIndexPage() {
@@ -17,12 +24,13 @@ export default function DevIndexPage() {
     <main className="page page--wide">
       <h1>开发索引</h1>
       <p className="muted">
-        仅 dev 下注册。配合 <code>pnpm dev:mock</code> 可跳过全部正式流程直接查看页面。
+        仅 dev 下注册。配合 <code>pnpm dev:mock</code> 可跳过全部正式流程直接查看页面；
+        <code>?seed=</code> 的链接会用 mock 直接造出对应战斗阶段。
       </p>
       <ul className="plain link-grid">
         {links.map((link) => (
           <li key={link.to}>
-            <Link to={link.to}>{link.label}</Link> <span className="muted mono">{link.to}</span>
+            <a href={link.to}>{link.label}</a> <span className="muted mono">{link.to}</span>
           </li>
         ))}
       </ul>
