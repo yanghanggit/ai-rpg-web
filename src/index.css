@@ -240,6 +240,27 @@ ul.items li {
   font-weight: 600;
 }
 
+/* 「副本操作」浮窗：纵向动作列表，每项一行（按钮在左、状态在右） */
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul.action-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+ul.action-list li > button:first-child {
+  min-width: 6.5rem;
+}
+
 /* 小节标题行 */
 .section-head {
   display: flex;

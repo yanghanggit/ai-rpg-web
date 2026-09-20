@@ -1,14 +1,14 @@
 import { useState } from "react";
 import NarrativeOverlay from "./NarrativeOverlay";
-import { sessionKey } from "./sessionKey";
-import { useSessionMessages } from "./useSessionMessages";
-import { useUnreadCount } from "./useUnreadCount";
+import { useNarrative } from "./useNarrative";
 
 /**
  * 「叙事」入口：一个带「已看 / 总共」计数的通知按钮 + 「全部叙事」浮层。
  *
- * 家园页与副本房间页**共用这一个组件**：叙事是**会话级**资源（本局所有事件），
- * 不属于任何一屏或任何房间类型，所以入口的长相与未读算法都只有一份。
+ * 家园页用这个组件；副本房间页把入口折进了「副本操作」菜单（见 `RoomActionsDialog`），
+ * 但两处的**数据与未读算法共用 `useNarrative`**，浮层共用 `NarrativeOverlay`。
+ * 叙事是**会话级**资源（本局所有事件），不属于任何一屏或任何房间类型。
+ *
  * 按钮右侧大于左侧即「有新事件没看」，用颜色表达，页面上不再写一句提示文案。
  */
 export default function NarrativeButton({
@@ -18,12 +18,8 @@ export default function NarrativeButton({
   userName: string;
   gameName: string;
 }) {
-  const session = useSessionMessages(userName, gameName);
   const [isOpen, setIsOpen] = useState(false);
-
-  const total = session.messages.length;
-  const unread = useUnreadCount(sessionKey(userName, gameName), total, session.hasLoaded, isOpen);
-  const seen = total - unread;
+  const { messages, seen, total, unread } = useNarrative(userName, gameName, isOpen);
 
   return (
     <>
@@ -36,9 +32,7 @@ export default function NarrativeButton({
       >
         叙事 {seen} / {total}
       </button>
-      {isOpen ? (
-        <NarrativeOverlay messages={session.messages} onClose={() => setIsOpen(false)} />
-      ) : null}
+      {isOpen ? <NarrativeOverlay messages={messages} onClose={() => setIsOpen(false)} /> : null}
     </>
   );
 }

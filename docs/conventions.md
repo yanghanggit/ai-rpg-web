@@ -34,7 +34,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
   dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/useAdvanceStage.ts
-  dungeon/OpeningRoomPanel.tsx  dungeon/RoomScaffold.tsx  dungeon/useOpeningParty.ts  dungeon/useOpeningActions.ts  dungeon/DeckDialog.tsx  dungeon/SpoilsDialog.tsx  dungeon/AdvanceRoomDialog.tsx
+  dungeon/OpeningRoomPanel.tsx  dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/useOpeningParty.ts  dungeon/useOpeningActions.ts  dungeon/DeckDialog.tsx  dungeon/SpoilsDialog.tsx  dungeon/AdvanceRoomDialog.tsx
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatInitPanel.tsx  combat/CombatRoundStartPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
   dungeon/combat/CombatStatus.tsx  combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/combatPhase.ts
@@ -42,7 +42,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   entities/ecs.ts  entities/invalidateEntities.ts
   cards/CardItem.tsx  cards/readCard.ts  cards/readCards.ts  cards/types.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
-  session/useSessionMessages.ts  session/NarrativeButton.tsx  session/NarrativeOverlay.tsx
+  session/useSessionMessages.ts  session/NarrativeButton.tsx  session/NarrativeOverlay.tsx  session/useNarrative.ts
   session/sessionKey.ts  session/unreadBaselines.ts  session/useUnreadCount.ts
 src/components/          # 通用展示逻辑（不含领域知识）
   displayName.ts         #   服务器名字 → 显示名，名字显示的唯一规则入口

@@ -1,6 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it, vi } from "vitest";
+import type { Schemas } from "../api/types";
 import { displayName } from "../components/displayName";
 import { enterMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
@@ -72,6 +73,12 @@ async function openSpoils(memberName: string) {
   return screen.findByRole("dialog", { name: "奖励" });
 }
 
+/** 打开「副本操作」菜单（副本信息 / 叙事 / 离开副本 三个动作都收在这一个入口里）。 */
+async function openActions() {
+  fireEvent.click(await screen.findByRole("button", { name: /副本操作/ }));
+  return screen.findByRole("dialog", { name: "副本操作" });
+}
+
 /** 共同框架用开场房间验证（它同样适用于战斗房间，见 `CombatRoomPage.test.tsx` 的标题断言）。 */
 describe("副本房间 · 共同框架", () => {
   it("标题 = 副本名 (当前/总数) 房间名（不是「开场」这类类型名）", async () => {
@@ -84,27 +91,35 @@ describe("副本房间 · 共同框架", () => {
     expect(screen.queryByText("开场")).not.toBeInTheDocument();
   });
 
-  it("顶部动作区：副本信息 / 叙事 / 离开副本（没有返回副本总览的入口）", async () => {
+  it("顶部动作区折叠成「副本操作」入口；菜单里有三个动作，没有返回副本总览的入口", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
     await screen.findByRole("heading", { name: OPENING_HEADING });
-    expect(screen.getByRole("button", { name: "副本信息" })).toBeInTheDocument();
-    // 叙事入口在共同框架（不分房间类型），与家园页共用同一个组件
-    expect(screen.getByRole("button", { name: /查看叙事事件/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "离开副本" })).toBeInTheDocument();
+    // 三个动作不再直接摊在页面上
+    expect(screen.queryByRole("button", { name: "副本信息" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "离开副本" })).not.toBeInTheDocument();
+
+    const menu = await openActions();
+    expect(within(menu).getByRole("button", { name: "副本信息" })).toBeInTheDocument();
+    // 叙事入口在共同框架（不分房间类型），与家园页共用同一套数据/未读算法
+    expect(within(menu).getByRole("button", { name: "叙事" })).toBeInTheDocument();
+    expect(within(menu).getByRole("button", { name: "离开副本" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /返回副本总览/ })).not.toBeInTheDocument();
   });
 
-  it("叙事入口：打开浮层看这一局的事件", async () => {
+  it("叙事入口：从菜单打开浮层看这一局的事件（菜单关闭，不叠层）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    fireEvent.click(await screen.findByRole("button", { name: /查看叙事事件/ }));
+    const menu = await openActions();
+    fireEvent.click(within(menu).getByRole("button", { name: "叙事" }));
 
     expect(await screen.findByRole("dialog", { name: "全部叙事" })).toBeInTheDocument();
+    // 菜单已关闭：同类浮窗是切换而不是叠加
+    expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
   });
 
   it("副本信息：展示副本进度，并标出队伍当前所在的房间", async () => {
@@ -112,10 +127,11 @@ describe("副本房间 · 共同框架", () => {
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    const infoButton = await screen.findByRole("button", { name: "副本信息" });
+    const menu = await openActions();
+    const infoEntry = within(menu).getByRole("button", { name: "副本信息" });
     // 「副本信息」要等 `/state` 回来才有内容，在此之前是禁用的
-    await waitFor(() => expect(infoButton).toBeEnabled());
-    fireEvent.click(infoButton);
+    await waitFor(() => expect(infoEntry).toBeEnabled());
+    fireEvent.click(infoEntry);
 
     const dialog = await screen.findByRole("dialog", { name: "副本信息" });
     // 起点是 rooms[0]（义庄前院）
@@ -126,17 +142,66 @@ describe("副本房间 · 共同框架", () => {
     expect(within(dialog).getByText(/HP 16/)).toBeInTheDocument();
   });
 
-  it("离开副本：任务跑着的时候按钮变「退出中…」并禁用", async () => {
+  it("新叙事未读时，入口按钮变绿并带上未读数；打开即已读", async () => {
+    let hasNewMessage = false;
+    const newMessage: Schemas["SessionMessage"] = {
+      sequence_id: 1,
+      agent_event: {
+        type: "announce",
+        message: "新事件",
+        actor: "旁白",
+        stage: "场景.义庄前院",
+        content: "新事件",
+      },
+    };
+    server.use(
+      instantTasks(),
+      http.post(api("/api/dungeon/opening/generate_spoils/v1/"), () => {
+        hasNewMessage = true;
+        return HttpResponse.json({ job_id: 2, message: "ok" });
+      }),
+      http.get(api("/api/session_messages/v1/:userName/:gameName/since"), ({ request }) => {
+        const since = Number(new URL(request.url).searchParams.get("last_sequence_id") ?? 0);
+        const all = hasNewMessage ? [newMessage] : [];
+        return HttpResponse.json({
+          session_messages: all.filter((message) => message.sequence_id > since),
+        });
+      }),
+    );
+    enterMockDungeon("副本.荒村义庄");
+    renderOpening();
+
+    // 首屏没有事件：入口按钮不亮
+    const entry = await screen.findByRole("button", { name: /副本操作/ });
+    await waitForInit();
+    expect(entry).not.toHaveClass("count-button--unread");
+
+    // 生成奖励 → 失效叙事 → 新事件到达：入口按钮变绿并带上未读数
+    fireEvent.click(screen.getByRole("button", { name: "生成奖励" }));
+    await waitFor(() => expect(entry).toHaveClass("count-button--unread"));
+    expect(within(entry).getByText("1")).toBeInTheDocument();
+
+    // 打开菜单里的「叙事」即视为已读，信号消失
+    const menu = await openActions();
+    fireEvent.click(within(menu).getByRole("button", { name: "叙事" }));
+    await screen.findByRole("dialog", { name: "全部叙事" });
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+    await waitFor(() => expect(entry).not.toHaveClass("count-button--unread"));
+  });
+
+  it("离开副本：从菜单触发后入口变「退出中…」并禁用", async () => {
     server.use(exitWith(9), tasksWithStuck(9));
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
     // 远离开场房间的退出守卫：先等自动初始化完成
     await waitForInit();
 
-    fireEvent.click(screen.getByRole("button", { name: "离开副本" }));
+    const menu = await openActions();
+    fireEvent.click(within(menu).getByRole("button", { name: "离开副本" }));
 
-    expect(await screen.findByRole("button", { name: "退出中…" })).toBeDisabled();
-    // 还没结束，人还留在房间页
+    expect(await screen.findByRole("button", { name: "副本操作（退出中）" })).toBeDisabled();
+    // 菜单已关，人还留在房间页
+    expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
     expect(screen.getByRole("heading", { name: OPENING_HEADING })).toBeInTheDocument();
   });
 
@@ -146,7 +211,8 @@ describe("副本房间 · 共同框架", () => {
     renderOpening();
     await waitForInit();
 
-    fireEvent.click(screen.getByRole("button", { name: "离开副本" }));
+    const menu = await openActions();
+    fireEvent.click(within(menu).getByRole("button", { name: "离开副本" }));
 
     expect(await screen.findByText("家园页占位")).toBeInTheDocument();
   });
@@ -171,11 +237,14 @@ describe("副本房间 · 开场房间", () => {
     const retry = screen.getByRole("button", { name: "初始化开场" });
     expect(retry).toBeEnabled();
 
-    // 未初始化 → 服务端不允许推进 / 退出，两个按钮都禁用并说明原因
+    // 未初始化 → 服务端不允许推进 / 退出，按钮都禁用并说明原因
     expect(screen.getByRole("button", { name: "进入下一关" })).toBeDisabled();
     expect(screen.getByText("开场房间尚未初始化，无法进入下一关。")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "离开副本" })).toBeDisabled();
+    // 「离开副本」被锁的原因写在页面上；菜单里的该项禁用
     expect(screen.getByText("开场房间尚未初始化，无法离开副本。")).toBeInTheDocument();
+    const menu = await openActions();
+    expect(within(menu).getByRole("button", { name: "离开副本" })).toBeDisabled();
+    fireEvent.click(within(menu).getByRole("button", { name: "关闭" }));
 
     // 手动重试会再发一次初始化
     fireEvent.click(retry);
@@ -295,14 +364,16 @@ describe("副本房间 · 开场房间", () => {
     expect(within(dialog).getByText("不可出牌")).toBeInTheDocument();
   });
 
-  it("叙事入口不再放在开场房间体内（它是共同框架的一部分）", async () => {
+  it("叙事入口只有一份，在「副本操作」菜单里（开场房间体内不再渲染）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 叙事按钮只有一个（在顶部动作区），开场房间不再各自渲染一份
     await screen.findByRole("heading", { name: OPENING_HEADING });
-    expect(screen.getAllByRole("button", { name: /查看叙事事件/ })).toHaveLength(1);
+    // 页面上不再直接有「叙事」按钮，只有菜单里一份
+    expect(screen.queryByRole("button", { name: "叙事" })).not.toBeInTheDocument();
+    const menu = await openActions();
+    expect(within(menu).getAllByRole("button", { name: "叙事" })).toHaveLength(1);
   });
 
   it("进入下一关：确认框列出下一间与奖励状态，确认后落到战斗房间", async () => {

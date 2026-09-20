@@ -1,8 +1,10 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { displayName } from "../../components/displayName";
-import NarrativeButton from "../session/NarrativeButton";
+import NarrativeOverlay from "../session/NarrativeOverlay";
+import { useNarrative } from "../session/useNarrative";
 import DungeonInfoDialog from "./DungeonInfoDialog";
+import RoomActionsDialog from "./RoomActionsDialog";
 import { useDungeonRun } from "./useDungeonRun";
 import { useExitDungeon } from "./useExitDungeon";
 
@@ -18,13 +20,20 @@ import { useExitDungeon } from "./useExitDungeon";
  * - 标题 = **副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自
  *   `/state`（房间模型没有自己的名字，界面上的房间名就是 `room.stage.name`）；`/state` 还没回来
  *   时先只显示房间名，避免标题卡在「加载中」；
- * - 顶部动作区：「副本信息」（展示副本**进度**）、「叙事」（与家园页共用 `NarrativeButton`）、
- *   「离开副本」；
+ * - 顶部**一个**「副本操作」入口按钮：原来的 副本信息 / 叙事 / 离开副本 三个按钮折进
+ *   `RoomActionsDialog`（纵向列表）。**未读叙事信号上提到入口按钮**（变绿 + 角标），否则会被菜单吃掉；
  * - 「离开副本」是**任务接口**，而「回家」发生在任务内部（队伍被传回家园场景、副本被拆掉），
- *   所以这里只等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
+ *   所以在回调里触发、等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
+ *
+ * **同一时刻最多开一个浮窗**：用一个 `pane` state 表达「菜单 → 子浮窗」的**切换**而非叠加
+ * （对照 docs/pages.md「同类切换不叠第三层」，否则 ESC 该关哪层有歧义）。
  *
  * 房间正文由 `children` 传入。**这一层要克制**：往上加的东西必须真的适用于每一种房间。
  */
+
+/** 当前开着的浮窗；`null` 表示都关着。 */
+type RoomPane = "actions" | "info" | "narrative" | null;
+
 export default function RoomScaffold({
   userName,
   gameName,
@@ -47,8 +56,10 @@ export default function RoomScaffold({
   const run = useDungeonRun(userName, gameName);
   const exit = useExitDungeon(userName, gameName);
 
-  // 是否打开「副本信息」浮窗
-  const [isInfoOpen, setIsInfoOpen] = useState(false);
+  const [pane, setPane] = useState<RoomPane>(null);
+
+  // 叙事浮层开着即视为已读；入口按钮的未读信号由同一个 hook 给出
+  const narrative = useNarrative(userName, gameName, pane === "narrative");
 
   const homePath = `/game/${userName}/${gameName}/home`;
 
@@ -70,6 +81,14 @@ export default function RoomScaffold({
       : "";
   const dungeonName = dungeon === null ? "" : displayName(dungeon.name);
 
+  const unread = narrative.unread;
+  const entryLabel = exit.isBusy ? "退出中…" : "副本操作";
+  const entryAria = exit.isBusy
+    ? "副本操作（退出中）"
+    : unread > 0
+      ? `副本操作（有 ${unread} 条新叙事未看）`
+      : "副本操作";
+
   return (
     <main className="page page--wide">
       <h1>
@@ -78,12 +97,16 @@ export default function RoomScaffold({
       </h1>
 
       <div className="toolbar">
-        <button type="button" disabled={run.data === undefined} onClick={() => setIsInfoOpen(true)}>
-          副本信息
-        </button>
-        <NarrativeButton userName={userName} gameName={gameName} />
-        <button type="button" disabled={exit.isBusy || exitBlocked} onClick={exit.start}>
-          {exit.isBusy ? "退出中…" : "离开副本"}
+        <button
+          type="button"
+          className={unread > 0 ? "count-button count-button--unread" : undefined}
+          aria-haspopup="dialog"
+          aria-label={entryAria}
+          disabled={exit.isBusy}
+          onClick={() => setPane("actions")}
+        >
+          {entryLabel}
+          {!exit.isBusy && unread > 0 ? <span className="badge">{unread}</span> : null}
         </button>
       </div>
 
@@ -92,8 +115,30 @@ export default function RoomScaffold({
 
       {children}
 
-      {isInfoOpen && run.data ? (
-        <DungeonInfoDialog dungeon={run.data.dungeon} onClose={() => setIsInfoOpen(false)} />
+      {pane === "actions" ? (
+        <RoomActionsDialog
+          canOpenInfo={run.data !== undefined}
+          exitBlocked={exitBlocked}
+          exitBlockedHint={exitBlockedHint}
+          exitBusy={exit.isBusy}
+          narrative={{ seen: narrative.seen, total: narrative.total, unread }}
+          onOpenInfo={() => setPane("info")}
+          onOpenNarrative={() => setPane("narrative")}
+          onExit={() => {
+            // 直接触发：后端会在任务里按房间/时机拦截，失败原因由上面的 error 行显示
+            setPane(null);
+            exit.start();
+          }}
+          onClose={() => setPane(null)}
+        />
+      ) : null}
+
+      {pane === "info" && run.data ? (
+        <DungeonInfoDialog dungeon={run.data.dungeon} onClose={() => setPane(null)} />
+      ) : null}
+
+      {pane === "narrative" ? (
+        <NarrativeOverlay messages={narrative.messages} onClose={() => setPane(null)} />
       ) : null}
     </main>
   );
