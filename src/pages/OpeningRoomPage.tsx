@@ -1,0 +1,35 @@
+import type { Schemas } from "../api/types";
+import OpeningRoomPanel from "../features/dungeon/OpeningRoomPanel";
+import RoomScaffold from "../features/dungeon/RoomScaffold";
+
+/**
+ * 开场房间整页（`room.type === "opening"`）。
+ *
+ * 与 `CombatRoomPage` 共用 `RoomScaffold`（标题 / 副本信息 / 叙事 / 离开副本），
+ * 这里只写**开场房间与别的房间不同的那一点**——服务端要求先初始化完才能退出，否则 409，
+ * 所以未初始化时直接禁用「离开副本」并写明原因；正文交给 `OpeningRoomPanel`
+ * （初始化 → 生成奖励 → 领卡 → 进入下一关）。
+ *
+ * 路由入口是 `DungeonRoomRoute`：它取回当前房间后按服务端判别字段 `room.type` 分发到这里。
+ */
+export default function OpeningRoomPage({
+  userName,
+  gameName,
+  room,
+}: {
+  userName: string;
+  gameName: string;
+  room: Schemas["OpeningRoom"];
+}) {
+  return (
+    <RoomScaffold
+      userName={userName}
+      gameName={gameName}
+      roomName={room.stage.name}
+      exitBlocked={!room.initialized}
+      exitBlockedHint="开场房间尚未初始化，无法离开副本。"
+    >
+      <OpeningRoomPanel userName={userName} gameName={gameName} room={room} />
+    </RoomScaffold>
+  );
+}

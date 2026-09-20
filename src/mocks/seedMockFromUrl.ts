@@ -1,8 +1,8 @@
 /**
  * dev/mock 专用的「深链种子」：把 URL 上的 `?seed=...` 翻译成一份 mock 初始状态。
  *
- * 目的是让 `DevIndexPage` 能直接深链到**任意战斗阶段**（`/dungeon/room?seed=combat:turn`），
- * 不必每次手动「进入副本 → 进入下一关」。它守住既定原则：
+ * 目的是让 `DevIndexPage` 能直接深链到**任意开场 / 战斗状态**（如 `/dungeon/room?seed=opening:spoils`、
+ * `/dungeon/room?seed=combat:turn`），不必每次手动走「进入副本 → 初始化 → …」。它守住既定原则：
  * - **不给 phase 加路由**：路径仍是 `/dungeon/room`，`seed` 只是 mock 指令；
  * - **app / router 零感知**：只有 dev 入口（`main.tsx::enableMocking`）调用它；
  * - **与测试同源**：造状态调的就是测试用的那几个 mock 函数，不引入第二套真值来源。
@@ -11,12 +11,24 @@
  */
 import { drawMockCards, initMockCombat, prepareMockPostCombat } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
+import { generateMockSpoils, initMockOpening } from "./opening";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
 const DUNGEON = "副本.荒村义庄";
 
 /** token → 「造出该阶段」的一串 mock 调用（每个 token 覆盖一个 `deriveCombatPhase` 分支）。 */
 const SEEDS: Record<string, () => void> = {
+  // OPENING：刚进入副本的开场房间，已初始化（可「生成奖励」）
+  "opening:ready": () => {
+    enterMockDungeon(DUNGEON);
+    initMockOpening();
+  },
+  // OPENING：开场房间已初始化并生成奖励（角色卡上有「奖励」按钮）
+  "opening:spoils": () => {
+    enterMockDungeon(DUNGEON);
+    initMockOpening();
+    generateMockSpoils();
+  },
   // INITIALIZATION：刚推进到战斗房间，等待初始化
   "combat:init": () => {
     enterMockDungeon(DUNGEON);

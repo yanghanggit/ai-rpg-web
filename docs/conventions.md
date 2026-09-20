@@ -22,8 +22,9 @@
 src/api/                 # 基础设施：传输层与契约适配，无业务功能
   schema.d.ts            #   生成物，只读
   client.ts  query.ts  types.ts  serverInfo.ts  sse.ts  useTask.ts  useJobAction.ts  describeApiError.ts
-src/pages/               # 路由级页面组件（每个 URL 一个）
-  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx  DungeonRoomPage.tsx  DevIndexPage.tsx
+src/pages/               # 路由级组件：`*Route`（绑定 URL 的入口）/ `*Page`（具体屏幕）
+  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx
+  DungeonRoomRoute.tsx  OpeningRoomPage.tsx  CombatRoomPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
   entry/useStartGame.ts  entry/generatePlayerName.ts
   blueprint/BlueprintDetails.tsx  blueprint/BlueprintInfoDialog.tsx  blueprint/useBlueprint.ts
@@ -33,7 +34,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
   dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/useAdvanceStage.ts
-  dungeon/OpeningRoomPanel.tsx  dungeon/useOpeningParty.ts  dungeon/useOpeningActions.ts  dungeon/DeckDialog.tsx  dungeon/SpoilsDialog.tsx  dungeon/AdvanceRoomDialog.tsx
+  dungeon/OpeningRoomPanel.tsx  dungeon/RoomScaffold.tsx  dungeon/useOpeningParty.ts  dungeon/useOpeningActions.ts  dungeon/DeckDialog.tsx  dungeon/SpoilsDialog.tsx  dungeon/AdvanceRoomDialog.tsx
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatInitPanel.tsx  combat/CombatRoundStartPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
   dungeon/combat/CombatStatus.tsx  combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/combatPhase.ts
@@ -46,7 +47,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
 src/components/          # 通用展示逻辑（不含领域知识）
   displayName.ts         #   服务器名字 → 显示名，名字显示的唯一规则入口
 src/mocks/               # mock fixtures / handlers / browser / node（测试与 dev 共用）
-src/test/                # 测试基建（setup.ts）
+src/test/                # 测试基建（setup.ts、测试专用外壳 RoomHarness.tsx）
 src/App.tsx              # 路由壳
 src/main.tsx             # 入口
 ```
@@ -55,14 +56,17 @@ src/main.tsx             # 入口
 
 | 位置 | 放什么 | 判据 |
 | --- | --- | --- |
-| `src/pages/<Name>Page.tsx` | 路由级页面 | **直接对应一个 URL** |
+| `src/pages/<Name>Route.tsx` | 绑定 URL 的入口 | 被 `src/App.tsx` 的 `<Route element=…>` 指向（可能只解析 / 分发，不渲染屏幕） |
+| `src/pages/<Name>Page.tsx` | 具体屏幕 | 渲染一屏内容（可能由某个 `*Route` 按服务端判别字段分发得到，不对应独立 URL） |
 | `src/features/<domain>/**` | 该领域专用的组件 | 含**领域知识**，且只服务该领域 |
 | `src/components/**` | 通用组件 | **不含任何领域知识** |
+| `src/test/**` | 测试专用外壳（Provider / 路由壳等） | 只被测试引用，不进生产代码 |
 
 - 白名单：`src/App.tsx`（路由壳）；`*.test.tsx` 跟随被测模块，位置不限。
 - 由 `pnpm check:conventions` 强制。
 
-> 常见误解：`.tsx` ≠ 必须放 `pages/`。**`pages/` 的判据是"有路由"，不是"是组件"。**
+> 常见误解：`.tsx` ≠ 必须放 `pages/`。**`pages/` 的判据是"路由级"，不是"是组件"。**
+> `*Route` 与 `*Page` 的分工：**绑定 URL 的（哪怕只做解析 / 分发）用 `*Route`**，它由 `App.tsx` 的 `<Route>` 指向；**具体屏幕用 `*Page`**，可以不对应独立 URL。例：`DungeonRoomRoute`（绑定 `/dungeon/room`，按 `room.type` 分发）→ `OpeningRoomPage` / `CombatRoomPage`（两屏）。**服务端判别字段不因此加路由**（见 [页面结构](pages.md) 的「副本进行中（房间）」）。
 
 ### 归属判据：谁变了它才变
 

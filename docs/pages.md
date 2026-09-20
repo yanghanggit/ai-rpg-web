@@ -13,7 +13,7 @@
 | `/entry` | `src/pages/EntryPage.tsx` | 玩家入口：玩家名自动生成（带日期），游戏名从 `/api/game/blueprint-list/v1/` 蓝图列表选择，并展示所选蓝图详情（玩家角色 / 战役设定 / 场景-角色映射 / 世界实体），登录 → 新游戏 |
 | `/game/:userName/:gameName/home` | `src/pages/HomeOverviewPage.tsx` | 家园概览：只有**功能按钮**与**场景卡片**两块。按钮条：`推进一步 · N 个角色`（人数直接写在按钮上）、`角色信息`（点击弹出玩家控制角色的信息浮窗；**卡片里每个角色 chip 也可点**，同样打开该角色的信息浮窗，NPC 亦可——玩家与 NPC 共用一个组件；浮窗内可穿/脱时装，穿时装会叠出选储物箱时装的二级浮窗）、`蓝图信息`（点击弹出蓝图名字/战役设定/世界系统）、`实体浏览器`（把「场景 → 角色」mapping 一次摊开，点场景名开场景信息、点角色名开角色信息——与点场景卡片等价，只是多一条宏观快捷入口）、`道具管理`（点击弹出背包与储物箱道具；储物箱顶部为穿戴中的时装，只读；勾选道具后可与「移入背包」平级地合成消耗品/制造装备/制作时装，点开会叠出确认用量的浮窗）、`副本`（**不是浮窗**：切到 `DungeonPage` 单独一屏，交接全部副本操作）、`叙事 已看/总共`（与副本房间页共用 `NarrativeButton`：右边大于左边即有新事件未看，点击弹出「全部叙事」浮层；未读基线是**会话级**且跨屏存活，所以进副本期间产生的事件回家园后仍会点亮它）、`← 返回上一级`（浮窗确认后登出）。卡片：每个 stage 一张，列出其中的 actor（**角色名可点**，打开角色信息浮窗），右上角小按钮打开**场景信息**浮窗（`StageComponent`/`EnvironmentComponent` + 场景内角色按钮），底部有「切换到此场景」按钮；玩家当前所在卡片高亮并标记「当前所在」 |
 | `/game/:userName/:gameName/dungeon` | `src/pages/DungeonOverviewPage.tsx` | **副本总览（备战）**：由家园页工具栏的「副本」按钮切过来（独立一屏，可切回）。本页只做「宏观阅览 + 做准备 + 决定是否进入」，**不承担副本内的流程**。三块：①**生成新副本**（`POST /api/home/generate_dungeon/v1/`，异步 job，等任务完成再刷新列表）；②**可用副本**（`GET /api/home/dungeon-list/v1/` 的**静态模型数据**；**卡片化**，列数随宽度自动变化，整体设定超出卡片高度即省略号；卡片是「容器 + 主体按钮 + 操作行」——点主体弹出 `DungeonInfoDialog` 查阅全文（整体设定 / 创建时间 / 房间与敌人 HP·ATK·DEF），点「进入副本」弹出 `EnterDungeonDialog` 做最终确认）；③**队伍名单**（`PartyRosterComponent` 的 add / remove：当前队伍（玩家 + 已选同伴，可移出）与可加入的同伴（持 `NPCComponent` 且**排除玩家控制角色**的 NPC）；角色**卡片化**，两段用与副本卡**同一组栅格参数**（两段各占若干列，卡宽与副本卡一致）；**点角色名打开 `ActorInfoDialog`**，连穿/脱时装的两级浮窗也一并接上）。工具栏另有**道具管理**（同一个 `ItemManagerDialog`，但 `craftEnabled={false}`：出征前只整理行装，**没有**工坊合成）与副本进行中的「回到副本」入口（见「进入副本」一节）。对应 TUI 的 `/list-dungeons` + `/dungeon @名` + `/generate-dungeon` |
-| `/game/:userName/:gameName/dungeon/room` | `src/pages/DungeonRoomPage.tsx` | **副本进行中（房间页）**：「进入副本」成功后切到这里——玩家的场景已变成副本第一关，总览页那一刻起已无事可做，而家园接口在副本进行中会被后端拒绝。这一屏是**房间类型的共同框架**（标题=副本名 (当前/总数) 房间名、顶部动作区、浮窗挂载点），房间专属内容按 `room.type` 分发（`opening` 已实现，`combat` 尚未），详见「副本进行中（房间）」一节 |
+| `/game/:userName/:gameName/dungeon/room` | `src/pages/DungeonRoomRoute.tsx` | **副本进行中（房间页）**：「进入副本」成功后切到这里——玩家的场景已变成副本第一关，总览页那一刻起已无事可做，而家园接口在副本进行中会被后端拒绝。`DungeonRoomRoute` 是**路由入口 + 房间类型解析器**：取回当前房间 `GET .../room`（含加载中 / 404 出口），再按服务端判别字段 `room.type` 把整页交给 `OpeningRoomPage`（开场）或 `CombatRoomPage`（战斗）——两个房间页各自成页、各自维护，共用 `RoomScaffold`（标题=副本名 (当前/总数) 房间名、顶部动作区、副本信息浮窗、离开副本）。**刻意不给房间类型加路由**，路径始终是 `/dungeon/room`。详见「副本进行中（房间）」一节 |
 | `/dev` | `src/pages/DevIndexPage.tsx` | 开发索引（仅 dev 注册）：常用深链清单 |
 
 ## 公共约定
@@ -53,14 +53,18 @@
 
 ## 副本进行中（房间）
 
-`DungeonRoomPage` 是**房间类型的共同框架**，只放所有房间都相同的东西；房间专属内容留给按 `room.type` 分发的子视图（目前只有 `opening` 有，`combat` 未实现）。**这一层要克制**：往上加的东西必须真的适用于每一种房间。
+房间页由三个组件组成——命名分两种：**绑定 URL 的入口用 `*Route`**（`DungeonRoomRoute`）**具体屏幕用 `*Page`**（`OpeningRoomPage` / `CombatRoomPage`）。职责按「变化原因」切开：
+
+- `DungeonRoomRoute`（`src/pages/DungeonRoomRoute.tsx`）：**解析器**。只做「参数守卫 → 取 `/room` → 加载中 / 404 出口 → 按 `room.type` 二选一整页」。**房间类型是服务端派生状态，不是导航状态**，所以刻意**不**给它加路由（对照 `combatPhase`、`seedMockFromUrl` 的同一条原则），路径始终是 `/dungeon/room`；写成二选一而非无 `default` 的 `switch`，后端将来多出第三种房间类型时会**编译报错**。
+- `OpeningRoomPage`（`room.type === "opening"`）/ `CombatRoomPage`（`room.type === "combat"`）：两个**房间整页**，各自成页、各自维护。二者的差别只有正文（`OpeningRoomPanel` / `CombatRoomPanel`）与「离开副本」的前置禁用。
+- `RoomScaffold`（`src/features/dungeon/RoomScaffold.tsx`）：**房间无关的共同框架**，两个房间页共用。唯一随房间变化的 `exitBlocked` / `exitBlockedHint` 由调用方显式传入，所以这层**不允许**出现 `room.type` 判断。**这一层要克制**：往上加的东西必须真的适用于每一种房间。
 
 - **数据**：当前房间 `GET /api/dungeons/v1/{user}/{game}/room`（只给房间，不含副本本体）；运行中的副本 `GET .../state`（「副本信息」用它展示进度）。两个查询各管一件事。
 - **标题 = 副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自 `/state`，房间名来自 `room.stage.name`（副本房间与场景一一对应，模型与 `StageComponent` 上都是固定的）；`/state` 还没回来时先只显示房间名，不把标题卡在「加载中」。
 - **顶部动作区**：目前三个按钮。「副本信息」= `DungeonInfoDialog`（整体设定 / 房间 / 敌人 + **进度**）；「叙事」= `NarrativeButton`（与家园页同一个组件，见下）；「离开副本」= 回家园。**不提供「返回副本总览」**：按游戏逻辑，离开副本就是回家园，副本进行中也没有别的去处。
 - **进度不另传参数**：`current_room_index` 就是副本模型自身的字段——静态副本（磁盘 JSON）恒为 `-1`，进行中才 `>= 0`，所以同一个浮窗给总览页与房间页用都不会误标（「第 N / M 间」与房间上的「当前所在」）。
 - **离开副本是任务接口**：`POST /api/dungeon/exit/v1/` 只返回 `job_id`，而「回家」发生在**任务内部**（队伍被传回家园场景、`PartyMemberComponent` 摘掉、满血恢复、`teardown_dungeon` 把副本重置回空副本）。所以界面是「触发 → 按钮变『退出中…』并禁用 → 等终态 → 跳家园页」，**不是**点了就跳；跳转用 `replace`，副本已不存在，返回键不该回到这一屏。
-- **离开副本按 `room.type` 分支**（服务端 `09674f13` 起）：开场房间未完成初始化时后端会 409，所以 `opening && !initialized` 时**直接禁用**并写明原因；战斗房间不预判（战斗未结束退出由后端拦），错误原样显示。没有进行中的房间时 `/room` 返回 404，页面显示后端那句话，并给一个「← 返回家园」的出口。
+- **离开副本的前置禁用按房间类型分两处写**（服务端 `09674f13` 起）：`OpeningRoomPage` 在 `!room.initialized` 时**直接禁用**并写明原因（后端会 409）；`CombatRoomPage` 不预判（战斗未结束退出由后端拦），错误原样显示。没有进行中的房间时 `/room` 返回 404，`DungeonRoomRoute` 显示后端那句话，并给一个「← 返回家园」的出口。
 
 **「叙事」为什么在共同框架里**：会话消息（`GET /api/session_messages/v1/.../since`）是**会话级**资源——本局所有事件，不是某个房间产生的。战斗房间一样会追加叙事，所以入口属于共同框架，不能塞进 `OpeningRoomPanel`。
 

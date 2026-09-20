@@ -13,6 +13,8 @@ const links = [
   { to: "/entry", label: "玩家入口 EntryPage" },
   { to: "/game/webdev/Game1/home", label: "家园概览 HomeOverviewPage" },
   { to: "/game/webdev/Game1/dungeon", label: "副本总览 DungeonOverviewPage" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=opening:ready", label: "开场 · 已初始化" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=opening:spoils", label: "开场 · 已生成奖励" },
   { to: "/game/webdev/Game1/dungeon/room?seed=combat:init", label: "战斗 · 初始化" },
   { to: "/game/webdev/Game1/dungeon/room?seed=combat:round_start", label: "战斗 · 抓牌" },
   { to: "/game/webdev/Game1/dungeon/room?seed=combat:turn", label: "战斗 · 出牌" },
@@ -25,7 +27,7 @@ export default function DevIndexPage() {
       <h1>开发索引</h1>
       <p className="muted">
         仅 dev 下注册。配合 <code>pnpm dev:mock</code> 可跳过全部正式流程直接查看页面；
-        <code>?seed=</code> 的链接会用 mock 直接造出对应战斗阶段。
+        <code>?seed=</code> 的链接会用 mock 直接造出对应开场 / 战斗状态。
       </p>
       <ul className="plain link-grid">
         {links.map((link) => (

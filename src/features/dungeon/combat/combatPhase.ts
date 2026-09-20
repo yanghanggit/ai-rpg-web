@@ -2,7 +2,7 @@
  * 战斗房间的 phase 派生（纯函数，无 React / 网络）。
  *
  * web 端与 TUI 的结构差异：TUI 是「一个 Screen 一个阶段、靠 `switch_screen` 换屏」；
- * web 端 `DungeonRoomPage` 每次渲染都持有最新的 `room.combat`，所以**从状态派生当前阶段**
+ * web 端 `CombatRoomPage` 每次渲染都持有最新的 `room.combat`，所以**从状态派生当前阶段**
  * 即可，不需要复刻 TUI 的「锁输入 → 回车 → 切屏」。动作成功后失效查询 → `/room` 重取 →
  * phase 重新派生 → 自动落到下一个 Panel。
  *

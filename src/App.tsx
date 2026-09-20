@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router";
 import DevIndexPage from "./pages/DevIndexPage";
 import DungeonOverviewPage from "./pages/DungeonOverviewPage";
-import DungeonRoomPage from "./pages/DungeonRoomPage";
+import DungeonRoomRoute from "./pages/DungeonRoomRoute";
 import EntryPage from "./pages/EntryPage";
 import HomeOverviewPage from "./pages/HomeOverviewPage";
 import LaunchPage from "./pages/LaunchPage";
@@ -24,8 +24,8 @@ import LaunchPage from "./pages/LaunchPage";
         <Route path="/entry" element={<EntryPage />} />
         <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
         <Route path="/game/:userName/:gameName/dungeon" element={<DungeonOverviewPage />} />
-        {/* 副本进行中：一屏承接「已经进入副本」这个状态（详见 DungeonRoomPage） */}
-        <Route path="/game/:userName/:gameName/dungeon/room" element={<DungeonRoomPage />} />
+        {/* 副本进行中：一屏承接「已经进入副本」这个状态（详见 DungeonRoomRoute） */}
+        <Route path="/game/:userName/:gameName/dungeon/room" element={<DungeonRoomRoute />} />
         {import.meta.env.DEV ? <Route path="/dev" element={<DevIndexPage />} /> : null}
       </Routes>
     </>

@@ -27,7 +27,7 @@ import { useOpeningParty } from "./useOpeningParty";
  * 失败不自动重试，把「初始化开场」按钮留给玩家手动重试（服务端要求先初始化才能推进 / 退出）。
  *
  * 这里**只放开场房间独有的东西**——标题、副本信息、叙事入口、离开副本属于外层框架
- * （`DungeonRoomPage`），不在这一层重复。
+ * （`OpeningRoomPage` 的 `RoomScaffold`），不在这一层重复。
  *
  * 注意这一层的「叙事」二字指场景环境叙述（`opening-narrative` 段），与按钮打开的
  * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。

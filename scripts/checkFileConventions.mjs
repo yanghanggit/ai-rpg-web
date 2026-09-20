@@ -7,7 +7,7 @@
  *
  * 规则（详见 docs/conventions.md）：
  *   - 组件 / 页面（.tsx）：必须有 default 导出，且导出名 = 文件名。
- *   - 组件 / 页面（.tsx）：只能放在 src/pages/、src/features/、src/components/（白名单 src/App.tsx）。
+ *   - 组件 / 页面（.tsx）：只能放在 src/pages/、src/features/、src/components/、src/test/（白名单 src/App.tsx）。
  *   - Hook（.ts，use 开头）：必须导出同名 hook。
  *   - 其余 .ts：只有一个导出且是函数时，文件名 = 函数名；否则按概念命名（不校验）。
  *   - 测试文件：文件名 = 被测模块名（.test 后缀）。
@@ -21,8 +21,8 @@ const ROOT = new URL("..", import.meta.url).pathname;
 const SRC = join(ROOT, "src");
 /** 允许「无导出」的约定文件（入口、测试 setup 等）。 */
 const ALLOW_NO_EXPORT = new Set(["src/main.tsx", "src/test/setup.ts"]);
-/** `.tsx` 允许出现的目录（见 docs/conventions.md 一）。 */
-const ALLOW_TSX_PREFIXES = ["src/pages/", "src/features/", "src/components/"];
+/** `.tsx` 允许出现的目录（见 docs/conventions.md 一）。`src/test/` 只放测试专用的外壳组件。 */
+const ALLOW_TSX_PREFIXES = ["src/pages/", "src/features/", "src/components/", "src/test/"];
 /** `.tsx` 白名单（路由壳）。 */
 const ALLOW_TSX_FILES = new Set(["src/App.tsx"]);
 

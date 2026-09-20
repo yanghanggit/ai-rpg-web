@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readMockCombat } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
+import { readMockOpeningInitialized, readMockSpoilsHolders } from "./opening";
 import { seedMockFromUrl } from "./seedMockFromUrl";
 
 const BASE = "http://localhost/game/webdev/Game1/dungeon/room";
@@ -16,6 +17,18 @@ describe("seedMockFromUrl", () => {
     seedMockFromUrl(`${BASE}?seed=nope`);
     expect(readMockDungeonRoom()).toBeNull();
     expect(readMockCombat().state).toBe(0);
+  });
+
+  it("opening:ready → 开场房间且已初始化", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:ready`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockOpeningInitialized()).toBe(true);
+  });
+
+  it("opening:spoils → 开场房间且已生成奖励", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:spoils`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockSpoilsHolders().length).toBeGreaterThan(0);
   });
 
   it("combat:init → 战斗房间处于 INITIALIZATION", () => {

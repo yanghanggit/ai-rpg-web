@@ -21,7 +21,7 @@ import RosterPanel from "../features/roster/RosterPanel";
  *
  * 所以这里只有三类事：生成副本、查阅副本的静态模型数据、出征前的准备
  * （队伍名单、整理行装）。「进入副本」是这一步的**终点**——发起成功即切到
- * `DungeonRoomPage`（副本进行中那一屏），页面的职责到此为止。
+ * `DungeonRoomRoute`（副本进行中那一屏），页面的职责到此为止。
  *
  * 内容：
  * - 「生成新副本」→ `POST /api/home/generate_dungeon/v1/`（异步 job，等任务完成再刷新列表）；
