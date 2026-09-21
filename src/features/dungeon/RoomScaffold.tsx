@@ -29,6 +29,8 @@ import { useExitDungeon } from "./useExitDungeon";
  *   3. 黑桃「牌组」→ `DeckBrowserDialog`（一级名单 → 二级卡面 → 三级卡牌详情）。
  * - 「离开副本」是**任务接口**，而「回家」发生在任务内部（队伍被传回家园场景、副本被拆掉），
  *   所以在回调里触发、等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
+ * - `roomAction`（本间的**主行动**，标题行最右那颗状态相关的图标）只在这里占个位：
+ *   “本间现在该做什么”由页面算（每个房间不一样），本层不判断房间、也不认识路由。
  *
  * **入口层同一时刻只开一个浮窗**：用一个 `pane` state 表达「菜单 → 子浮窗」的**切换**而非叠加
  * （对照 docs/pages.md「同类切换不叠第三层」，否则 ESC 该关哪层有歧义）。唯一例外是「牌组」入口
@@ -40,12 +42,35 @@ import { useExitDungeon } from "./useExitDungeon";
 /** 当前开着的浮窗；`null` 表示都关着。 */
 type RoomPane = "actions" | "info" | "narrative" | "decks" | null;
 
+/**
+ * 本间的**主行动**：标题行最右边那颗状态相关的图标（由页面算好传进来，本层只负责画）。
+ *
+ * 为什么是状态相关的字形而不是固定文案：这个槽位的含义随本间状态变（还没开始 → 把它跑起来；
+ * 已经可以走了 → 结束本间），而图标按钮显示不下文字，所以动作名全靠 `label` / `title`。
+ */
+export interface RoomAction {
+  /** 单色字形。 */
+  icon: string;
+  /** 无障碍名字（也是悬停说明的底）：图标按钮全靠它讲清"这是干什么的"。 */
+  label: string;
+  /** 更长的悬停说明（后果、原因）；不给就用 `label`。 */
+  title?: string;
+  /** 运行中：禁用 + 字形转起来（本间正在自动做这件事）。 */
+  busy?: boolean;
+  /** `warn` = 下一步会失去什么；`err` = 出错了等着你处理；默认中性色。 */
+  tone?: "plain" | "warn" | "err";
+  /** 字形的字号 / 基线微调类（不同字形墨迹差很多，见 `index.css`）。 */
+  iconClass: string;
+  onActivate: () => void;
+}
+
 export default function RoomScaffold({
   userName,
   gameName,
   roomName,
   exitBlocked = false,
   exitBlockedHint,
+  roomAction = null,
   children,
 }: {
   userName: string;
@@ -56,6 +81,8 @@ export default function RoomScaffold({
   exitBlocked?: boolean;
   /** 禁用「离开副本」时写给玩家的原因。 */
   exitBlockedHint?: string;
+  /** 本间的主行动（标题行那颗状态相关的图标）；不给就不渲染（地图页就没有）。 */
+  roomAction?: RoomAction | null;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
@@ -136,6 +163,30 @@ export default function RoomScaffold({
         >
           ♠
         </button>
+        {/* 本间的主行动：放在三个「副本入口」右侧并拉开一点。左边三个是同一类（看副本），
+            这颗是"现在该做什么"——由页面按本间状态算好（开场房：初始化中 / 重试 / 结束本间）。 */}
+        {roomAction === null ? null : (
+          <button
+            type="button"
+            className={`icon-button icon-button--room ${roomAction.iconClass}${
+              roomAction.tone === "warn"
+                ? " icon-button--warn"
+                : roomAction.tone === "err"
+                  ? " icon-button--err"
+                  : ""
+            }`}
+            aria-label={roomAction.label}
+            title={roomAction.title ?? roomAction.label}
+            disabled={roomAction.busy}
+            onClick={roomAction.onActivate}
+          >
+            {roomAction.busy ? (
+              <span className="icon-spin">{roomAction.icon}</span>
+            ) : (
+              roomAction.icon
+            )}
+          </button>
+        )}
         {/* 图标按钮显示不下文字，退出中的反馈放在它旁边 */}
         {exit.isBusy ? <span className="muted">退出中…</span> : null}
       </div>

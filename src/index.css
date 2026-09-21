@@ -314,6 +314,53 @@ ul.items li {
   transform: translateY(-0.022em);
 }
 
+/* 本间的主行动（标题行最右那颗）：与三个「副本入口」拉开，读成"现在做什么" */
+.icon-button--room {
+  margin-left: 0.6rem;
+}
+
+/* ↻（跑 / 重试本间的初始化）：墨迹 34×41（48px），比 ⚙ 高而窄，缩到 2.2rem 才与它同高；
+   它的墨迹比 ⚙ 矮一丁点地挂在基线上方，所以上抬量与 ⚙（−0.031em）不同（实测 +2px）。 */
+.icon-button--run {
+  font-size: 2.2rem;
+  transform: translateY(2px);
+}
+
+/* →（结束本间、回地图）：墨迹 35×29（48px）与 ⚙ 几乎同高，所以字号沿用基准 3rem；
+   它的墨迹中心比 ⚙ 略低一点，抬 +1px 即齐。
+   字形选平箭而不是 ▶：后者在游戏里会被读成"播放 / 开始"，而这里是**结束**本间。 */
+.icon-button--leave {
+  transform: translateY(1px);
+}
+
+/* 下一步会失去什么（未领的奖励）/ 出错了等着你处理：与「获取奖励 !」同一套色 */
+.icon-button--warn {
+  color: var(--warn);
+}
+
+.icon-button--err {
+  color: var(--err);
+}
+
+/* 初始化是自动跑的，界面只剩这颗图标能反馈"正在做"，所以让它自己转；
+   减弱动效偏好下不转（改用禁用态 + 悬停说明）。 */
+.icon-spin {
+  display: inline-block;
+  animation: icon-spin 1.2s linear infinite;
+}
+
+@keyframes icon-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-spin {
+    animation: none;
+  }
+}
+
 /* 有新叙事未看时齿轮变绿：与 .count-button--unread 同一套颜色 */
 .icon-button--unread {
   border-color: var(--ok);
@@ -938,6 +985,11 @@ li.dungeon-room--current {
 .cards--party {
   grid-template-columns: repeat(auto-fill, minmax(min(12.5rem, 100%), 1fr));
   gap: 1rem;
+}
+
+/* 队伍块：上面是环境叙述（固定高），这里不再有标题行，靠距离分组 */
+.party-section {
+  margin-top: 2.5rem;
 }
 
 .cards--party .card {

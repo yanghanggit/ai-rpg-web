@@ -31,8 +31,8 @@ describe("副本房间 · 路由解析器", () => {
     expect(
       await screen.findByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" }),
     ).toBeInTheDocument();
-    // 开场房间正文（队伍）在，说明分发到了开场页
-    expect(await screen.findByRole("heading", { name: "队伍" })).toBeInTheDocument();
+    // 开场房间正文（队伍块）在，说明分发到了开场页
+    expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
   });
 
   it("进行中的是战斗房间 → 分发到 CombatRoomPage", async () => {

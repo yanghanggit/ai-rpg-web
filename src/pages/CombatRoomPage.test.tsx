@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 import { prepareMockPostCombat } from "../mocks/combat";
@@ -171,6 +171,28 @@ describe("副本房间 · 战斗房间", () => {
     const collect = await screen.findByRole("button", { name: "收取战利品（1）" });
     expect(collect).toHaveClass("button--pending");
     expect(collect).toHaveAttribute("title", "结束本间后就无法再收了。");
-    expect(screen.getByRole("button", { name: "结束本次战斗" })).toBeEnabled();
+    // 同一件事也做到标题行那颗「结束本间」上（与开场房同一套）
+    const finish = screen.getByRole("button", { name: "结束本次战斗" });
+    expect(finish).toHaveClass("icon-button--warn");
+    expect(finish).toHaveAttribute(
+      "title",
+      "结束本次战斗（回到地图）—— 还有战利品未收取，结束本间后就无法再收了。",
+    );
+    expect(finish).toBeEnabled();
+  });
+
+  it("战利品收完之后：标题行那颗「结束本间」的提醒色消失", async () => {
+    enterMockDungeon("副本.荒村义庄");
+    advanceMockDungeon();
+    prepareMockPostCombat();
+    renderCombat();
+
+    fireEvent.click(await screen.findByRole("button", { name: "收取战利品（1）" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "结束本次战斗" })).not.toHaveClass(
+        "icon-button--warn",
+      ),
+    );
   });
 });

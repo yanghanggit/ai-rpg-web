@@ -23,15 +23,15 @@ function resultLabel(result: number): { text: string; className: string } {
 /**
  * 战斗结算（`COMPLETE / POST_COMBAT`，对应 TUI `CombatPostScreen`）。
  *
- * **结算专属的两件事都由本组件自己持有**（不劳烦父层）：收取战利品（`useCollectLoot`，
- * `LootComponent` → 背包的**同步**接口）与父层透传进来的「结束本次战斗」。
+ * **结算专属的那件事由本组件自己持有**（不劳烦父层）：收取战利品（`useCollectLoot`，
+ * `LootComponent` → 背包的**同步**接口）。
  *
- * **本间的结束动作不推进副本、也不套确认框**：它只是回地图（`onFinishRoom`），推进是在地图上
- * 才发生的事（「前往下一间」，那里有确认框，因为推进不可逆）。所以这里"结束就是结束"，
- * 零服务端调用。「离开副本」属于外层共同框架（顶部动作区），这里不重复。
+ * **本间的结束动作不在这里**：它是标题行那颗 →（`RoomScaffold` 的 `roomAction`，由页面接线）。
+ * 那个动作不推进副本、也不套确认框——它只是回地图，推进是在地图上才发生的事（「前往下一间」，
+ * 那里有确认框，因为推进不可逆）。所以“结束就是结束”，零服务端调用。
  *
  * **单向门**：结束即回地图，而已结束的房间进不去，所以没收的战利品就留在身上拿不到了
- * （`collect_loot` 要求当前房间还是这间战斗房）——只**提示不阻止**（惩罚是设计要的）。
+ * （`collect_loot` 要求当前房间还是这间战斗房）——只**提醒不阻止**（惩罚是设计要的）。
  *
  * 展示胜负 / 局数 / 参战者（含战死标记）/ 战利品 / 最新回合记录。
  *
@@ -47,7 +47,6 @@ export default function CombatPostPanel({
   combatants,
   combatPending,
   loot,
-  onFinishRoom,
 }: {
   userName: string;
   gameName: string;
@@ -55,8 +54,6 @@ export default function CombatPostPanel({
   combatants: Combatant[];
   combatPending: boolean;
   loot: Item[];
-  /** 本间的结束动作：回地图（由页面接线，本层不认识路由）。 */
-  onFinishRoom: () => void;
 }) {
   const collect = useCollectLoot(userName, gameName);
   const latest = combat.rounds.at(-1) ?? null;
@@ -83,10 +80,6 @@ export default function CombatPostPanel({
               !
             </span>
           )}
-        </button>
-        {/* 本间的结束动作：回地图。之后本间进不来，没收拾的就没机会了 */}
-        <button type="button" onClick={onFinishRoom}>
-          结束本次战斗
         </button>
       </div>
       {collectError ? <p className="error">收取战利品失败：{collectError}</p> : null}

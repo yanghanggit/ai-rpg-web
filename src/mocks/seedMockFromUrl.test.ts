@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { readMockCombat } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
 import {
+  consumeFailNextOpeningInit,
   readMockClaimedCount,
   readMockOpeningInitialized,
   readMockPartyNames,
@@ -27,6 +28,15 @@ describe("seedMockFromUrl", () => {
   it("opening:fresh → 开场房间且尚未初始化（刚进入副本的样子）", () => {
     seedMockFromUrl(`${BASE}?seed=opening:fresh`);
     expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockOpeningInitialized()).toBe(false);
+  });
+
+  it("opening:init-failed → 第一次初始化失败（只剩重试能救）", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:init-failed`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(consumeFailNextOpeningInit()).toBe(true);
+    // 只失败一次：重试就会成功
+    expect(consumeFailNextOpeningInit()).toBe(false);
     expect(readMockOpeningInitialized()).toBe(false);
   });
 

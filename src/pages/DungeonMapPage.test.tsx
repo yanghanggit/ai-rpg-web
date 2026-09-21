@@ -45,7 +45,7 @@ describe("副本地图 · 状态与前进", () => {
     expect(screen.queryByRole("button", { name: "前往下一间" })).not.toBeInTheDocument();
     expect(screen.getByText(/本间尚未结束/)).toBeInTheDocument();
     // 没结束时「离开副本」也被锁（服务端要求开场先初始化）
-    expect(screen.getByText("开场房间尚未初始化，无法离开副本。")).toBeInTheDocument();
+    expect(screen.getByText(/开场房间尚未初始化：先完成初始化/)).toBeInTheDocument();
   });
 
   it("「进入房间」：进入本间（开场房间整页），并自动开始初始化", async () => {
@@ -55,8 +55,8 @@ describe("副本地图 · 状态与前进", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "进入房间" }));
 
-    // 落到房间页：正文是队伍（只有房间页有）；自动初始化跑完 → 卡上的「生成奖励」可点
-    expect(await screen.findByRole("heading", { name: "队伍" })).toBeInTheDocument();
+    // 落到房间页：正文是队伍块（只有房间页有）；自动初始化跑完 → 卡上的「生成奖励」可点
+    expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: "生成奖励" })).toBeEnabled());
     // 此时地图已经卸载，标题才是无歧义的判据（地图上的标题也长这样）
     expect(screen.getByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" })).toBeInTheDocument();

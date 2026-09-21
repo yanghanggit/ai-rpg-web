@@ -36,7 +36,9 @@ export function readRoomGuards(room: Schemas["DungeonRoomResponse"]["room"]) {
       /** 「离开副本」是否**前置禁用**。 */
       exitBlocked: !initialized,
       /** 禁用「离开副本」时写给玩家的原因。 */
-      exitBlockedHint: initialized ? null : "开场房间尚未初始化，无法离开副本。",
+      exitBlockedHint: initialized
+        ? null
+        : "开场房间尚未初始化：先完成初始化（进房间会自动跑，失败可重试），才能结束本间或离开副本。",
     };
   }
 

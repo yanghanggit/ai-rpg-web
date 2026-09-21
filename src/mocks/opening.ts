@@ -178,7 +178,22 @@ export function claimFirstMockSpoilsCard(actorName: string): boolean {
   return pickMockSpoilsCard(actorName, cardName).ok;
 }
 
+/** 让**下一次**开场初始化直接失败（吃掉标记，只失败一次）；dev 种子用它造出"初始化失败"这一态。 */
+let failNextOpeningInit = false;
+
+export function failNextMockOpeningInit(): void {
+  failNextOpeningInit = true;
+}
+
+/** 读一次就走（true = 这次应该失败）。 */
+export function consumeFailNextOpeningInit(): boolean {
+  const fail = failNextOpeningInit;
+  failNextOpeningInit = false;
+  return fail;
+}
+
 /** 复位成「没有副本在跑」（测试之间隔离）。 */
 export function resetMockOpening(): void {
+  failNextOpeningInit = false;
   leaveMockOpening();
 }

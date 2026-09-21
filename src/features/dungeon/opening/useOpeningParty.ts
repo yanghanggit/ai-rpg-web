@@ -31,6 +31,8 @@ export interface OpeningPartyMember {
   spoils: { candidateCards: Card[]; claimedCards: Card[] } | null;
 }
 
+export type OpeningParty = ReturnType<typeof useOpeningParty>;
+
 export function useOpeningParty(userName: string, gameName: string) {
   const members = $api.useQuery(
     "get",

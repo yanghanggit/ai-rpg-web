@@ -286,7 +286,7 @@ describe("副本房间 · 共同框架", () => {
 });
 
 describe("副本房间 · 开场房间", () => {
-  it("自动初始化失败时：显示原因、保留可点的「初始化开场」，并锁住结束与退出", async () => {
+  it("自动初始化失败时：显示原因、标题行留下可点的「重试初始化开场」，并锁住结束与退出", async () => {
     const initSpy = vi.fn();
     server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒村义庄");
@@ -300,9 +300,10 @@ describe("副本房间 · 开场房间", () => {
     expect(await screen.findByText(/开场动作失败/)).toBeInTheDocument();
     expect(initSpy).toHaveBeenCalledTimes(1);
 
-    // 「初始化开场」保留为手动重试入口
-    const retry = screen.getByRole("button", { name: "初始化开场" });
+    // 失败 → 标题行那颗 ↻ 变成红色错误色，名字是「重试初始化开场」（可点）
+    const retry = screen.getByRole("button", { name: "重试初始化开场" });
     expect(retry).toBeEnabled();
+    expect(retry).toHaveClass("icon-button--err");
 
     // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
     expect(screen.getByRole("button", { name: "生成奖励" })).toBeDisabled();
@@ -310,10 +311,10 @@ describe("副本房间 · 开场房间", () => {
     // 未初始化 → 服务端不允许推进 / 退出，所以本间的结束动作根本不出现，退出入口禁用并说明原因
     expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
     expect(
-      screen.getByText("开场房间尚未初始化，结束本间与离开副本都还不行。"),
+      screen.getByText(
+        "开场房间尚未初始化：先完成初始化（进房间会自动跑，失败可重试），才能结束本间或离开副本。",
+      ),
     ).toBeInTheDocument();
-    // 「离开副本」被锁的原因写在页面上；菜单里的该项禁用
-    expect(screen.getByText("开场房间尚未初始化，无法离开副本。")).toBeInTheDocument();
     const menu = await openActions();
     expect(within(menu).getByRole("button", { name: "离开副本" })).toBeDisabled();
     fireEvent.click(within(menu).getByRole("button", { name: "关闭" }));
@@ -323,12 +324,14 @@ describe("副本房间 · 开场房间", () => {
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(2));
   });
 
-  it("队伍区：标题是「队伍」、玩家卡片标「玩家」，不再有「3 选 1」提示", async () => {
+  it("队伍区没有可见标题（卡上有名字就够），玩家卡片标「玩家」，不再有「3 选 1」提示", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    expect(await screen.findByRole("heading", { name: "队伍" })).toBeInTheDocument();
+    // 这一块留着无障碍名，但没有可见标题（卡上有名字，「队伍」是废话）
+    expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "队伍" })).not.toBeInTheDocument();
     // 玩家徽章叫「玩家」，不叫「你」
     expect(await screen.findByText("玩家")).toBeInTheDocument();
     expect(screen.queryByText("你")).not.toBeInTheDocument();
@@ -336,14 +339,16 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.queryByText(/3 选 1/)).not.toBeInTheDocument();
   });
 
-  it("进入开场房间自动初始化一次；完成前「生成奖励」在但不可点", async () => {
+  it("进入开场房间自动初始化一次；完成后标题行那颗图标从 ↻（初始化）变成 →（结束本间）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 自动初始化完成后按钮才可点，且「初始化开场」收起
+    // 自动初始化完成后：本间的主行动从「初始化」换成「结束开局准备」
     await waitForInit();
-    expect(screen.queryByRole("button", { name: "初始化开场" })).not.toBeInTheDocument();
+    const finish = screen.getByRole("button", { name: "结束开局准备" });
+    expect(finish).toHaveTextContent("→");
+    expect(screen.queryByRole("button", { name: /初始化开场/ })).not.toBeInTheDocument();
   });
 
   it("生成奖励：不摊在页面上，角色卡那颗按钮从「生成奖励」变成「获取奖励」，弹窗里竖排 3 张候选", async () => {
@@ -495,7 +500,30 @@ describe("副本房间 · 开场房间", () => {
     const reward = screen.getByRole("button", { name: "获取奖励" });
     expect(reward).toHaveClass("button--pending");
     expect(reward).toHaveAttribute("title", "还有候选卡未领：结束本间后就无法再领取了。");
+    // 同一件事也做到标题行那颗「结束本间」上：一按就永久失去，所以它也变提醒色
+    const finish = screen.getByRole("button", { name: "结束开局准备" });
+    expect(finish).toHaveClass("icon-button--warn");
+    expect(finish).toHaveAttribute(
+      "title",
+      "结束开局准备（回到地图）—— 还有候选卡未领，结束本间后就无法再领取了。",
+    );
     // 结束动作照旧可用（不套二次确认）
     expect(screen.getByRole("button", { name: "结束开局准备" })).toBeEnabled();
+  });
+
+  it("奖励都领完之后：卡上的「!」与标题行的提醒色一起消失", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒村义庄");
+    renderOpening();
+    await generateSpoils();
+    const dialog = await openSpoils("角色.无名");
+    fireEvent.click(within(dialog).getByRole("button", { name: "挑选 火折子" }));
+
+    expect(await screen.findByRole("button", { name: "查看奖励" })).not.toHaveClass(
+      "button--pending",
+    );
+    expect(screen.getByRole("button", { name: "结束开局准备" })).not.toHaveClass(
+      "icon-button--warn",
+    );
   });
 });

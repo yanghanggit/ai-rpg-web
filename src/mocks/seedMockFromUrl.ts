@@ -11,7 +11,12 @@
  */
 import { drawMockCards, initMockCombat, prepareMockPostCombat } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
-import { claimFirstMockSpoilsCard, generateMockSpoils, initMockOpening } from "./opening";
+import {
+  claimFirstMockSpoilsCard,
+  failNextMockOpeningInit,
+  generateMockSpoils,
+  initMockOpening,
+} from "./opening";
 import { addMockRosterMember } from "./roster";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
@@ -22,6 +27,11 @@ const SEEDS: Record<string, () => void> = {
   // OPENING：刚进入副本的开场房间，**未初始化**（进入房间那一刻才自动跑初始化）
   "opening:fresh": () => {
     enterMockDungeon(DUNGEON);
+  },
+  // OPENING：自动初始化失败（标题行那颗 ↻ 变成错误色 = 可重试），再点一次就会成功
+  "opening:init-failed": () => {
+    enterMockDungeon(DUNGEON);
+    failNextMockOpeningInit();
   },
   // OPENING：刚进入副本的开场房间，已初始化（可「生成奖励」）
   "opening:ready": () => {

@@ -49,6 +49,7 @@ import {
   wearMockCostume,
 } from "./items";
 import {
+  consumeFailNextOpeningInit,
   generateMockSpoils,
   initMockOpening,
   pickMockSpoilsCard,
@@ -324,8 +325,16 @@ export const handlers = [
     return HttpResponse.json({ room });
   }),
 
-  // 开场房间初始化：任务接口（叙事 + 牌库），mock 里同步切状态并追一条叙事
+  // 开场房间初始化：任务接口（叙事 + 牌库），mock 里同步切状态并追一条叙事。
+  // `failNextOpeningInit` 让**下一次**初始化直接失败（dev 种子 `opening:init-failed` 用）：
+  // 否则"初始化失败 → 标题行 ↻ 变红"这一态在 mock 里永远走不到。
   http.post(api("/api/dungeon/opening/init/v1/"), () => {
+    if (consumeFailNextOpeningInit()) {
+      return HttpResponse.json(
+        { detail: "（mock）开场初始化失败（?seed=opening:init-failed 造出来的）" },
+        { status: 500 },
+      );
+    }
     initMockOpening();
     appendMockSessionMessage({
       type: "announce",
