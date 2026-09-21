@@ -547,6 +547,20 @@ export function combatRoomFixture(
 }
 
 /**
+ * 构造一个开场房间（`OpeningRoom`）：`GET .../room` 的 `room` 的 `opening` 分支。
+ *
+ * 只需要一个入参：开场房间的房间侧状态就只有 `initialized` 一个字段（叙事 + 牌库初始化），
+ * 奖励是否存在挂在队伍成员身上，不在房间上。
+ */
+export function openingRoomFixture(initialized = false): Schemas["OpeningRoom"] {
+  return {
+    type: "opening",
+    stage: dungeonStage("场景.义庄前院", []),
+    initialized,
+  };
+}
+
+/**
  * 卡牌载荷（后端 `Card.model_dump()` 的形状：`DeckComponent` 的 `cards`、`SpoilsComponent`
  * 的 `candidate_cards` / `claimed_cards`）。
  *

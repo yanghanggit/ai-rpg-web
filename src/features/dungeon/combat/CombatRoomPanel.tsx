@@ -22,19 +22,26 @@ import { useCombatScene } from "./useCombatScene";
  * 不是导航状态）：
  * - **共享的、必须唯一一份的**留在这里：参战者快照（`useCombatScene`：各阶段看同一份，避免快照
  *   互不一致）与 7 个 job 动作（`useCombatActions`：共用后端同一把玩家锁，`isBusy` 必须合起来看）。
- * - **只有某个阶段用的**跟着那个阶段走：结算的「收取战利品」（`useCollectLoot`）与「进入下一关」
- *   （`useAdvanceStage`）都在 `CombatPostPanel` 里，本层不再认识它们。
+ * - **只有某个阶段用的**跟着那个阶段走：结算的「收取战利品」（`useCollectLoot`）与「结束本次战斗」
+ *   都在 `CombatPostPanel` 里，本层不再认识它们。
  * - 真到 props 读不动了，再考虑上 context 消钻井（最后手段，Panel 会不再纯 props）；若某阶段内部
  *   长出**用户主动导航的子视图**，路由化那个子视图，而不是 phase。
+ *
+ * `onFinishRoom`（本间的结束动作 → 回地图）由页面接线后**透传**给结算面板，因为只有结算阶段才有
+ * 这个动作（其他阶段还在打，谈不上结束）；本层自己不认识路由。推进下一间不在房间里——那是地图上
+ * 的动作（见 `map/DungeonMapPanel`）。
  */
 export default function CombatRoomPanel({
   userName,
   gameName,
   room,
+  onFinishRoom,
 }: {
   userName: string;
   gameName: string;
   room: Schemas["CombatRoom"];
+  /** 本间的结束动作：回地图（仅结算阶段会用到，本层只做透传）。 */
+  onFinishRoom: () => void;
 }) {
   const scene = useCombatScene(userName, gameName, room);
   const actions = useCombatActions(userName, gameName);
@@ -84,6 +91,7 @@ export default function CombatRoomPanel({
           combatants={scene.combatants}
           combatPending={scene.isPending}
           loot={scene.loot}
+          onFinishRoom={onFinishRoom}
         />
       )}
     </>

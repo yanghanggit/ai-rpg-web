@@ -6,19 +6,16 @@ import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import { useStageEntity } from "../../stage/useStageEntity";
 import DeckDialog from "../DeckDialog";
-import { useAdvanceStage } from "../useAdvanceStage";
-import { useDungeonRun } from "../useDungeonRun";
-import AdvanceRoomDialog from "./AdvanceRoomDialog";
 import SpoilsDialog from "./SpoilsDialog";
 import { useOpeningActions } from "./useOpeningActions";
 import { useOpeningParty } from "./useOpeningParty";
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
  *
- * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 进入下一关」：
+ * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 结束本间」：
  * - 场景环境叙述（当前场景的 `EnvironmentComponent`）：**始终占位**的固定区（加载中 / 空也保留
  *   高度，避免下方按钮与内容跳动），放在动作按钮上方；
- * - 当前该做的动作按钮；
+ * - 当前该做的动作按钮，最后一个是**本间的结束动作**（`onFinishRoom`，回地图）；
  * - **队伍**：横排的角色卡（顺序即后端给的队伍顺序，玩家在前），点卡上的名字开角色信息浮窗、
  *   卡上有「查看牌组」；有奖励时多一个「奖励」按钮，点开在浮窗里**竖排**候选卡挑选。
  *   横排卡片就是「队伍站位」的 UX 雏形。
@@ -26,8 +23,14 @@ import { useOpeningParty } from "./useOpeningParty";
  * **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务；
  * 失败不自动重试，把「初始化开场」按钮留给玩家手动重试（服务端要求先初始化才能推进 / 退出）。
  *
+ * **本间是一扇单向门**：结束动作一旦按下就回地图，而**已结束的房间进不去**（地图上不再提供
+ * "进入房间"）。奖励候选本来就挂在队伍成员身上、只有当前还是开场房时才能领
+ * （`activate_pick_spoils_card` 要求 `is_current_room_dungeon_opening`），所以没领的卡就永久
+ * 留在那里——这是设计上要的惩罚，所以这里只**提示不阻止**（数据在这一层，提醒也放在这一层）。
+ *
  * 这里**只放开场房间独有的东西**——标题、副本信息、叙事入口、离开副本属于外层框架
- * （`OpeningRoomPage` 的 `RoomScaffold`），不在这一层重复。
+ * （`OpeningRoomPage` 的 `RoomScaffold`），不在这一层重复。「进入下一间」属于地图
+ * （`map/DungeonMapPanel`）：推进是整局副本的前进动作，不是某个房间的动作。
  *
  * 注意这一层的「叙事」二字指场景环境叙述（`opening-narrative` 段），与按钮打开的
  * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。
@@ -39,16 +42,17 @@ export default function OpeningRoomPanel({
   userName,
   gameName,
   room,
+  onFinishRoom,
 }: {
   userName: string;
   gameName: string;
   room: Schemas["OpeningRoom"];
+  /** 本间的结束动作：回地图（由页面接线，本层不认识路由）。 */
+  onFinishRoom: () => void;
 }) {
   const stage = useStageEntity(userName, gameName, room.stage.name);
   const party = useOpeningParty(userName, gameName);
   const actions = useOpeningActions(userName, gameName);
-  const advance = useAdvanceStage(userName, gameName);
-  const run = useDungeonRun(userName, gameName);
 
   // 自动初始化只对「本房间」触发一次：ref 记住已触发过的房间标识——StrictMode 下 effect 跑两次、
   // 或轮询导致重渲染都不会重复发任务；失败后由玩家点按钮重试，不会自己再发。
@@ -61,8 +65,6 @@ export default function OpeningRoomPanel({
   const [spoilsMember, setSpoilsMember] = useState<string | null>(null);
   // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
-  // 是否打开「进入下一关」确认框
-  const [isAdvanceOpen, setIsAdvanceOpen] = useState(false);
 
   // 进入开场房间自动执行一次初始化（失败不自动重试）
   useEffect(() => {
@@ -75,10 +77,6 @@ export default function OpeningRoomPanel({
 
   const narrative =
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
-
-  const dungeon = run.data?.dungeon ?? null;
-  const currentIndex = dungeon?.current_room_index ?? -1;
-  const nextRoom = dungeon === null ? null : (dungeon.rooms[currentIndex + 1] ?? null);
 
   const spoilsGenerated = party.party.some((member) => member.spoils !== null);
   const spoilsPending = party.party.some(
@@ -123,14 +121,19 @@ export default function OpeningRoomPanel({
             {actions.spoils.isBusy ? "生成中…" : "生成奖励"}
           </button>
         ) : null}
-        {/* 服务端要求开场房先初始化才能推进（否则 409），所以未初始化时直接禁用 */}
-        <button type="button" disabled={!room.initialized} onClick={() => setIsAdvanceOpen(true)}>
-          进入下一关
-        </button>
+        {/* 本间的结束动作：结束即回地图，之后本间进不来——未领的候选卡就留在这里了 */}
+        {room.initialized ? (
+          <button type="button" disabled={actions.isBusy} onClick={onFinishRoom}>
+            结束开局准备
+          </button>
+        ) : null}
       </div>
 
       {!room.initialized && !actions.init.isBusy ? (
-        <p className="muted">开场房间尚未初始化，无法进入下一关。</p>
+        <p className="muted">开场房间尚未初始化，结束本间与离开副本都还不行。</p>
+      ) : null}
+      {room.initialized && spoilsPending ? (
+        <p className="muted">还有候选卡未领：结束本间后就无法再领取了。</p>
       ) : null}
       {actionError ? <p className="error">开场动作失败：{actionError}</p> : null}
       {party.isError ? <p className="error">无法获取队伍状态：{String(party.error)}</p> : null}
@@ -201,21 +204,6 @@ export default function OpeningRoomPanel({
           onClose={() => setInfoActor(null)}
         />
       )}
-
-      {isAdvanceOpen ? (
-        <AdvanceRoomDialog
-          currentRoomName={room.stage.name}
-          nextRoom={nextRoom}
-          spoilsPending={spoilsPending}
-          busy={advance.isPending}
-          error={advance.isError ? describeApiError(advance.error) : null}
-          onConfirm={() => advance.mutate()}
-          onClose={() => {
-            advance.reset();
-            setIsAdvanceOpen(false);
-          }}
-        />
-      ) : null}
     </>
   );
 }

@@ -7,12 +7,26 @@
  * 这里一律用**普通 `<a>`**（整页加载），而不是 react-router 的 `<Link>`：带 `?seed=` 的深链
  * 需要重跑 `main.tsx::enableMocking` 才能把 mock 状态造出来（见 `mocks/seedMockFromUrl`），
  * 而 SPA 跳转不会重跑 boot。顺带的好处是每次进来都是全新的 mock 内存态。
+ *
+ * **副本进行中的两屏都从地图进**：地图是运行点（`/dungeon/map`），房间（`/dungeon/room`）是从
+ * 地图上「进入房间」才到的地方。带 `seed` 的链接把状态造好之后再落到地图，所以在地图上往下点
+ * 一步，看到的就是种子对应的那一间。
  */
 const links = [
   { to: "/", label: "启动屏 LaunchPage" },
   { to: "/entry", label: "玩家入口 EntryPage" },
   { to: "/game/webdev/Game1/home", label: "家园概览 HomeOverviewPage" },
   { to: "/game/webdev/Game1/dungeon", label: "副本总览 DungeonOverviewPage" },
+  {
+    to: "/game/webdev/Game1/dungeon/map?seed=opening:fresh",
+    label: "副本地图 · 刚进入副本（本间未结束）",
+  },
+  {
+    to: "/game/webdev/Game1/dungeon/map?seed=party:full",
+    label: "副本地图 · 本间已结束（队伍带同伴）",
+  },
+  { to: "/game/webdev/Game1/dungeon/map?seed=combat:turn", label: "副本地图 · 战斗未结束" },
+  { to: "/game/webdev/Game1/dungeon/map?seed=combat:post", label: "副本地图 · 最后一间已结束" },
   { to: "/game/webdev/Game1/dungeon/room?seed=opening:ready", label: "开场房间 · 已初始化" },
   { to: "/game/webdev/Game1/dungeon/room?seed=opening:spoils", label: "开场房间 · 已生成奖励" },
   { to: "/game/webdev/Game1/dungeon/room?seed=party:full", label: "开场房间 · 队伍带同伴" },

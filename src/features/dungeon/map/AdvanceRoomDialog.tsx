@@ -4,17 +4,21 @@ import Modal from "../../../components/Modal";
 import { ROOM_TYPE_LABELS } from "../readDungeonInfo";
 
 /**
- * 「进入下一关」的确认框。
+ * 「进入下一关」的确认框（地图页专用）。
  *
- * 为什么要有：推进**不可逆**——副本只向前，进了下一间就回不来，所以这是一步要确认的动作。
+ * 为什么要有：推进**不可逆**——副本只向前（服务端 `current_room_index` 只会 `+1`，没有任何接口
+ * 能回退），进了下一间就回不来，所以这是一步要确认的动作。
  *
- * 里面列一句奖励状态，**只提示、不阻止**：后端不要求必须领完奖励才能推进。
- * （开场房初始化是另一回事：它现在是**硬前置**，未初始化时根本打不开这个框，见 OpeningRoomPanel。）
+ * 为什么在地图上而不在房间里：地图上"前往下一间"是**整局副本唯一的前进动作**，也是选下一间房间
+ * 的地方（`rooms[current_room_index + 1]`）。看似能选，其实目前恒为一间——这个框就是那次确认。
+ *
+ * 只展示"当前 → 下一间"，**不展示开场奖励状态**：奖励候选在队伍成员身上，只有开场房间手里有
+ * 那份数据（`opening/useOpeningParty`），地图页不该为了这一行去拉队伍。奖励提醒归开场房间自己
+ * 的结束动作（那里既有数据、也正是会发生损失的那一刻）。
  */
 export default function AdvanceRoomDialog({
   currentRoomName,
   nextRoom,
-  spoilsPending,
   busy,
   error,
   onConfirm,
@@ -24,8 +28,7 @@ export default function AdvanceRoomDialog({
   currentRoomName: string;
   /** 下一间房间；`null` = 没有下一间（后端会 409「副本已全部通关」）。 */
   nextRoom: Schemas["DungeonRoomResponse"]["room"] | null;
-  /** 是否还有**未领取**的奖励（Spoils）候选（没有就说明尚未生成或已领完）。 */
-  spoilsPending: boolean;
+  /** 提交中（请求 + 重取）：禁用两个按钮，避免重复发起。 */
   busy: boolean;
   error: string | null;
   onConfirm: () => void;
@@ -53,8 +56,6 @@ export default function AdvanceRoomDialog({
             </>
           )}
         </dd>
-        <dt>开场准备</dt>
-        <dd>奖励 {spoilsPending ? "还有候选待挑" : "暂无候选"}</dd>
       </dl>
 
       {error ? <p className="error">进入下一关失败：{error}</p> : null}

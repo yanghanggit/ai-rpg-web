@@ -19,6 +19,10 @@ const DUNGEON = "副本.荒村义庄";
 
 /** token → 「造出该阶段」的一串 mock 调用（每个 token 覆盖一个 `deriveCombatPhase` 分支）。 */
 const SEEDS: Record<string, () => void> = {
+  // OPENING：刚进入副本的开场房间，**未初始化**（进入房间那一刻才自动跑初始化）
+  "opening:fresh": () => {
+    enterMockDungeon(DUNGEON);
+  },
   // OPENING：刚进入副本的开场房间，已初始化（可「生成奖励」）
   "opening:ready": () => {
     enterMockDungeon(DUNGEON);

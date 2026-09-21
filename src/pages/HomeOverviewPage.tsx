@@ -188,7 +188,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
                 <article key={stage} className={isCurrent ? "card card--current" : "card"}>
                   <div className="card-head">
                     <h2 className="mono">{displayName(stage)}</h2>
-                    {isCurrent ? <span className="badge card-current-badge">当前所在</span> : null}
+                    {isCurrent ? <span className="badge badge--current">当前所在</span> : null}
                     <button
                       type="button"
                       className="card-info-button"

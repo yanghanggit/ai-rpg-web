@@ -18,7 +18,7 @@ function renderDungeon() {
       <MemoryRouter initialEntries={["/game/webdev/Game1/dungeon"]}>
         <Routes>
           <Route path="/game/:userName/:gameName/dungeon" element={<DungeonOverviewPage />} />
-          <Route path="/game/:userName/:gameName/dungeon/room" element={<p>副本房间页占位</p>} />
+          <Route path="/game/:userName/:gameName/dungeon/map" element={<p>副本地图页占位</p>} />
           <Route path="/game/:userName/:gameName/home" element={<p>家园页占位</p>} />
         </Routes>
       </MemoryRouter>
@@ -207,7 +207,7 @@ describe("副本总览 · 道具管理（出征前整理行装）", () => {
 });
 
 describe("副本总览 · 进入副本（最终确认）", () => {
-  it("确认浮窗展示队伍与背包，确认后发起进入并切到副本房间页", async () => {
+  it("确认浮窗展示队伍与背包，确认后发起进入并切到**副本地图**（运行点）", async () => {
     addMockRosterMember("角色.顾知秋");
     server.use(
       http.post(api("/api/home/enter_dungeon/v1/"), async ({ request }) => {
@@ -244,7 +244,7 @@ describe("副本总览 · 进入副本（最终确认）", () => {
 
     fireEvent.click(within(dialog).getByRole("button", { name: "确认进入" }));
 
-    expect(await screen.findByText("副本房间页占位")).toBeInTheDocument();
+    expect(await screen.findByText("副本地图页占位")).toBeInTheDocument();
   });
 
   it("队伍里有已死亡的角色：确认按钮禁用并说明原因（后端会直接 500）", async () => {

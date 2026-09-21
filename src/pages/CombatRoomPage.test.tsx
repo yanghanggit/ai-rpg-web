@@ -148,13 +148,27 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByRole("button", { name: "收取战利品（0）" })).toBeDisabled();
   });
 
-  it("结算：最后一关点「进入下一关」显示后端原因", async () => {
+  it("结算：本间的结束动作回到地图（不推进副本）", async () => {
     enterMockDungeon("副本.荒村义庄");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
 
-    fireEvent.click(await screen.findByRole("button", { name: "进入下一关" }));
-    expect(await screen.findByText(/进入下一关失败：副本已全部通关/)).toBeInTheDocument();
+    fireEvent.click(await screen.findByRole("button", { name: "结束本次战斗" }));
+
+    // 落点是地图：索引还停在第 2 间（结束不推进），且本间已结束、进不去了
+    expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
+    expect(await screen.findByText("你在这里（已结束）")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
+  });
+
+  it("结算：未收的战利品只提示不阻止（没收拾就没机会了）", async () => {
+    enterMockDungeon("副本.荒村义庄");
+    advanceMockDungeon();
+    prepareMockPostCombat();
+    renderCombat();
+
+    expect(await screen.findByText(/还有战利品未收取/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "结束本次战斗" })).toBeEnabled();
   });
 });

@@ -198,6 +198,14 @@ summary {
   vertical-align: middle;
 }
 
+/* 绿色徽标："当前所在 / 当前行动"这一类——家园页的角色卡、副本信息的房间、战斗名单的行动者、
+   副本地图的队伍位置，用同一份（都是"焦点在这里"） */
+.badge--current {
+  border-color: var(--ok);
+  color: var(--ok);
+  font-weight: 600;
+}
+
 ul.plain {
   margin: 0.5rem 0;
   padding-left: 1.2rem;
@@ -604,11 +612,6 @@ ol.session .what {
   color: var(--muted);
 }
 
-.card-current-badge {
-  border-color: var(--ok);
-  color: var(--ok);
-}
-
 /* 卡片底部操作区：靠 margin-top:auto 压到底部，各卡按钮对齐 */
 .card-actions {
   margin-top: auto;
@@ -868,6 +871,40 @@ ol.dungeon-rooms {
   margin: 0.35rem 0 0;
 }
 
+/* ── 副本地图（进行中） ─────────────────────────────────────── */
+
+/* 地图 = 一条纵线：副本本身是**线性**的（模型就是 rooms[] + 一个 current_room_index，
+   没有分叉、没有边），所以刻意不做分叉图，免得让玩家以为能选路。
+   节点只读展示「已完成 / 你在这里 / 下一间 / 未到达」，动作由下面的工具栏给出。 */
+.map-nodes {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-node {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+/* 队伍所在的那一间：描边加重（同一份数据在「副本信息」浮窗里是绿色「当前所在」徽标） */
+.map-node--current {
+  border-color: var(--fg);
+}
+
+/* 序号是地图上的里程碑刻度，用等宽字体对齐 */
+.map-node-index {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+}
+
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 
 /* 环境叙述：这一屏的正文开场白（房间名由页面标题给出）。
@@ -1056,12 +1093,6 @@ ul.combat-roster {
 .combatant-stats {
   margin: 0;
   font-size: 0.85rem;
-}
-
-.badge--current {
-  border-color: var(--ok);
-  color: var(--ok);
-  font-weight: 600;
 }
 
 .badge--dead {

@@ -19,6 +19,12 @@ describe("seedMockFromUrl", () => {
     expect(readMockCombat().state).toBe(0);
   });
 
+  it("opening:fresh → 开场房间且尚未初始化（刚进入副本的样子）", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:fresh`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockOpeningInitialized()).toBe(false);
+  });
+
   it("opening:ready → 开场房间且已初始化", () => {
     seedMockFromUrl(`${BASE}?seed=opening:ready`);
     expect(readMockDungeonRoom()?.type).toBe("opening");

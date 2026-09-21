@@ -35,6 +35,18 @@ export const COMBAT_STATE = {
 /** 战斗房间的四个阶段。 */
 export type CombatPhase = "init" | "round_start" | "turn" | "post";
 
+/**
+ * 战斗结果枚举值，与后端 `models/combat.py::CombatResult` 一一对应（同样是裸数字联合）。
+ *
+ * 它和 `state` 是两件事：`state` 说“进行到哪一步”，`result` 说“谁赢了”。
+ * 服务端的 `is_won` / `is_lost` 就读它，所以 `readRoomGuards` 与结算面板都从这里取。
+ */
+export const COMBAT_RESULT = {
+  NONE: 0,
+  WIN: 1,
+  LOSE: 2,
+} as const;
+
 /** 由战斗状态派生当前 phase。 */
 export function deriveCombatPhase(combat: Combat): CombatPhase {
   // 结算阶段：COMPLETE（已出胜负，待结算）与 POST_COMBAT（可收战利品 / 推进）合并，

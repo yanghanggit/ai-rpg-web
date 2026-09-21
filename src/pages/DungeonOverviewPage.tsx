@@ -20,8 +20,8 @@ import RosterPanel from "../features/roster/RosterPanel";
  * 副本总览页：**宏观阅览副本 + 做准备 + 决定是否进入**，不承担副本内的流程。
  *
  * 所以这里只有三类事：生成副本、查阅副本的静态模型数据、出征前的准备
- * （队伍名单、整理行装）。「进入副本」是这一步的**终点**——发起成功即切到
- * `DungeonRoomRoute`（副本进行中那一屏），页面的职责到此为止。
+ * （队伍名单、整理行装）。「进入副本」是这一步的**终点**——发起成功即切到**副本地图**
+ * （`/dungeon/map`，副本进行中的运行点），页面的职责到此为止。
  *
  * 内容：
  * - 「生成新副本」→ `POST /api/home/generate_dungeon/v1/`（异步 job，等任务完成再刷新列表）；
@@ -91,10 +91,14 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
 
       <div className="toolbar">
         {/* 副本进行中时，第一优先是回到那一屏，而不是再发起新的进入 */}
+        {/* 副本进行中时总览页其实无事可做（家园接口全被拒、生成副本也被 setup 挡住），
+            这个入口只是“异常落点”的兜底：玩家用返回键/地址栏才能站在这里。
+            去副本的**运行点**（地图），与“进入副本”的落点一致。
+            （将来“进行中就直接定位到运行点”的两态守卫上线后，这个按钮会整个删掉。） */}
         {dungeonRun?.active ? (
           <button
             type="button"
-            onClick={() => navigate(`/game/${userName}/${gameName}/dungeon/room`)}
+            onClick={() => navigate(`/game/${userName}/${gameName}/dungeon/map`)}
           >
             回到副本：{displayName(dungeonRun.dungeon.name)}
           </button>
@@ -151,8 +155,11 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
           error={enterDungeon.isError ? describeApiError(enterDungeon.error) : null}
           onConfirm={() => {
             enterDungeon.mutate(enterTarget, {
-              // 成功即离开本页：玩家的场景已经变成副本第一关，这里已经没有可做的事
-              onSuccess: () => navigate(`/game/${userName}/${gameName}/dungeon/room`),
+              // 成功即离开本页：玩家的场景已经变成副本第一关，这里已经没有可做的事。
+              // 落点是**地图**（运行点）：先看到“队伍在哪一间”，再自己走进房间。
+              // 用 replace：副本内没有“后退”（见 DungeonMapPanel）
+              onSuccess: () =>
+                navigate(`/game/${userName}/${gameName}/dungeon/map`, { replace: true }),
             });
           }}
           onClose={() => {

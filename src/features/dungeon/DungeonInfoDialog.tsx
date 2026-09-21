@@ -50,7 +50,7 @@ export default function DungeonInfoDialog({
               <span className={room.type === "combat" ? "badge badge--combat" : "badge"}>
                 {room.typeLabel}
               </span>
-              {room.isCurrent ? <span className="badge card-current-badge">当前所在</span> : null}
+              {room.isCurrent ? <span className="badge badge--current">当前所在</span> : null}
             </div>
             {room.monsters.length === 0 ? (
               <p className="muted">（无敌人）</p>

@@ -273,7 +273,7 @@ describe("副本房间 · 共同框架", () => {
 });
 
 describe("副本房间 · 开场房间", () => {
-  it("自动初始化失败时：显示原因、保留可点的「初始化开场」，并锁住推进与退出", async () => {
+  it("自动初始化失败时：显示原因、保留可点的「初始化开场」，并锁住结束与退出", async () => {
     const initSpy = vi.fn();
     server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒村义庄");
@@ -291,9 +291,11 @@ describe("副本房间 · 开场房间", () => {
     const retry = screen.getByRole("button", { name: "初始化开场" });
     expect(retry).toBeEnabled();
 
-    // 未初始化 → 服务端不允许推进 / 退出，按钮都禁用并说明原因
-    expect(screen.getByRole("button", { name: "进入下一关" })).toBeDisabled();
-    expect(screen.getByText("开场房间尚未初始化，无法进入下一关。")).toBeInTheDocument();
+    // 未初始化 → 服务端不允许推进 / 退出，所以本间的结束动作根本不出现，退出入口禁用并说明原因
+    expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText("开场房间尚未初始化，结束本间与离开副本都还不行。"),
+    ).toBeInTheDocument();
     // 「离开副本」被锁的原因写在页面上；菜单里的该项禁用
     expect(screen.getByText("开场房间尚未初始化，无法离开副本。")).toBeInTheDocument();
     const menu = await openActions();
@@ -430,44 +432,31 @@ describe("副本房间 · 开场房间", () => {
     expect(within(menu).getAllByRole("button", { name: "叙事" })).toHaveLength(1);
   });
 
-  it("进入下一关：确认框列出下一间与奖励状态，确认后落到战斗房间", async () => {
+  it("结束开局准备：本间的结束动作回到地图，**不**推进副本（索引还是第 1 间）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
     await waitForInit();
 
-    fireEvent.click(screen.getByRole("button", { name: "进入下一关" }));
+    fireEvent.click(screen.getByRole("button", { name: "结束开局准备" }));
 
-    const dialog = await screen.findByRole("dialog", { name: "进入下一关" });
-    // 下一间是战斗房间，名字与类型都摊开
-    expect(within(dialog).getByText("停柩房")).toBeInTheDocument();
-    expect(within(dialog).getByText("战斗")).toBeInTheDocument();
-    // 奖励只提示、不阻止（初始化是硬前置，已由按钮禁用把关）
-    expect(within(dialog).getByText(/奖励 暂无候选/)).toBeInTheDocument();
-
-    fireEvent.click(within(dialog).getByRole("button", { name: "进入下一关" }));
-
-    // 副本推进到战斗房间：开场房间那一屏被换掉，标题变成战斗房间
+    // 落点是地图：标题仍是第 1 间（房间结束不推进，前进是地图上的动作）
+    expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
     expect(
-      await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" }),
+      await screen.findByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" }),
     ).toBeInTheDocument();
+    // 本间已结束 → 地图上的前进动作是「前往下一间」（而不是回到本间）
+    expect(screen.getByRole("button", { name: "前往下一间" })).toBeEnabled();
   });
 
-  it("进入下一关失败时把后端原因显示在确认框里", async () => {
-    server.use(
-      instantTasks(),
-      http.post(api("/api/dungeon/progress/advance_stage/v1/"), () =>
-        HttpResponse.json({ detail: "副本已全部通关，请返回营地" }, { status: 409 }),
-      ),
-    );
+  it("未领的奖励只提示不阻止：结束本间前写明「结束后无法再领取」（惩罚是设计要的）", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
-    await waitForInit();
+    await generateSpoils();
 
-    fireEvent.click(screen.getByRole("button", { name: "进入下一关" }));
-    const dialog = await screen.findByRole("dialog", { name: "进入下一关" });
-    fireEvent.click(within(dialog).getByRole("button", { name: "进入下一关" }));
-
-    expect(await within(dialog).findByText(/副本已全部通关/)).toBeInTheDocument();
+    expect(screen.getByText(/还有候选卡未领/)).toBeInTheDocument();
+    // 结束动作照旧可用（不套二次确认）
+    expect(screen.getByRole("button", { name: "结束开局准备" })).toBeEnabled();
   });
 });
