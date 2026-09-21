@@ -13,17 +13,17 @@ import {
   stageEntityFixtures,
 } from "./fixtures";
 
-type Mapping = Schemas["StagesStateResponse"]["mapping"];
+type ActorsByStage = Schemas["StagesStateResponse"]["actors_by_stage"];
 
-function cloneMapping(source: Mapping): Mapping {
+function cloneActorsByStage(source: ActorsByStage): ActorsByStage {
   return Object.fromEntries(Object.entries(source).map(([stage, actors]) => [stage, [...actors]]));
 }
 
-let mapping: Mapping = cloneMapping(homeStagesFixture.mapping);
+let actorsByStage: ActorsByStage = cloneActorsByStage(homeStagesFixture.actors_by_stage);
 
 /** 当前场景分布快照（深拷贝，调用方改不到内部状态）。 */
 export function readMockStages(): Schemas["StagesStateResponse"] {
-  return { mapping: cloneMapping(mapping) };
+  return { actors_by_stage: cloneActorsByStage(actorsByStage) };
 }
 
 /** 把玩家移到目标场景，返回原场景；找不到玩家时返回 `null`。 */
@@ -41,9 +41,9 @@ export function moveMockPlayerToStage(targetStage: string): string | null {
  * `./dungeons` 用它把队伍（与怪物）搬进当前场景。
  */
 export function moveMockActorsToStage(targetStage: string, actors: readonly string[]): void {
-  const targetActors = mapping[targetStage] ?? [];
+  const targetActors = actorsByStage[targetStage] ?? [];
   for (const actor of actors) {
-    for (const names of Object.values(mapping)) {
+    for (const names of Object.values(actorsByStage)) {
       const index = names.indexOf(actor);
       if (index !== -1) {
         names.splice(index, 1);
@@ -51,12 +51,12 @@ export function moveMockActorsToStage(targetStage: string, actors: readonly stri
     }
     targetActors.push(actor);
   }
-  mapping[targetStage] = targetActors;
+  actorsByStage[targetStage] = targetActors;
 }
 
 /** 查找角色当前所在场景；不在任何场景时返回 `null`。 */
 function findMockStageOfActor(actor: string): string | null {
-  for (const [stage, actors] of Object.entries(mapping)) {
+  for (const [stage, actors] of Object.entries(actorsByStage)) {
     if (actors.includes(actor)) {
       return stage;
     }
@@ -66,7 +66,7 @@ function findMockStageOfActor(actor: string): string | null {
 
 /** 复位成初始 fixture（测试之间隔离）。 */
 export function resetMockStages(): void {
-  mapping = cloneMapping(homeStagesFixture.mapping);
+  actorsByStage = cloneActorsByStage(homeStagesFixture.actors_by_stage);
 }
 
 /** 场景实体快照（深拷贝）；未知场景名返回 `null`。家园与副本场景都在这里。 */

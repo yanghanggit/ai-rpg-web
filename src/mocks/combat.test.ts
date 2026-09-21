@@ -66,9 +66,9 @@ describe("进入战斗房间", () => {
 
   it("队伍与怪物被搬进战斗场景，队伍离开家园场景", () => {
     enterCombat();
-    const mapping = readMockStages().mapping;
-    expect(mapping[COMBAT_STAGE]).toEqual([PLAYER, MONSTER_1, MONSTER_2]);
-    expect(mapping["场景.门厅"]).not.toContain(PLAYER);
+    const actorsByStage = readMockStages().actors_by_stage;
+    expect(actorsByStage[COMBAT_STAGE]).toEqual([PLAYER, MONSTER_1, MONSTER_2]);
+    expect(actorsByStage["场景.门厅"]).not.toContain(PLAYER);
   });
 });
 

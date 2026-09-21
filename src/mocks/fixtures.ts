@@ -143,7 +143,7 @@ export const blueprintListFixture: Schemas["BlueprintListResponse"] = {
  * 从 blueprintFixture 派生，保证与蓝图一致。
  */
 export const homeStagesFixture: Schemas["StagesStateResponse"] = {
-  mapping: Object.fromEntries(
+  actors_by_stage: Object.fromEntries(
     blueprintFixture.stages.map((stage) => [stage.name, stage.actors.map((a) => a.name)]),
   ),
 };

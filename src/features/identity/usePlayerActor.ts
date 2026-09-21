@@ -1,7 +1,7 @@
 /**
  * 解析「玩家控制的角色名」（player_actor）。
  *
- * 为什么需要它：`StagesStateResponse.mapping` 只给「场景 → 角色」，
+ * 为什么需要它：`StagesStateResponse.actors_by_stage` 只给「场景 → 角色」，
  * 要判断玩家当前在哪个场景（高亮、禁用「切换到此场景」），必须先知道玩家是谁。
  * 后端没有单独的 player_session 查询接口，但玩家实体挂了 `PlayerComponent`
  * （见 `ai-rpg` 的 `game/dbg_game.py`），可以用 group 端点精确捞出——

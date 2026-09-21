@@ -22,7 +22,7 @@ export default function StageInfoDialog({
   gameName: string;
   /** 场景原始名（`场景.门厅`）。 */
   stageName: string;
-  /** 该场景内的角色原始名列表（来自 stages state 的 mapping）。 */
+  /** 该场景内的角色原始名列表（来自 stages state 的 actors_by_stage）。 */
   actorNames: string[];
   onSelectActor: (actorName: string) => void;
   onClose: () => void;

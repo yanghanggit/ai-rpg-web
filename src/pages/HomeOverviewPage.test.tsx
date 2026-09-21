@@ -99,7 +99,7 @@ describe("家园概览页", () => {
   it("没有可推进的角色时按钮禁用，人数显示为 0", async () => {
     server.use(
       http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>
-        HttpResponse.json({ mapping: { "场景.空屋": [] } }),
+        HttpResponse.json({ actors_by_stage: { "场景.空屋": [] } }),
       ),
     );
 

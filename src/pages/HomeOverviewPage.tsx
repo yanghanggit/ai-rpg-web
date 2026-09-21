@@ -32,7 +32,7 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  * 浮窗内可穿/脱时装，穿时装时叠出 `StorageCostumeDialog` 选储物箱里的时装。
  * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统；
  * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
- * 「实体浏览器」打开 `EntityBrowserDialog`，把「场景 → 角色」mapping 一次性摊开，
+ * 「实体浏览器」打开 `EntityBrowserDialog`，把「场景 → 角色」actors_by_stage 一次性摊开，
  * 点名字即可打开对应的场景 / 角色信息浮窗——与点场景卡片等价，只是多一条宏观快捷入口。
  * 「副本」不属于浮窗：它切到 `DungeonOverviewPage`（`/game/:userName/:gameName/dungeon`）单独一屏，
  * 交接副本总览、出征准备与「进入副本」；进入成功后会切到 `/dungeon/room`（副本进行中）。
@@ -67,18 +67,18 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
     params: { path: { user_name: userName, game_name: gameName } },
   });
 
-  const mapping = state.data?.mapping ?? {};
-  // 顺序固定：直接沿用后端返回的 mapping key 顺序，客户端不排序、不重排。
+  const actorsByStage = state.data?.actors_by_stage ?? {};
+  // 顺序固定：直接沿用后端返回的 actors_by_stage key 顺序，客户端不排序、不重排。
   // 卡片位置是玩家的「空间记忆」，切换场景时卡片不能跳；当前场景靠高亮 + 角标表达，
   // 而不是把它移到最前。要改顺序请改后端（客户端不自行决定）。
-  const stages = Object.entries(mapping);
+  const stages = Object.entries(actorsByStage);
   // 后端要求显式传入"要推进的角色"；口径与 TUI 一致：全部场景的全部角色
-  const actors = collectActors(mapping);
+  const actors = collectActors(actorsByStage);
   const advance = useHomeAdvance(userName, gameName, actors);
   const switchStage = useSwitchStage(userName, gameName);
   // 玩家角色名用于判断「当前在哪个场景」；缓存未命中时回退查询 group 端点
   const playerActor = usePlayerActor(userName, gameName);
-  const currentStage = findStageOfActor(mapping, playerActor.data ?? null);
+  const currentStage = findStageOfActor(actorsByStage, playerActor.data ?? null);
   const logout = useLogout(userName, gameName);
   const costume = useCostumeAction(userName, gameName);
   const hasActors = actors.length > 0;
@@ -270,7 +270,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           userName={userName}
           gameName={gameName}
           stageName={infoStage}
-          actorNames={mapping[infoStage] ?? []}
+          actorNames={actorsByStage[infoStage] ?? []}
           // 点场景里的角色：关掉场景浮窗，换成角色浮窗
           onSelectActor={(actorName) => {
             setInfoStage(null);
@@ -282,7 +282,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
       {isEntityBrowserOpen ? (
         <EntityBrowserDialog
-          mapping={mapping}
+          actorsByStage={actorsByStage}
           // 点名字：关掉浏览器，换成对应的信息浮窗（与场景卡片点击等价）
           onSelectStage={(stage) => {
             setIsEntityBrowserOpen(false);

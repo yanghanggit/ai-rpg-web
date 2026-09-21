@@ -62,8 +62,8 @@ describe("战斗房间接口（mock handlers）", () => {
     const stages = unwrap(
       await client.GET("/api/stages/v1/{user_name}/{game_name}/state", { params: { path } }),
     );
-    expect(stages.mapping[COMBAT_STAGE]).toContain(PLAYER);
-    expect(stages.mapping[COMBAT_STAGE]).toContain("怪物.纸人");
+    expect(stages.actors_by_stage[COMBAT_STAGE]).toContain(PLAYER);
+    expect(stages.actors_by_stage[COMBAT_STAGE]).toContain("怪物.纸人");
   });
 
   it("未抓牌就出牌：handler 返回 400（与后端前置校验一致）", async () => {
