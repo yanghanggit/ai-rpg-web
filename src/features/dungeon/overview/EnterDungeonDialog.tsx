@@ -6,7 +6,7 @@ import { useDungeonList } from "./useDungeonList";
 import { useEnterPreview } from "./useEnterPreview";
 
 /**
- * 进入副本前的最终确认浮窗（一级浮窗，与「副本信息」互斥）。
+ * 进入副本前的最终确认浮窗（一级浮窗，与「地图」互斥）。
  *
  * 出征这一步是**不可逆**的：后端 `enter_dungeon` 会把玩家与队伍名单里的成员都挂上
  * `PartyMemberComponent`，并传送到副本第一关；之后队伍名单在退出副本前不能再改
@@ -43,7 +43,7 @@ export default function EnterDungeonDialog({
 }) {
   const preview = useEnterPreview(userName, gameName, playerActor);
 
-  // 起点房间与「副本信息」浮窗同源：从列表缓存里按名字取，不额外发请求
+  // 起点房间与「地图」浮窗同源：从列表缓存里按名字取，不额外发请求
   const dungeons = useDungeonList();
   const dungeon = dungeons.data?.find((item) => item.name === dungeonName);
   const entryRoom = dungeon ? readDungeonInfo(dungeon).rooms[0] : undefined;

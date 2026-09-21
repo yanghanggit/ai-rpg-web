@@ -4,7 +4,7 @@ import { describeApiError } from "../api/describeApiError";
 import { displayName } from "../components/displayName";
 import StorageCostumeDialog from "../features/costume/StorageCostumeDialog";
 import { useCostumeAction } from "../features/costume/useCostumeAction";
-import DungeonInfoDialog from "../features/dungeon/DungeonInfoDialog";
+import DungeonMapDialog from "../features/dungeon/DungeonMapDialog";
 import DungeonPanel from "../features/dungeon/overview/DungeonPanel";
 import EnterDungeonDialog from "../features/dungeon/overview/EnterDungeonDialog";
 import { useDungeonList } from "../features/dungeon/overview/useDungeonList";
@@ -26,7 +26,7 @@ import RosterPanel from "../features/roster/RosterPanel";
  * 内容：
  * - 「生成新副本」→ `POST /api/home/generate_dungeon/v1/`（异步 job，等任务完成再刷新列表）；
  * - 「可用副本」卡片 → `GET /api/home/dungeon-list/v1/`（磁盘上的静态模型数据）：
- *   点卡片主体打开 `DungeonInfoDialog` 查阅（对应 TUI 的 `/list-dungeons` + `/dungeon @名`），
+ *   点卡片主体打开 `DungeonMapDialog`（地图）查阅（对应 TUI 的 `/list-dungeons` + `/dungeon @名`），
  *   点「进入副本」打开 `EnterDungeonDialog` 做最终确认（队伍 + 背包 + 确认）；
  * - 队伍名单 → `PartyRosterComponent` 的 add / remove；**点角色名打开 `ActorInfoDialog`**，
  *   与家园页「点角色 chip 看信息」是同一套流程（连穿/脱时装的两级浮窗也一并接上）；
@@ -60,7 +60,7 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
   const run = useDungeonRun(userName, gameName);
   const dungeons = useDungeonList();
 
-  // 正在查阅的副本（原始名）；非空即打开副本信息浮窗
+  // 正在查阅的副本（原始名）；非空即打开「地图」浮窗
   const [infoDungeon, setInfoDungeon] = useState<string | null>(null);
   // 正在确认进入的副本（原始名）；非空即打开进入确认浮窗
   const [enterTarget, setEnterTarget] = useState<string | null>(null);
@@ -142,7 +142,7 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
       />
 
       {infoDungeonData ? (
-        <DungeonInfoDialog dungeon={infoDungeonData} onClose={() => setInfoDungeon(null)} />
+        <DungeonMapDialog dungeon={infoDungeonData} onClose={() => setInfoDungeon(null)} />
       ) : null}
 
       {enterTarget && playerActor.data ? (

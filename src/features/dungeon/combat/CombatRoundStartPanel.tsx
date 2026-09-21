@@ -1,6 +1,5 @@
 import type { Schemas } from "../../../api/types";
 import CombatRoster from "./CombatRoster";
-import CombatStatus from "./CombatStatus";
 import type { Combatant } from "./readCombat";
 
 /**
@@ -27,17 +26,17 @@ export default function CombatRoundStartPanel({
   drawError: string | null;
 }) {
   const latest = combat.rounds.at(-1) ?? null;
+  // 第一回合（还没有任何回合记录）不写引导句：按钮本身就是唯一动作，不靠文字再说一遍。
   const hint =
     latest === null
-      ? "战斗已开始，抓牌以开启第一回合。"
+      ? null
       : latest.is_completed
         ? "本回合已全部行动完毕，抓牌以开启新回合。"
         : "本回合尚未抓牌。";
 
   return (
     <>
-      <CombatStatus combat={combat} currentActor={currentActor} />
-      <p className="muted">{hint}</p>
+      {hint === null ? null : <p className="muted">{hint}</p>}
 
       <div className="toolbar">
         <button type="button" disabled={drawBusy} onClick={onDraw}>

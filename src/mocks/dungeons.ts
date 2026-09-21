@@ -53,9 +53,18 @@ export function readMockDungeonState(): Schemas["DungeonStateResponse"] {
   if (dungeon === undefined) {
     return { dungeon: structuredClone(emptyDungeonFixture) };
   }
+  // 当前房间若是战斗房，用**实时**战斗状态覆盖静态 fixture：真实后端的 `/state` 返回的是
+  // `world.dungeon`（战斗中会随动作变化），`/room` 也是这么拼的。不覆盖的话，⚙ 菜单里的
+  // 「战斗信息」会一直读到进入战斗时的空回合。
+  const rooms: Schemas["Dungeon"]["rooms"] = dungeon.rooms.map((room, index) =>
+    index === runningRoomIndex && room.type === "combat"
+      ? { type: "combat" as const, stage: structuredClone(room.stage), combat: readMockCombat() }
+      : structuredClone(room),
+  );
   return {
     dungeon: {
       ...structuredClone(dungeon),
+      rooms,
       current_room_index: runningRoomIndex,
       setup_entities: true,
     },

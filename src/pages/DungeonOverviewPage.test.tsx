@@ -57,7 +57,7 @@ describe("副本总览 · 可用副本（静态模型数据）", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "查看副本：荒村义庄" }));
 
-    const dialog = await screen.findByRole("dialog", { name: "副本信息" });
+    const dialog = await screen.findByRole("dialog", { name: "地图" });
     expect(within(dialog).getByText("义庄前院")).toBeInTheDocument();
     expect(within(dialog).getByText("开场")).toBeInTheDocument();
     expect(within(dialog).getByText("停柩房")).toBeInTheDocument();

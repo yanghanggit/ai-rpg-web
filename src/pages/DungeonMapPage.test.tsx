@@ -19,7 +19,7 @@ import DungeonMapPage from "./DungeonMapPage";
  * - 战斗没结束时地图不该出现：整页会把人**转发**回房间。
  *
  * 标题与入口也跟着收：这一屏不在某一间房里，所以标题只有副本名（没有 "(1/2) 房间名"），
- * 也不渲染「副本信息」（⚑）——地图自己就是房间清单。
+ * 也不渲染「地图」（⚑）——地图自己就是房间清单。
  */
 const renderMapPage = () => renderMap(<DungeonMapPage />);
 
@@ -33,7 +33,7 @@ function roomRow(stageName: string): HTMLElement {
 }
 
 describe("副本地图 · 状态与前进", () => {
-  it("刚进入副本：标题只留副本名、没有「副本信息」入口，只有本间那一行带「进入房间」", async () => {
+  it("刚进入副本：标题只留副本名、没有「地图」入口，只有本间那一行带「进入房间」", async () => {
     // 进入但不初始化：开场房间还没进过（刚进入副本）
     enterMockDungeon("副本.荒村义庄");
     renderMapPage();
@@ -42,13 +42,13 @@ describe("副本地图 · 状态与前进", () => {
     // 标题只留副本名：不带进度、不带房间名（这一屏不在某一间房里）。
     // 标题里的副本名来自 /state，所以要等它回来（地图与房间共用同一个 `/state` 查询）
     expect(await screen.findByRole("heading", { name: "荒村义庄" })).toBeInTheDocument();
-    // 地图自己就是房间清单，所以不再给「副本信息」；「副本操作」「牌组」照旧
+    // 地图自己就是房间清单，所以不再给「地图」；「副本操作」「牌组」照旧
     expect(screen.getByRole("button", { name: "副本操作" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "副本信息" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "地图" })).not.toBeInTheDocument();
 
     expect(screen.getByText("第 1 / 2 间")).toBeInTheDocument();
-    // 房间表就是「副本信息」浮窗那一份（同一个 readDungeonInfo），敌人也一并列出
+    // 房间表就是「地图」浮窗那一份（同一个 readDungeonInfo），敌人也一并列出
     expect(screen.getByText("义庄前院")).toBeInTheDocument();
     expect(screen.getByText("停柩房")).toBeInTheDocument();
     expect(screen.getByText(/HP 9/)).toBeInTheDocument();

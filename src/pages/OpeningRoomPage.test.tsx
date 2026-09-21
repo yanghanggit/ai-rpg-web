@@ -103,7 +103,7 @@ describe("副本房间 · 共同框架", () => {
     expect(screen.queryByText("开场")).not.toBeInTheDocument();
   });
 
-  it("标题行三个平级入口（副本操作 / 副本信息 / 牌组）；菜单里只剩叙事 / 离开副本", async () => {
+  it("标题行三个平级入口（副本操作 / 地图 / 牌组）；菜单里只剩叙事 / 离开副本", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
@@ -111,7 +111,7 @@ describe("副本房间 · 共同框架", () => {
     await screen.findByRole("heading", { name: OPENING_HEADING });
     // 三个入口都在标题行上、彼此平级
     expect(screen.getByRole("button", { name: /副本操作/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "副本信息" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "地图" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
     // 「离开副本」仍然不直接摊在页面上，只在菜单里
     expect(screen.queryByRole("button", { name: "离开副本" })).not.toBeInTheDocument();
@@ -120,8 +120,9 @@ describe("副本房间 · 共同框架", () => {
     // 叙事入口在共同框架（不分房间类型），与家园页共用同一套数据/未读算法
     expect(within(menu).getByRole("button", { name: "叙事" })).toBeInTheDocument();
     expect(within(menu).getByRole("button", { name: "离开副本" })).toBeInTheDocument();
-    // 「副本信息」已提到标题行，不再是菜单里的一项
-    expect(within(menu).queryByRole("button", { name: "副本信息" })).not.toBeInTheDocument();
+    // 「地图」已提到标题行，不再是菜单里的一项；开场房也没有「战斗信息」那一行
+    expect(within(menu).queryByRole("button", { name: "地图" })).not.toBeInTheDocument();
+    expect(within(menu).queryByRole("button", { name: "战斗信息" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /返回副本总览/ })).not.toBeInTheDocument();
   });
 
@@ -138,23 +139,25 @@ describe("副本房间 · 共同框架", () => {
     expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
   });
 
-  it("副本信息：从标题行直接打开，展示副本进度，并标出队伍当前所在的房间", async () => {
+  it("地图：从标题行直接打开，展示副本进度，并标出队伍当前所在的房间", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    const infoEntry = await screen.findByRole("button", { name: "副本信息" });
-    // 「副本信息」要等 `/state` 回来才有内容，在此之前是禁用的
+    const infoEntry = await screen.findByRole("button", { name: "地图" });
+    // 「地图」要等 `/state` 回来才有内容，在此之前是禁用的
     await waitFor(() => expect(infoEntry).toBeEnabled());
     fireEvent.click(infoEntry);
 
-    const dialog = await screen.findByRole("dialog", { name: "副本信息" });
+    const dialog = await screen.findByRole("dialog", { name: "地图" });
     // 起点是 rooms[0]（义庄前院）
     expect(within(dialog).getByText("第 1 / 2 间")).toBeInTheDocument();
     expect(within(dialog).getByText("当前所在")).toBeInTheDocument();
     // 房间列表仍然照旧（类型 + 敌人）
     expect(within(dialog).getByText("停柩房")).toBeInTheDocument();
     expect(within(dialog).getByText(/HP 16/)).toBeInTheDocument();
+    // 当前是开场房，没有战斗数据：「战斗信息」按钮不出现
+    expect(within(dialog).queryByRole("button", { name: /战斗信息/ })).not.toBeInTheDocument();
   });
 
   it("新叙事未读时，入口按钮变绿并带上未读数；打开即已读", async () => {

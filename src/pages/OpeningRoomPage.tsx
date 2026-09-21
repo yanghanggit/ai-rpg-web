@@ -12,7 +12,7 @@ import { useExitDungeon } from "../features/dungeon/useExitDungeon";
 /**
  * 开场房间整页（`room.type === "opening"`）。
  *
- * 与 `CombatRoomPage` 共用 `RoomScaffold`（标题 / 副本信息 / 叙事 / 离开副本），
+ * 与 `CombatRoomPage` 共用 `RoomScaffold`（标题 / 地图 / 叙事 / 离开副本），
  * 这里只写**开场房间与别的房间不同的那两件事**：
  * - **本间的主行动不占标题行那个槽位**（不传 `RoomScaffold` 的 `roomAction`）：开场房这个槽位
  *   从前放的是「初始化中 / 重试 / 结束本间」，但它们全都已经在正文里有入口——初始化三态在场景卡上

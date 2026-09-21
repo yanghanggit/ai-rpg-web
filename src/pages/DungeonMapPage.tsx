@@ -16,7 +16,7 @@ import { useExitDungeon } from "../features/dungeon/useExitDungeon";
  * 页面只做三件事，正文交给 `map/DungeonMapPanel`：
  * - 取回当前房间并处理「加载中 / 没有进行中的房间」（`DungeonRunGate`，与房间路由共用同一个门）；
  * - 套上副本共同框架 `RoomScaffold`（标题 = 副本名 (当前/总数) 房间名 + 三个图标入口）——
- *   地图上同样要看叙事 / 副本信息 / 牌组，它们本来就是"副本状态"的一部分；
+ *   地图上同样要看叙事 / 战斗信息 / 牌组，它们本来就是"副本状态"的一部分；
  * - 「离开副本」「能不能前进」都不预判：前者由服务端在接口/任务里拦（原因原样显示），后者由
  *   `readNextRoom` + `readRoomGuards` 决定「有没有可前往的那一行」。
  *
@@ -29,7 +29,7 @@ import { useExitDungeon } from "../features/dungeon/useExitDungeon";
  * 所以在这一层**转发**回房间。
  *
  * 标题与入口也跟着变：这一屏不在某一间房里，所以标题只留副本名（不带 "(1/2) 房间名"），
- * 也不渲染「副本信息」（⚑）——地图自己就是房间清单，再开一个浮窗看同一份清单是多余的。
+ * 也不渲染「地图」（⚑）——地图自己就是房间清单，再开一个浮窗看同一份清单是多余的。
  */
 export default function DungeonMapPage() {
   const { userName, gameName } = useParams();
@@ -68,7 +68,7 @@ function DungeonMap({
   }
 
   return (
-    <RoomScaffold userName={userName} gameName={gameName} exit={exit} showInfo={false}>
+    <RoomScaffold userName={userName} gameName={gameName} exit={exit} showMap={false}>
       <DungeonMapPanel userName={userName} gameName={gameName} room={room} />
     </RoomScaffold>
   );

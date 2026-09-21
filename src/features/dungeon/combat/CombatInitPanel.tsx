@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { Schemas } from "../../../api/types";
 import CombatRoster from "./CombatRoster";
-import CombatStatus from "./CombatStatus";
 import type { Combatant } from "./readCombat";
 
 /**
@@ -38,7 +37,6 @@ export default function CombatInitPanel({
 
   return (
     <>
-      <CombatStatus combat={combat} currentActor={null} />
       <p className="muted">
         战斗尚未初始化。进入战斗房间会自动初始化一次；若失败，可点下方按钮重试。
       </p>

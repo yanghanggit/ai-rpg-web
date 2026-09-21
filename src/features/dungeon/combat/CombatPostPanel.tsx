@@ -4,7 +4,6 @@ import ItemRow from "../../items/ItemRow";
 import type { Item } from "../../items/types";
 import CombatRoster from "./CombatRoster";
 import CombatRoundLog from "./CombatRoundLog";
-import CombatStatus from "./CombatStatus";
 import { COMBAT_RESULT } from "./combatPhase";
 import type { Combatant } from "./readCombat";
 import { useCollectLoot } from "./useCollectLoot";
@@ -63,7 +62,6 @@ export default function CombatPostPanel({
 
   return (
     <>
-      <CombatStatus combat={combat} currentActor={null} />
       <p className={result.className}>{result.text}</p>
 
       <div className="toolbar">

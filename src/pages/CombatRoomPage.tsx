@@ -11,7 +11,7 @@ import { useExitDungeon } from "../features/dungeon/useExitDungeon";
 /**
  * 战斗房间整页（`room.type === "combat"`）。
  *
- * 与 `OpeningRoomPage` 共用 `RoomScaffold`（标题 / 副本信息 / 叙事 / 离开副本），
+ * 与 `OpeningRoomPage` 共用 `RoomScaffold`（标题 / 地图 / 叙事 / 离开副本），
  * 这里只接战斗房间的正文 `CombatRoomPanel`（按 `combat.state` 派生阶段 → 渲染对应面板，详见该
  * 组件注释），以及**本间的主行动**（标题行最右那颗图标）：战斗打完了才是「结束本次战斗」，
  * 否则这个槽位空着——还在打的时候没有"结束本间"这件事可做。

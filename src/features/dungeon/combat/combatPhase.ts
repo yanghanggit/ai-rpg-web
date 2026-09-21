@@ -47,6 +47,22 @@ export const COMBAT_RESULT = {
   LOSE: 2,
 } as const;
 
+/** 战斗状态 → 界面说法（与 TUI `/info` 的 `CombatState.name` 对应）。 */
+export const COMBAT_STATE_LABELS: Record<number, string> = {
+  [COMBAT_STATE.NONE]: "未开始",
+  [COMBAT_STATE.INITIALIZATION]: "初始化中",
+  [COMBAT_STATE.ONGOING]: "进行中",
+  [COMBAT_STATE.COMPLETE]: "已分出胜负",
+  [COMBAT_STATE.POST_COMBAT]: "结算中",
+};
+
+/** 战斗结果 → 界面说法。 */
+export const COMBAT_RESULT_LABELS: Record<number, string> = {
+  [COMBAT_RESULT.NONE]: "—",
+  [COMBAT_RESULT.WIN]: "胜利",
+  [COMBAT_RESULT.LOSE]: "失败",
+};
+
 /** 由战斗状态派生当前 phase。 */
 export function deriveCombatPhase(combat: Combat): CombatPhase {
   // 结算阶段：COMPLETE（已出胜负，待结算）与 POST_COMBAT（可收战利品 / 推进）合并，

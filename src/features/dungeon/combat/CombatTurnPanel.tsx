@@ -4,7 +4,6 @@ import { displayName } from "../../../components/displayName";
 import CardItem from "../../cards/CardItem";
 import CombatRoster from "./CombatRoster";
 import CombatRoundLog from "./CombatRoundLog";
-import CombatStatus from "./CombatStatus";
 import type { Combatant } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
@@ -52,8 +51,6 @@ export default function CombatTurnPanel({
 
   return (
     <>
-      <CombatStatus combat={combat} currentActor={currentActor} />
-
       <section>
         <div className="section-head">
           <h2>参战者</h2>

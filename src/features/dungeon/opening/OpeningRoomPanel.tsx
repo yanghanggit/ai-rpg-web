@@ -43,7 +43,7 @@ import type { OpeningActions } from "./useOpeningActions";
  * （`activate_pick_spoils_card` 要求 `is_current_room_dungeon_opening`），所以没领的卡就永久
  * 留在那里——这是设计上要的惩罚，所以只**提醒不阻止**（提醒就在卡上那颗按钮）。
  *
- * 这里**只放开场房间独有的东西**——标题、副本信息、叙事入口、离开副本属于外层框架
+ * 这里**只放开场房间独有的东西**——标题、地图、叙事入口、离开副本属于外层框架
  * （`OpeningRoomPage` 的 `RoomScaffold`），不在这一层重复。「进入下一间」属于地图
  * （`map/DungeonMapPanel`）：推进是整局副本的前进动作，不是某个房间的动作。
  *
