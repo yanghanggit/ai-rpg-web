@@ -380,7 +380,13 @@ export function prepareMockPostCombat(): void {
   ];
 }
 
-/** 怪物基础实体（怪物不是家园 NPC，`./items` 查不到，所以在这里构造）。 */
+/**
+ * 怪物基础实体（怪物不是家园 NPC，`./items` 查不到，所以在这里构造）。
+ *
+ * 组件与队伍成员同底：`IdentityComponent` / `AppearanceComponent` / `CharacterStatsComponent`，
+ * 只把类型标记换成 `MonsterComponent`（真实后端 `dbg_game.py` 给所有 actor 都挂外观组件，
+ * `appearance` 初始 = `base_body`；怪物不穿时装，所以两者相同）。
+ */
 export function readMockCombatActorEntity(name: string): Entity | null {
   const actor = monsterActor(name);
   if (actor === undefined) {
@@ -393,6 +399,10 @@ export function readMockCombatActorEntity(name: string): Entity | null {
       {
         name: "IdentityComponent",
         data: { name, creation_order: 0, entity_id: `mock-${name}` },
+      },
+      {
+        name: "AppearanceComponent",
+        data: { name, base_body: actor.base_body, appearance: actor.base_body },
       },
       {
         name: "CharacterStatsComponent",

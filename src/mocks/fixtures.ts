@@ -174,6 +174,9 @@ export const stageEntityFixtures: Schemas["EntitySerialization"][] = blueprintFi
  * 玩家实体在 Identity / Appearance / CharacterStats 之外额外挂 PlayerComponent，
  * 所以 group / details 两个端点用它当返回体。字段形状照抄后端 `model_dump()`：
  * CharacterStatsComponent 的 stats 是嵌套对象。
+ *
+ * **只序列化客户端会读的组件**：后端的 `SystemMessage`（客户端不允许读）与 `ActorComponent`
+ * （只有 `name` / `current_stage`，暂无用途）不列入——mock 不是后端响应的完整镜像。
  */
 export const playerEntityFixture: Schemas["EntitySerialization"] = {
   name: blueprintFixture.player_actor,
@@ -409,16 +412,25 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
   },
 ];
 
+/**
+ * 副本蓝图里的一个 actor（怪物）。
+ *
+ * **玩家 / NPC / 怪物挂同一套公共组件**（真实后端 `dbg_game.py::create_actor_entities`）：
+ * `IdentityComponent` / `AppearanceComponent`（`appearance` 初始 = `base_body`）/ `CharacterStatsComponent`，
+ * 只在类型标记上分岔（`PlayerComponent` / `NPCComponent` / `MonsterComponent`）。所以 `base_body`
+ * 是每个 actor 都有的数据，怪物也必须给——否则「角色信息」浮窗的外观栏就是空的。
+ */
 function dungeonActor(
   name: string,
   type: Schemas["ActorType"],
   stats: Schemas["CharacterStats"],
+  baseBody: string,
 ): Schemas["Actor"] {
   return {
     name,
     type,
     profile: "（mock）角色简介",
-    base_body: "（mock）基础身体",
+    base_body: baseBody,
     system_message: "（mock）角色系统提示",
     character_stats: stats,
     components: [],
@@ -462,13 +474,23 @@ export const dungeonFixture: Schemas["Dungeon"] = {
       type: "combat",
       combat: { name: "", state: 0, result: 0, rounds: [], retreated: false },
       stage: dungeonStage("场景.停柩房", [
-        dungeonActor("怪物.纸人", "Monster", { hp: 9, max_hp: 9, attack: 3, defense: 1 }),
-        dungeonActor("怪物.棺中殭尸", "Monster", {
-          hp: 16,
-          max_hp: 16,
-          attack: 5,
-          defense: 2,
-        }),
+        dungeonActor(
+          "怪物.纸人",
+          "Monster",
+          { hp: 9, max_hp: 9, attack: 3, defense: 1 },
+          "（mock）薄纸糊成的纸人，脸上画着朱砂笑眼，风一吹便有簌簌的纸响。",
+        ),
+        dungeonActor(
+          "怪物.棺中殭尸",
+          "Monster",
+          {
+            hp: 16,
+            max_hp: 16,
+            attack: 5,
+            defense: 2,
+          },
+          "（mock）棺木爆开处爬出的殭尸，浑身裹着霉烂的殓布，指爪青黑。",
+        ),
       ]),
     },
   ],

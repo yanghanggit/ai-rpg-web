@@ -4,7 +4,7 @@ import ActorCard from "./ActorCard";
 
 /**
  * `ActorCard` 的单元测试：整卡可点与否、`extra` 第二行、动作区有无、动作按钮拦点击——这四件事
- * 决定它在开场房（有奖励按钮 + 卡组张数）与战斗开局（敌人无入口、队伍无动作）里的两种长相。
+ * 决定它在开场房（有奖励按钮 + 卡组张数）与战斗开局（敌人 / 队伍同款，只是没有卡底动作）里的长相。
  */
 describe("ActorCard", () => {
   it("给 onOpenInfo：整卡是一个可点按钮（名字不再是独立按钮）", () => {
@@ -19,7 +19,7 @@ describe("ActorCard", () => {
     expect(onOpenInfo).toHaveBeenCalledTimes(1);
   });
 
-  it("不给 onOpenInfo：整卡不可点（敌人卡不给入口），名字是静态文本", () => {
+  it("不给 onOpenInfo：整卡不可点，名字是静态文本", () => {
     render(<ActorCard name="纸人" badge="怪物" stats={null} />);
 
     expect(screen.queryByRole("button")).not.toBeInTheDocument();

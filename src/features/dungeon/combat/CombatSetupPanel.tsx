@@ -27,8 +27,9 @@ import type { CombatActions } from "./useCombatActions";
  * 一次点击落到第一回合；开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
  *
  * 卡片只留**必要信息**：名字 + 身份 + 一行 `HP / 攻 / 防`。能量 / 格挡 / 牌堆在开局前全是 0，
- * 先不显示（它们属于回合行动那一屏）。**队伍卡整卡可点开角色信息浮窗**（`ActorInfoDialog`，
- * 副本内不提供穿 / 脱时装）；敌人卡不给入口——它不是可操作对象。
+ * 先不显示（它们属于回合行动那一屏）。**敌人卡与队伍卡一样整卡可点开角色信息浮窗**
+ * （`ActorInfoDialog`，副本内不提供穿 / 脱时装）——怪物也是可查阅的实体（身份 / 属性；没有外观
+ * 组件就显示占位）。
  */
 export default function CombatSetupPanel({
   userName,
@@ -116,6 +117,7 @@ export default function CombatSetupPanel({
               name={combatant.name}
               badge={roleLabel(combatant)}
               stats={combatant.stats}
+              onOpenInfo={() => setInfoActor(combatant.name)}
             />
           ))}
         </section>

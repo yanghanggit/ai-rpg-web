@@ -54,19 +54,27 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
-  it("开局准备：队伍卡整卡可点开角色信息（敌人卡不给入口）", async () => {
+  it("开局准备：队伍卡整卡可点开角色信息（副本内无时装入口）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 队伍卡整卡可点（名字不再是独立按钮）；敌人卡整卡不可点
-    const name = await screen.findByRole("button", { name: "查看角色：无名" });
-    expect(screen.queryByRole("button", { name: "查看角色：纸人" })).not.toBeInTheDocument();
-
-    fireEvent.click(name);
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：无名" }));
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     await within(dialog).findByText("属性");
     // 副本进行中家园接口会被拒，所以隐藏时装区
     expect(within(dialog).queryByRole("heading", { name: "时装" })).not.toBeInTheDocument();
+  });
+
+  it("开局准备：敌人卡也能点开（怪物与队伍成员挂同一套组件，外观同样来自 AppearanceComponent）", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：纸人" }));
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    await within(dialog).findByText("属性");
+    expect(within(dialog).getByText("9 / 9")).toBeInTheDocument();
+    // 外观来自 AppearanceComponent：初始「当前」=「基础」（怪物不穿时装，真实后端也如此）
+    expect(within(dialog).getAllByText(/朱砂笑眼/)).toHaveLength(2);
   });
 
   it("开局准备：场景卡可点开「场景信息」全文（与开场房同一交互）", async () => {
