@@ -68,7 +68,7 @@ src/main.tsx             # 入口
 - 由 `pnpm check:conventions` 强制。
 
 > 常见误解：`.tsx` ≠ 必须放 `pages/`。**`pages/` 的判据是"路由级"，不是"是组件"。**
-> `*Route` 与 `*Page` 的分工：**绑定 URL 的（哪怕只做解析 / 分发）用 `*Route`**，它由 `App.tsx` 的 `<Route>` 指向；**具体屏幕用 `*Page`**，可以不对应独立 URL。例：`DungeonRoomRoute`（绑定 `/dungeon/room`，按 `room.type` 分发）→ `OpeningRoomPage` / `CombatRoomPage`（两屏）。**服务端判别字段不因此加路由**（见 [页面结构](pages.md) 的「副本进行中（房间）」）。
+> `*Route` 与 `*Page` 的分工：**绑定 URL 的（哪怕只做解析 / 分发）用 `*Route`**，它由 `App.tsx` 的 `<Route>` 指向；**具体屏幕用 `*Page`**，可以不对应独立 URL。例：`DungeonRoomRoute`（绑定 `/dungeon/room`，按 `room.type` 分发）→ `OpeningRoomPage` / `CombatRoomPage`（两屏）。**服务端判别字段不因此加路由**（见 [页面结构](pages.md) 的「副本进行中（地图 + 房间）」）。
 
 ### 归属判据：谁变了它才变
 

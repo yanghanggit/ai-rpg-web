@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 import { prepareMockPostCombat } from "../mocks/combat";
@@ -55,9 +55,9 @@ describe("副本地图 · 状态与前进", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "进入房间" }));
 
-    // 落到房间页：正文是队伍（只有房间页有），初始化已自动跑完（「生成奖励」出现）
+    // 落到房间页：正文是队伍（只有房间页有）；自动初始化跑完 → 卡上的「生成奖励」可点
     expect(await screen.findByRole("heading", { name: "队伍" })).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "生成奖励" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "生成奖励" })).toBeEnabled());
     // 此时地图已经卸载，标题才是无歧义的判据（地图上的标题也长这样）
     expect(screen.getByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" })).toBeInTheDocument();
   });

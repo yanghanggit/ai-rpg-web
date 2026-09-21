@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { readMockCombat } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
-import { readMockOpeningInitialized, readMockPartyNames, readMockSpoilsHolders } from "./opening";
+import {
+  readMockClaimedCount,
+  readMockOpeningInitialized,
+  readMockPartyNames,
+  readMockSpoilsHolders,
+} from "./opening";
 import { seedMockFromUrl } from "./seedMockFromUrl";
 
 const BASE = "http://localhost/game/webdev/Game1/dungeon/room";
@@ -35,6 +40,12 @@ describe("seedMockFromUrl", () => {
     seedMockFromUrl(`${BASE}?seed=opening:spoils`);
     expect(readMockDungeonRoom()?.type).toBe("opening");
     expect(readMockSpoilsHolders().length).toBeGreaterThan(0);
+  });
+
+  it("opening:claimed → 已生成奖励且已领走一张", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:claimed`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockClaimedCount("角色.无名")).toBe(1);
   });
 
   it("combat:init → 战斗房间处于 INITIALIZATION", () => {

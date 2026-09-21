@@ -7,6 +7,7 @@ import { readStageInfo } from "../../stage/readStageInfo";
 import { useStageEntity } from "../../stage/useStageEntity";
 import SpoilsDialog from "./SpoilsDialog";
 import { useOpeningActions } from "./useOpeningActions";
+import type { OpeningPartyMember } from "./useOpeningParty";
 import { useOpeningParty } from "./useOpeningParty";
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
@@ -14,11 +15,12 @@ import { useOpeningParty } from "./useOpeningParty";
  * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 结束本间」：
  * - 场景环境叙述（当前场景的 `EnvironmentComponent`）：**始终占位**的固定区（加载中 / 空也保留
  *   高度，避免下方按钮与内容跳动），放在动作按钮上方；
- * - 当前该做的动作按钮，最后一个是**本间的结束动作**（`onFinishRoom`，回地图）；
+ * - 工具栏只放**房间级**的动作：开场未初始化时的「初始化开场」（自动初始化失败后的重试入口）
+ *   与本间的**结束动作**（`onFinishRoom`，回地图）；
  * - **队伍**：竖着的角色卡，一张挨一张横排（顺序即后端给的队伍顺序，玩家在前）——卡面是
- *   「名字 + 属性（HP/ATK/DEF）+ 牌组张数」，点卡上的名字开角色信息浮窗；有奖励时卡上多一个
- *   「奖励」按钮，点开在浮窗里**竖排**候选卡挑选。卡片的形状与牌组 / 奖励里的**卡面同一套**
- *   （窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
+ *   「名字 + 属性（HP/ATK/DEF）+ DECK 张数」，点卡上的名字开角色信息浮窗；卡底那颗按钮是
+ *   本成员的奖励入口，**三态**：生成奖励 → 获取奖励 → 查看奖励（见下）。卡片的形状与牌组 /
+ *   奖励里的**卡面同一套**（窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
  *   **卡上不再有「查看牌组」**：牌组已由标题行的「牌组」入口统一提供（`RoomScaffold`，同一份
  *   `useOpeningParty`），不在房间里再开一个口子——两个入口会各自演化出两份卡面。
  *
@@ -37,8 +39,14 @@ import { useOpeningParty } from "./useOpeningParty";
  * 注意这一层的「叙事」二字指场景环境叙述（`opening-narrative` 段），与按钮打开的
  * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。
  *
- * **奖励渐进式披露**：不摊在页面上，角色卡上只留「奖励」按钮，点开才展开候选卡。「挑选」
+ * **奖励渐进式披露**：不摊在页面上，角色卡上只留那一颗三态按钮，点开才展开候选卡。「挑选」
  * 不做二次确认，防误触靠卡片上的显式按钮（与队伍名单的「加入 / 移出」同一套心智）。
+ *
+ * **「生成奖励」是整队一次的动作，所以它长在每张卡上却只算一件事**：后端 `activate_generate_spoils`
+ * 一次给全队挂 `SpoilsComponent`，所以点**任何**一张卡上的「生成奖励」都是同一次调用，
+ * 生成后每张卡一起从「生成奖励」变成「获取奖励」（按钮的 `title` 也这么写，免得看成单人生成）。
+ * 领取 / 查看才是按成员各自的（`pick_spoils/pick_card` 带 `actor_name`），所以三态里只有第一态是共用的。
+ * 未初始化时那颗按钮**在但不可点**（服务端硬前置）：把"下一步是什么"提前告诉玩家，而不是凭空少一个按钮。
  */
 export default function OpeningRoomPanel({
   userName,
@@ -78,7 +86,6 @@ export default function OpeningRoomPanel({
   const narrative =
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
 
-  const spoilsGenerated = party.party.some((member) => member.spoils !== null);
   const spoilsPending = party.party.some(
     (member) =>
       member.spoils !== null &&
@@ -89,6 +96,14 @@ export default function OpeningRoomPanel({
 
   // 页面级动作失败的原因（初始化 / 生成奖励）；领卡失败在奖励浮窗内显示
   const actionError = actions.init.error ?? actions.spoils.error;
+
+  /** 某张角色卡上那颗按钮现在该写什么：生成奖励 → 获取奖励 → 查看奖励。 */
+  function spoilsLabel(member: OpeningPartyMember): string {
+    if (member.spoils === null) {
+      return actions.spoils.isBusy ? "生成中…" : "生成奖励";
+    }
+    return member.spoils.claimedCards.length > 0 ? "查看奖励" : "获取奖励";
+  }
 
   return (
     <>
@@ -108,18 +123,12 @@ export default function OpeningRoomPanel({
       </section>
 
       <div className="toolbar">
-        {/* 初始化与奖励是顺序动作：做完就不再出现，页面上永远只有「当前该做的那一步」；
-            初始化已自动触发，这个按钮只在失败后作为手动重试入口保留。 */}
+        {/* 初始化已自动触发，这个按钮只在失败后作为手动重试入口保留；「生成奖励」搬到角色卡上了 */}
         {room.initialized ? null : (
           <button type="button" disabled={actions.isBusy} onClick={actions.init.start}>
             {actions.init.isBusy ? "初始化中…" : "初始化开场"}
           </button>
         )}
-        {room.initialized && !spoilsGenerated ? (
-          <button type="button" disabled={actions.isBusy} onClick={actions.spoils.start}>
-            {actions.spoils.isBusy ? "生成中…" : "生成奖励"}
-          </button>
-        ) : null}
         {/* 本间的结束动作：结束即回地图，之后本间进不来——未领的候选卡就留在这里了 */}
         {room.initialized ? (
           <button type="button" disabled={actions.isBusy} onClick={onFinishRoom}>
@@ -160,28 +169,40 @@ export default function OpeningRoomPanel({
                 {member.player ? <span className="badge">玩家</span> : null}
               </div>
 
-              {/* 属性是副本里最要紧的状态（血量会变），排在最前；一行一项，横排会被卡宽挤断 */}
-              {member.stats === null ? null : (
-                <p className="muted actor-card-stats">
-                  <span>
-                    HP {member.stats.hp}/{member.stats.max_hp}
-                  </span>
-                  <span>ATK {member.stats.attack}</span>
-                  <span>DEF {member.stats.defense}</span>
-                </p>
-              )}
+              {/* 卡面数据：属性（会变的血量最要紧）+ 牌组张数，**一组**、一行一项
+                  （横排会被卡宽挤断；拉开成两段中间会空一行，难看） */}
+              <p className="muted actor-card-stats">
+                {member.stats === null ? null : (
+                  <>
+                    <span>
+                      HP {member.stats.hp}/{member.stats.max_hp}
+                    </span>
+                    <span>ATK {member.stats.attack}</span>
+                    <span>DEF {member.stats.defense}</span>
+                  </>
+                )}
+                <span>DECK {member.deck.length}</span>
+              </p>
 
-              <p className="muted">牌组 {member.deck.length} 张</p>
-
-              {/* 奖励候选不摊在页面上：有奖励时卡上多一个「奖励」按钮，点开浮窗看。
-                  牌组不在这里开口子——标题行的「牌组」入口已经能看全队（同一份 useOpeningParty）。 */}
-              {member.spoils === null ? null : (
-                <div className="card-actions">
-                  <button type="button" onClick={() => setSpoilsMember(member.name)}>
-                    奖励
+              {/* 卡上唯一一颗按钮 = 本成员的奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励。
+                  生成是**整队一次**的动作（点哪张卡上的都一样），所以给 button 加 title 说明。 */}
+              <div className="card-actions">
+                {member.spoils === null ? (
+                  <button
+                    type="button"
+                    // 生成需要开场已初始化（服务端硬前置）：未初始化时按钮在，但不可点
+                    disabled={!room.initialized || actions.isBusy}
+                    title="一次为整队生成奖励（点任何一张卡上的它都一样）"
+                    onClick={() => actions.spoils.start()}
+                  >
+                    {spoilsLabel(member)}
                   </button>
-                </div>
-              )}
+                ) : (
+                  <button type="button" onClick={() => setSpoilsMember(member.name)}>
+                    {spoilsLabel(member)}
+                  </button>
+                )}
+              </div>
             </article>
           ))}
         </div>

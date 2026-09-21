@@ -54,22 +54,34 @@ const failingInit = (spy: () => void) =>
     return HttpResponse.json({ detail: "mock 初始化失败" }, { status: 500 });
   });
 
-/** 进入开场房间会自动初始化；等它完成（`生成奖励` 出现即代表 `initialized=true`）。 */
-const waitForInit = () => screen.findByRole("button", { name: "生成奖励" });
-
-/** 走完「（自动）初始化 → 生成奖励」，角色卡上出现「奖励」按钮即就绪。 */
-async function generateSpoils() {
-  fireEvent.click(await waitForInit());
-  await screen.findAllByRole("button", { name: "奖励" });
+/** 进入开场房间会自动初始化；等到角色卡上那颗「生成奖励」可点（= `initialized=true`）为止。 */
+async function waitForInit() {
+  await waitFor(() => {
+    for (const button of screen.getAllByRole("button", { name: "生成奖励" })) {
+      expect(button).toBeEnabled();
+    }
+  });
 }
 
-/** 打开某个成员的奖励浮窗：点其角色卡上的「奖励」按钮。 */
-async function openSpoils(memberName: string) {
+/** 某个成员卡底那颗奖励按钮（三态：生成奖励 / 获取奖励 / 查看奖励）。 */
+function spoilsButton(memberName: string) {
   const card = screen.getByRole("button", { name: displayName(memberName) }).closest("article");
   if (!(card instanceof HTMLElement)) {
     throw new Error(`找不到 ${memberName} 的角色卡`);
   }
-  fireEvent.click(within(card).getByRole("button", { name: "奖励" }));
+  return within(card).getByRole("button", { name: /奖励/ });
+}
+
+/** 走完「（自动）初始化 → 生成奖励」；生成是**整队一次**的动作，点哪张卡上那颗都一样。 */
+async function generateSpoils() {
+  await waitForInit();
+  fireEvent.click(spoilsButton("角色.无名"));
+  await screen.findAllByRole("button", { name: "获取奖励" });
+}
+
+/** 打开某个成员的奖励浮窗：点其角色卡上的「获取奖励 / 查看奖励」。 */
+async function openSpoils(memberName: string) {
+  fireEvent.click(spoilsButton(memberName));
   return screen.findByRole("dialog", { name: "奖励" });
 }
 
@@ -180,7 +192,8 @@ describe("副本房间 · 共同框架", () => {
     expect(entry).not.toHaveClass("icon-button--unread");
 
     // 生成奖励 → 失效叙事 → 新事件到达：入口按钮变绿并带上未读数
-    fireEvent.click(screen.getByRole("button", { name: "生成奖励" }));
+    await waitForInit();
+    fireEvent.click(spoilsButton("角色.无名"));
     await waitFor(() => expect(entry).toHaveClass("icon-button--unread"));
     expect(within(entry).getByText("1")).toBeInTheDocument();
 
@@ -291,6 +304,9 @@ describe("副本房间 · 开场房间", () => {
     const retry = screen.getByRole("button", { name: "初始化开场" });
     expect(retry).toBeEnabled();
 
+    // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
+    expect(screen.getByRole("button", { name: "生成奖励" })).toBeDisabled();
+
     // 未初始化 → 服务端不允许推进 / 退出，所以本间的结束动作根本不出现，退出入口禁用并说明原因
     expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
     expect(
@@ -320,17 +336,17 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.queryByText(/3 选 1/)).not.toBeInTheDocument();
   });
 
-  it("进入开场房间自动初始化一次；完成前不给「生成奖励」", async () => {
+  it("进入开场房间自动初始化一次；完成前「生成奖励」在但不可点", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 自动初始化完成后才出现「生成奖励」，且「初始化开场」收起
+    // 自动初始化完成后按钮才可点，且「初始化开场」收起
     await waitForInit();
     expect(screen.queryByRole("button", { name: "初始化开场" })).not.toBeInTheDocument();
   });
 
-  it("生成奖励：不摊在页面上，角色卡出现「奖励」按钮，弹窗里竖排 3 张候选", async () => {
+  it("生成奖励：不摊在页面上，角色卡那颗按钮从「生成奖励」变成「获取奖励」，弹窗里竖排 3 张候选", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
@@ -338,14 +354,14 @@ describe("副本房间 · 开场房间", () => {
     await generateSpoils();
 
     // 奖励不在页面上展开，只在卡上留一个按钮
-    expect(screen.getByRole("button", { name: "奖励" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "获取奖励" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
     expect(within(dialog).getByRole("button", { name: "挑选 火折子" })).toBeInTheDocument();
     expect(within(dialog).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
 
-    // 生成后「生成奖励」按钮收起
+    // 生成后按钮不再是「生成奖励」（同一个按钮进了下一态）
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
 
@@ -354,13 +370,13 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
     await generateSpoils();
-    expect(await screen.findByText("牌组 9 张")).toBeInTheDocument();
+    expect(await screen.findByText("DECK 9")).toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
     fireEvent.click(within(dialog).getByRole("button", { name: "挑选 火折子" }));
 
     // 牌组 +1；候选仍在（供回看），但「挑选」按钮消失
-    expect(await screen.findByText("牌组 10 张")).toBeInTheDocument();
+    expect(await screen.findByText("DECK 10")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
     expect(within(dialog).getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
     // 组件保留作为守卫：生成按钮不再回来
@@ -374,8 +390,8 @@ describe("副本房间 · 开场房间", () => {
     renderOpening();
     await generateSpoils();
 
-    // 两个人各有一个「奖励」按钮
-    expect(screen.getAllByRole("button", { name: "奖励" })).toHaveLength(2);
+    // 两个人各有一颗奖励按钮（三态共用同一个位置）
+    expect(screen.getAllByRole("button", { name: /奖励/ })).toHaveLength(2);
 
     const qiuzhi = await openSpoils("角色.顾知秋");
     fireEvent.click(within(qiuzhi).getByRole("button", { name: "挑选 镇棺符" }));
@@ -405,13 +421,36 @@ describe("副本房间 · 开场房间", () => {
     expect(within(dialog).queryByRole("button", { name: /时装/ })).not.toBeInTheDocument();
   });
 
+  it("奖励按钮是同一颗的三态：生成奖励 → 获取奖励 → 查看奖励（生成是整队一次）", async () => {
+    server.use(instantTasks());
+    addMockRosterMember("角色.顾知秋");
+    enterMockDungeon("副本.荒村义庄");
+    renderOpening();
+
+    // 一态：两张卡各有一颗「生成奖励」
+    await waitForInit();
+    expect(screen.getAllByRole("button", { name: "生成奖励" })).toHaveLength(2);
+
+    // 点**一个人的**「生成奖励」= 整队一次生成：两张卡一起进第二态
+    fireEvent.click(spoilsButton("角色.无名"));
+    expect(await screen.findAllByRole("button", { name: "获取奖励" })).toHaveLength(2);
+
+    // 二态：获取奖励 → 领走一张
+    const dialog = await openSpoils("角色.顾知秋");
+    fireEvent.click(within(dialog).getByRole("button", { name: "挑选 火折子" }));
+
+    // 三态：领过的那个人变成「查看奖励」；没领的那个人还在「获取奖励」（领取是按成员各自的）
+    expect(await screen.findAllByRole("button", { name: "查看奖励" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: "获取奖励" })).toHaveLength(1);
+  });
+
   it("角色卡上不再有「查看牌组」：牌组入口只有标题行那一份", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 卡上只留「牌组 N 张」这行状态（有奖励时才多一个「奖励」按钮）
-    expect(await screen.findByText("牌组 9 张")).toBeInTheDocument();
+    // 卡上只留「Deck N」这行状态，卡底那颗按钮就是奖励入口
+    expect(await screen.findByText("DECK 9")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "查看牌组" })).not.toBeInTheDocument();
     // 同一份数据仍然看得到：入口上提到标题行（一级名单 → 二级卡面，分开用例覆盖）
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();

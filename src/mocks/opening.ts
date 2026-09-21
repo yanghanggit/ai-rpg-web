@@ -50,6 +50,11 @@ export function readMockSpoilsHolders(): string[] {
   return [...spoils.keys()];
 }
 
+/** 某成员**已领取**的奖励张数（测试断言用）。 */
+export function readMockClaimedCount(actorName: string): number {
+  return spoils.get(actorName)?.claimedCards.length ?? 0;
+}
+
 /**
  * 进副本：固化队伍并给每人装上初始牌组（奖励清空、开场回到未初始化）。
  *
@@ -156,6 +161,21 @@ export function pickMockSpoilsCard(
     claimedCards: [...reward.claimedCards, clone(selected)],
   });
   return { ok: true };
+}
+
+/**
+ * 领走某成员候选里的**第一张**（没有该成员 / 没有候选时什么都不做）。
+ *
+ * 只服务 dev 种子（`?seed=opening:claimed`）——把「已领取」这一态也变成一条深链，
+ * 免得为了看第三态先手点「生成奖励 → 挑选」。
+ */
+export function claimFirstMockSpoilsCard(actorName: string): boolean {
+  const first = spoils.get(actorName)?.candidateCards[0];
+  const cardName = first?.name;
+  if (typeof cardName !== "string") {
+    return false;
+  }
+  return pickMockSpoilsCard(actorName, cardName).ok;
 }
 
 /** 复位成「没有副本在跑」（测试之间隔离）。 */

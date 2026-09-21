@@ -29,6 +29,7 @@ const links = [
   { to: "/game/webdev/Game1/dungeon/map?seed=combat:post", label: "副本地图 · 最后一间已结束" },
   { to: "/game/webdev/Game1/dungeon/room?seed=opening:ready", label: "开场房间 · 已初始化" },
   { to: "/game/webdev/Game1/dungeon/room?seed=opening:spoils", label: "开场房间 · 已生成奖励" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=opening:claimed", label: "开场房间 · 已领奖励" },
   { to: "/game/webdev/Game1/dungeon/room?seed=party:full", label: "开场房间 · 队伍带同伴" },
   { to: "/game/webdev/Game1/dungeon/room?seed=combat:init", label: "战斗房间 · 初始化" },
   { to: "/game/webdev/Game1/dungeon/room?seed=combat:round_start", label: "战斗房间 · 抓牌" },

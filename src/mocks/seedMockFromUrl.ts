@@ -11,7 +11,7 @@
  */
 import { drawMockCards, initMockCombat, prepareMockPostCombat } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
-import { generateMockSpoils, initMockOpening } from "./opening";
+import { claimFirstMockSpoilsCard, generateMockSpoils, initMockOpening } from "./opening";
 import { addMockRosterMember } from "./roster";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
@@ -28,11 +28,18 @@ const SEEDS: Record<string, () => void> = {
     enterMockDungeon(DUNGEON);
     initMockOpening();
   },
-  // OPENING：开场房间已初始化并生成奖励（角色卡上有「奖励」按钮）
+  // OPENING：开场房间已初始化并生成奖励（角色卡底那颗按钮进第二态「获取奖励」）
   "opening:spoils": () => {
     enterMockDungeon(DUNGEON);
     initMockOpening();
     generateMockSpoils();
+  },
+  // OPENING：奖励已生成且玩家已领走一张（那颗按钮进第三态「查看奖励」）
+  "opening:claimed": () => {
+    enterMockDungeon(DUNGEON);
+    initMockOpening();
+    generateMockSpoils();
+    claimFirstMockSpoilsCard("角色.无名");
   },
   // OPENING：队伍里有同伴（用于看 / 调试「牌组」浏览：一级名单里有三个角色）
   "party:full": () => {
