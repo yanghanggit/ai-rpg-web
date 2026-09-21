@@ -1,26 +1,5 @@
 import { displayName } from "../../../components/displayName";
-import type { Combatant } from "./readCombat";
-
-/** 阵营 / 身份 → 界面标签，与 TUI `role_label` 一致（玩家 / 队友 / 怪物）。 */
-function roleLabel(combatant: Combatant): string {
-  if (combatant.faction === "monster") {
-    return "怪物";
-  }
-  if (combatant.player) {
-    return "玩家";
-  }
-  if (combatant.faction === "party") {
-    return "队友";
-  }
-  return "？";
-}
-
-function statsText(combatant: Combatant): string {
-  if (combatant.stats === null) {
-    return "（无属性数据）";
-  }
-  return `HP ${combatant.stats.hp}/${combatant.stats.max_hp} · 攻 ${combatant.stats.attack} · 防 ${combatant.stats.defense}`;
-}
+import { type Combatant, roleLabel, statsText } from "./readCombat";
 
 /**
  * 参战者一览：每个角色一张紧凑卡片（身份 / 名字 / 血量攻防 / 能量格挡牌堆）。

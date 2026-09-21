@@ -33,7 +33,7 @@ function cardTileOf(cardName: string): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
-  it("进入战斗房间自动初始化，落到抓牌阶段（参战者 = 队伍 + 怪物）", async () => {
+  it("进入战斗房间是准备阶段：上面敌人 / 中间开始卡 / 下面队伍，开始后落到玩家回合", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
@@ -41,14 +41,17 @@ describe("副本房间 · 战斗房间", () => {
     expect(
       await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" }),
     ).toBeInTheDocument();
-    // 自动初始化完成后出现抓牌按钮
-    expect(await screen.findByRole("button", { name: /抓牌/ })).toBeInTheDocument();
-    // 第一回合不再写引导句（“战斗已开始，抓牌以开启第一回合。”已移除）
+    // 开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
+    expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByText(/抓牌以开启第一回合/)).not.toBeInTheDocument();
     // 参战者：队友不入队时只有玩家 + 两个怪物
     expect(await screen.findByText("纸人")).toBeInTheDocument();
     expect(screen.getByText("棺中殭尸")).toBeInTheDocument();
     expect(screen.getAllByText("怪物")).toHaveLength(2);
+
+    // 开始 = 初始化 + 抓牌：直接落到玩家回合（第一回合有了）
+    fireEvent.click(screen.getByRole("button", { name: "开始!" }));
+    expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
   it("共同框架在战斗房间同样给出三个平级入口（副本操作 / 地图 / 牌组）", async () => {
@@ -69,8 +72,8 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 抓牌开第一回合，让「战斗信息」有真正的回合数据
-    fireEvent.click(await screen.findByRole("button", { name: /抓牌/ }));
+    // 开始（初始化 + 抓牌）开第一回合，让「战斗信息」有真正的回合数据
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByText("剖棺");
 
     fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
@@ -89,18 +92,18 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
   });
 
-  it("「战斗信息」不挑 phase：还没抓牌（第 0 回合）时 ⚙ 菜单里就有这一行", async () => {
+  it("「战斗信息」不挑 phase：还没开始（第 0 回合）时 ⚙ 菜单里就有这一行", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // round_start：自动初始化完成但还没抓牌
-    expect(await screen.findByRole("button", { name: /抓牌/ })).toBeInTheDocument();
+    // init 阶段（还没初始化、0 回合）：仍然能从菜单开战斗信息
+    expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
     const menu = await screen.findByRole("dialog", { name: "副本操作" });
     expect(within(menu).getByRole("button", { name: "战斗信息" })).toBeInTheDocument();
   });
 
-  it("自动初始化失败：显示原因并保留可点的「初始化战斗」重试", async () => {
+  it("开始失败：显示原因，再点「开始」可重试", async () => {
     server.use(
       instantTasks(),
       http.post(api("/api/dungeon/combat/init/v1/"), () =>
@@ -109,17 +112,20 @@ describe("副本房间 · 战斗房间", () => {
     );
     renderCombatRoom();
 
-    expect(await screen.findByText(/初始化战斗失败/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "初始化战斗" })).toBeEnabled();
-    // 还没到抓牌阶段
-    expect(screen.queryByRole("button", { name: /抓牌/ })).not.toBeInTheDocument();
+    // 点开始 → init 失败
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    expect(await screen.findByText(/开始战斗失败/)).toBeInTheDocument();
+    // 还没进回合（draw 不会在 init 失败后补发）
+    expect(screen.queryByRole("button", { name: "过牌（结束回合）" })).not.toBeInTheDocument();
+    // 同一颗按钮就是重试入口
+    expect(screen.getByRole("button", { name: "开始!" })).toBeEnabled();
   });
 
-  it("抓牌后进入玩家回合：显示手牌、能量与过牌按钮", async () => {
+  it("开始后进入玩家回合：显示手牌、能量与过牌按钮", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    fireEvent.click(await screen.findByRole("button", { name: /抓牌/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     expect(await screen.findByRole("heading", { name: "手牌" })).toBeInTheDocument();
     expect(screen.getByText("剖棺")).toBeInTheDocument();
@@ -130,7 +136,7 @@ describe("副本房间 · 战斗房间", () => {
   it("出牌：按默认目标打出，回合记录出现该次出牌", async () => {
     server.use(instantTasks());
     renderCombatRoom();
-    fireEvent.click(await screen.findByRole("button", { name: /抓牌/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     await screen.findByText("剖棺");
     fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "出牌" }));
@@ -138,10 +144,10 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByText(/使用『剖棺』对 怪物.纸人/)).toBeInTheDocument();
   });
 
-  it("过牌推进到怪物；推进怪物回合结束后回到抓牌阶段", async () => {
+  it("过牌推进到怪物；推进怪物回合结束后回到开始新回合", async () => {
     server.use(instantTasks());
     renderCombatRoom();
-    fireEvent.click(await screen.findByRole("button", { name: /抓牌/ }));
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     // 我方过牌 → 轮到第一个怪物
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
@@ -151,9 +157,9 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
     await screen.findByText(/当前由 棺中殭尸 行动/);
 
-    // 第二只怪物 → 全员行动完，回抓牌阶段
+    // 第二只怪物 → 全员行动完，回准备屏（已有回合 → 按钮改成「开始新回合」）
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
-    expect(await screen.findByRole("button", { name: /抓牌/ })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "开始新回合" })).toBeInTheDocument();
   });
 
   it("结算：显示胜负、战利品与收取按钮，怪物标记战死", async () => {

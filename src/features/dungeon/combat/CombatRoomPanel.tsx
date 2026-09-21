@@ -1,8 +1,7 @@
 import { describeApiError } from "../../../api/describeApiError";
 import type { Schemas } from "../../../api/types";
-import CombatInitPanel from "./CombatInitPanel";
 import CombatPostPanel from "./CombatPostPanel";
-import CombatRoundStartPanel from "./CombatRoundStartPanel";
+import CombatSetupPanel from "./CombatSetupPanel";
 import CombatTurnPanel from "./CombatTurnPanel";
 import { deriveCombatPhase } from "./combatPhase";
 import { useCombatActions } from "./useCombatActions";
@@ -52,26 +51,7 @@ export default function CombatRoomPanel({
         <p className="error">无法获取参战者：{describeApiError(scene.error)}</p>
       ) : null}
 
-      {phase === "init" ? (
-        <CombatInitPanel
-          combat={room.combat}
-          combatants={scene.combatants}
-          combatPending={scene.isPending}
-          onInit={actions.init.start}
-          initBusy={actions.init.isBusy}
-          initError={actions.init.error}
-        />
-      ) : phase === "round_start" ? (
-        <CombatRoundStartPanel
-          combat={room.combat}
-          combatants={scene.combatants}
-          currentActor={currentActor}
-          combatPending={scene.isPending}
-          onDraw={actions.draw.start}
-          drawBusy={actions.draw.isBusy}
-          drawError={actions.draw.error}
-        />
-      ) : phase === "turn" ? (
+      {phase === "turn" ? (
         <CombatTurnPanel
           combat={room.combat}
           combatants={scene.combatants}
@@ -79,7 +59,7 @@ export default function CombatRoomPanel({
           combatPending={scene.isPending}
           actions={actions}
         />
-      ) : (
+      ) : phase === "post" ? (
         <CombatPostPanel
           userName={userName}
           gameName={gameName}
@@ -87,6 +67,16 @@ export default function CombatRoomPanel({
           combatants={scene.combatants}
           combatPending={scene.isPending}
           loot={scene.loot}
+        />
+      ) : (
+        <CombatSetupPanel
+          userName={userName}
+          gameName={gameName}
+          stageName={room.stage.name}
+          combat={room.combat}
+          combatants={scene.combatants}
+          combatPending={scene.isPending}
+          actions={actions}
         />
       )}
     </>

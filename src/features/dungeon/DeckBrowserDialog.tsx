@@ -51,8 +51,6 @@ export default function DeckBrowserDialog({
   return (
     <>
       <Modal title="队伍牌组" size="sm" onClose={closeList}>
-        <p className="muted">点名字查看该角色的牌组。</p>
-
         {party.isPending ? <p className="muted">加载中…</p> : null}
         {party.isError ? <p className="error">无法获取队伍牌组：{String(party.error)}</p> : null}
 
@@ -63,7 +61,8 @@ export default function DeckBrowserDialog({
             <ul className="action-list">
               {members.map((member) => (
                 <li key={member.name}>
-                  {/* 整行是一颗按钮，点击区域大；名字 + 玩家徽标在左、张数在右 */}
+                  {/* 整行是一颗按钮：名字 + 玩家徽标在左、张数在右，行尾一个小箭头把
+                      "点进二级"做在视觉上（不另写一句提示文字） */}
                   <button
                     type="button"
                     className="deck-row"
@@ -72,6 +71,9 @@ export default function DeckBrowserDialog({
                     <span>{displayName(member.name)}</span>
                     {member.player ? <span className="badge">玩家</span> : null}
                     <span className="action-meta">{member.deck.length} 张</span>
+                    <span className="deck-row-chevron" aria-hidden="true">
+                      ›
+                    </span>
                   </button>
                 </li>
               ))}

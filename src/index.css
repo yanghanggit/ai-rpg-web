@@ -409,6 +409,15 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
   margin-left: auto;
 }
 
+/* 行尾的「进入下一层」箭头：与整行按钮同一个颜色，hover 时随按钮一起变绿（不靠一句提示文字） */
+.deck-row-chevron {
+  margin-left: 0.1rem;
+  color: currentColor;
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.5;
+}
+
 /* 小节标题行 */
 .section-head {
   display: flex;
@@ -965,6 +974,7 @@ li.dungeon-room--current {
   /* 高度跟宽度一起定死：卡片是这一屏的量尺，不能因为描述长短而变形 */
   height: 9rem;
   padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
   border-radius: 12px;
   text-align: left;
 }
@@ -1031,6 +1041,31 @@ li.dungeon-room--current {
 
 .stage-next--warn .stage-next-caption {
   color: var(--warn);
+}
+
+/* 战斗开始前那一屏：上面敌人、中间场景卡 + 开始卡、下面队伍，三排同宽同距。 */
+.combat-setup {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+/* 三排的间距由上面的 `gap` 统一给，去掉 `.cards` / `.stage-row` 自带的 `margin-top` */
+.combat-setup .cards,
+.combat-setup .stage-row {
+  margin: 0;
+}
+
+/* 「开始」卡：开局前唯一的动作，比「回到地图」卡更重一些（它是进入对局，不是收尾） */
+.stage-next--start {
+  width: 8rem;
+}
+
+.stage-next--start .stage-next-caption {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--fg);
 }
 
 /* 队伍的角色卡：**竖着的矩形卡牌**（与牌组 / 奖励里的卡面同一形状语言——窄而高，一行几张由

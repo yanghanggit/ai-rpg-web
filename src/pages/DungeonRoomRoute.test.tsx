@@ -44,7 +44,7 @@ describe("副本房间 · 路由解析器", () => {
     expect(
       await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" }),
     ).toBeInTheDocument();
-    // 战斗房间正文（抓牌阶段）在，说明分发到了战斗页
-    expect(await screen.findByRole("button", { name: /抓牌/ })).toBeInTheDocument();
+    // 战斗房间正文（开局准备阶段）在，说明分发到了战斗页
+    expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
   });
 });

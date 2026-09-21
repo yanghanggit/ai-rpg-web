@@ -42,7 +42,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   dungeon/opening/OpeningRoomPanel.tsx  opening/StageCard.tsx  opening/SpoilsDialog.tsx  opening/hasUnclaimedRewards.ts
   dungeon/opening/useOpeningActions.ts
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
-  dungeon/combat/CombatRoomPanel.tsx  combat/CombatInitPanel.tsx  combat/CombatRoundStartPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
+  dungeon/combat/CombatRoomPanel.tsx  combat/CombatSetupPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
   dungeon/combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/CombatInfoDialog.tsx  combat/combatPhase.ts
   dungeon/combat/readCombat.ts  combat/useCombatScene.ts  combat/useCombatActions.ts  combat/useCollectLoot.ts
   entities/ecs.ts  entities/invalidateEntities.ts

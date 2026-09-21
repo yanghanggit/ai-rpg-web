@@ -97,6 +97,28 @@ export function readPiles(entity: Entity): CombatPiles {
   };
 }
 
+/** 阵营 / 身份 → 界面标签，与 TUI `role_label` 一致（玩家 / 队友 / 怪物）。 */
+export function roleLabel(combatant: Combatant): string {
+  if (combatant.faction === "monster") {
+    return "怪物";
+  }
+  if (combatant.player) {
+    return "玩家";
+  }
+  if (combatant.faction === "party") {
+    return "队友";
+  }
+  return "？";
+}
+
+/** 参战者的血量 / 攻防一行（战斗卡片与名单共用同一份措辞）。 */
+export function statsText(combatant: Combatant): string {
+  if (combatant.stats === null) {
+    return "（无属性数据）";
+  }
+  return `HP ${combatant.stats.hp}/${combatant.stats.max_hp} · 攻 ${combatant.stats.attack} · 防 ${combatant.stats.defense}`;
+}
+
 /** 把单个参战角色的界面字段一次读全。 */
 export function readCombatant(entity: Entity): Combatant {
   const hand = readHand(entity);

@@ -98,7 +98,7 @@ describe("副本地图 · 状态与前进", () => {
 
     // 一步到位：推进成功后直接落在**战斗房间**（`useAdvanceStage` 先等重取落地，所以这里
     // 第一屏拿到的就是新房间，不会闪一下缓存里的开场房间）。判据用房间页独有的正文。
-    expect(await screen.findByRole("button", { name: "初始化战斗" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "地图" })).not.toBeInTheDocument();
   });
 
@@ -139,8 +139,8 @@ describe("副本地图 · 状态与前进", () => {
     advanceMockDungeon();
     renderMapPage();
 
-    // 房间页的战斗初始化面板（地图上不会出现它）
-    expect(await screen.findByRole("button", { name: "初始化战斗" })).toBeInTheDocument();
+    // 房间页的战斗准备屏（地图上不会出现它）
+    expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "地图" })).not.toBeInTheDocument();
   });
 });
