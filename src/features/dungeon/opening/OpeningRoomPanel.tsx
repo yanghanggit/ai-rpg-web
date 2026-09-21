@@ -6,6 +6,7 @@ import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import StageInfoDialog from "../../stage/StageInfoDialog";
 import { useStageEntity } from "../../stage/useStageEntity";
+import { characterStatsText } from "../characterStatsText";
 import type { DungeonParty, DungeonPartyMember } from "../useDungeonParty";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
@@ -20,7 +21,7 @@ import type { OpeningActions } from "./useOpeningActions";
  *   （弹 `StageInfoDialog`）——**开场房的初始化三态只在这一处表达**（标题行没有第二颗 ↻）；
  * - 场景卡右边那张「回到地图」卡：本间的下一步（初始化完成后才出现）；
  * - **队伍**（**没有可见标题**：卡上写着名字，“队伍”是废话）：竖着的角色卡，一张挨一张横排
- *   （顺序即后端给的队伍顺序，玩家在前）——卡面是「名字 + 属性（HP/ATK/DEF）+ DECK 张数」，
+ *   （顺序即后端给的队伍顺序，玩家在前）——卡面是「名字 + 属性（`HP x/y · 攻 n · 防 m`）+ 卡组张数」，
  *   点卡上的名字开角色信息浮窗；卡底那颗按钮是
  *   本成员的奖励入口，**三态**：生成奖励 → 获取奖励 → 查看奖励（见下）。卡片的形状与牌组 /
  *   奖励里的**卡面同一套**（窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
@@ -184,19 +185,11 @@ export default function OpeningRoomPanel({
                 {member.player ? <span className="badge">玩家</span> : null}
               </div>
 
-              {/* 卡面数据：属性（会变的血量最要紧）+ 牌组张数，**一组**、一行一项
-                  （横排会被卡宽挤断；拉开成两段中间会空一行，难看） */}
+              {/* 卡面数据：属性一行（与战斗房的角色卡同一份措辞，见 `characterStatsText`）
+                  + 卡组张数另起一行（横排会被卡宽挤断） */}
               <p className="muted actor-card-stats">
-                {member.stats === null ? null : (
-                  <>
-                    <span>
-                      HP {member.stats.hp}/{member.stats.max_hp}
-                    </span>
-                    <span>ATK {member.stats.attack}</span>
-                    <span>DEF {member.stats.defense}</span>
-                  </>
-                )}
-                <span>DECK {member.deck.length}</span>
+                <span>{characterStatsText(member.stats)}</span>
+                <span>卡组 {member.deck.length}</span>
               </p>
 
               {/* 卡上唯一一颗按钮 = 本成员的奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励。

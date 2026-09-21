@@ -1,10 +1,12 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Schemas } from "../../../api/types";
 import { displayName } from "../../../components/displayName";
+import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import { useStageEntity } from "../../stage/useStageEntity";
+import { characterStatsText } from "../characterStatsText";
 import { COMBAT_STATE } from "./combatPhase";
-import { type Combatant, roleLabel, statsText } from "./readCombat";
+import { type Combatant, roleLabel } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
 /**
@@ -19,7 +21,8 @@ import type { CombatActions } from "./useCombatActions";
  * → effect 补发 `draw`）。开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
  *
  * 卡片只留**必要信息**：名字 + 身份 + 一行 `HP / 攻 / 防`。能量 / 格挡 / 牌堆在开局前全是 0，
- * 先不显示（它们属于回合行动那一屏）。
+ * 先不显示（它们属于回合行动那一屏）。**队伍卡的名字可点开角色信息浮窗**（与开场房的角色卡
+ * 同一交互：`ActorInfoDialog`，副本内不提供穿 / 脱时装）；敌人卡不给入口——它不是可操作对象。
  */
 export default function CombatSetupPanel({
   userName,
@@ -42,6 +45,9 @@ export default function CombatSetupPanel({
   const stage = useStageEntity(userName, gameName, stageName);
   const narrative =
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
+
+  // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
+  const [infoActor, setInfoActor] = useState<string | null>(null);
 
   // 点过一次「开始」但 init 还没落地：init 成功（state 变 ONGOING）后由下面的 effect 补发 draw。
   // 用 ref 记住"玩家想开局"这个意图，而不是让按钮连点两次。
@@ -108,23 +114,45 @@ export default function CombatSetupPanel({
 
         <section className="cards cards--party" aria-label="队伍">
           {party.map((combatant) => (
-            <SetupCard key={combatant.name} combatant={combatant} />
+            <SetupCard
+              key={combatant.name}
+              combatant={combatant}
+              onSelect={() => setInfoActor(combatant.name)}
+            />
           ))}
         </section>
       </section>
+
+      {infoActor === null ? null : (
+        <ActorInfoDialog
+          userName={userName}
+          gameName={gameName}
+          actorName={infoActor}
+          // 副本进行中家园接口会被拒，角色信息里不提供穿 / 脱时装
+          costumeEnabled={false}
+          onClose={() => setInfoActor(null)}
+        />
+      )}
     </>
   );
 }
 
 /** 开局前的参战者卡：名字 + 身份 + 一行属性（与开场房间的角色卡同一套骨架，省掉开局前无意义的数据）。 */
-function SetupCard({ combatant }: { combatant: Combatant }) {
+function SetupCard({ combatant, onSelect }: { combatant: Combatant; onSelect?: () => void }) {
   return (
     <article className="card actor-card">
       <div className="card-head">
-        <span className="chip mono">{displayName(combatant.name)}</span>
+        {/* 给 `onSelect` 的角色（队伍）名字可点，开角色信息；没给（敌人）就是静态 chip */}
+        {onSelect === undefined ? (
+          <span className="chip mono">{displayName(combatant.name)}</span>
+        ) : (
+          <button type="button" className="chip chip-button mono" onClick={onSelect}>
+            {displayName(combatant.name)}
+          </button>
+        )}
         <span className="badge">{roleLabel(combatant)}</span>
       </div>
-      <p className="muted actor-card-stats">{statsText(combatant)}</p>
+      <p className="muted actor-card-stats">{characterStatsText(combatant.stats)}</p>
     </article>
   );
 }

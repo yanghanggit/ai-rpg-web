@@ -410,13 +410,13 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
     await generateSpoils();
-    expect(await screen.findByText("DECK 9")).toBeInTheDocument();
+    expect(await screen.findByText("卡组 9")).toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
     fireEvent.click(within(dialog).getByRole("button", { name: "挑选 火折子" }));
 
     // 牌组 +1；候选仍在（供回看），但「挑选」按钮消失
-    expect(await screen.findByText("DECK 10")).toBeInTheDocument();
+    expect(await screen.findByText("卡组 10")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
     expect(within(dialog).getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
     // 组件保留作为守卫：生成按钮不再回来
@@ -484,13 +484,15 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.getAllByRole("button", { name: "获取奖励" })).toHaveLength(1);
   });
 
-  it("角色卡上不再有「查看牌组」：牌组入口只有标题行那一份", async () => {
+  it("角色卡上不再有「查看牌组」；属性用统一措辞、卡组另起一行", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 卡上只留「Deck N」这行状态，卡底那颗按钮就是奖励入口
-    expect(await screen.findByText("DECK 9")).toBeInTheDocument();
+    // 属性与战斗房的角色卡同一份措辞（HP · 攻 · 防），卡组张数另起一行
+    expect(await screen.findByText("HP 12/15 · 攻 3 · 防 1")).toBeInTheDocument();
+    // 卡上只留「卡组 N」这行状态，卡底那颗按钮就是奖励入口
+    expect(await screen.findByText("卡组 9")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "查看牌组" })).not.toBeInTheDocument();
     // 同一份数据仍然看得到：入口上提到标题行（一级名单 → 二级卡面，分开用例覆盖）
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();

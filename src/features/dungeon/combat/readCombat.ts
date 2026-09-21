@@ -111,14 +111,6 @@ export function roleLabel(combatant: Combatant): string {
   return "？";
 }
 
-/** 参战者的血量 / 攻防一行（战斗卡片与名单共用同一份措辞）。 */
-export function statsText(combatant: Combatant): string {
-  if (combatant.stats === null) {
-    return "（无属性数据）";
-  }
-  return `HP ${combatant.stats.hp}/${combatant.stats.max_hp} · 攻 ${combatant.stats.attack} · 防 ${combatant.stats.defense}`;
-}
-
 /** 把单个参战角色的界面字段一次读全。 */
 export function readCombatant(entity: Entity): Combatant {
   const hand = readHand(entity);

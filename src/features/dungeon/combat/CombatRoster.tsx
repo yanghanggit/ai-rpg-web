@@ -1,5 +1,6 @@
 import { displayName } from "../../../components/displayName";
-import { type Combatant, roleLabel, statsText } from "./readCombat";
+import { characterStatsText } from "../characterStatsText";
+import { type Combatant, roleLabel } from "./readCombat";
 
 /**
  * 参战者一览：每个角色一张紧凑卡片（身份 / 名字 / 血量攻防 / 能量格挡牌堆）。
@@ -40,7 +41,7 @@ export default function CombatRoster({
               {combatant.dead ? <span className="badge badge--dead">已战死</span> : null}
               {isCurrent ? <span className="badge badge--current">当前行动</span> : null}
             </div>
-            <p className="muted combatant-stats">{statsText(combatant)}</p>
+            <p className="muted combatant-stats">{characterStatsText(combatant.stats)}</p>
             <p className="muted combatant-stats">
               能量 {combatant.energy} · 格挡 {combatant.block} · 抽 {combatant.piles.draw} / 弃{" "}
               {combatant.piles.discard} / 消耗 {combatant.piles.exhaust}

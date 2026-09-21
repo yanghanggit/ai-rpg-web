@@ -54,6 +54,21 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
+  it("开局准备：队伍卡的名字可点开角色信息（敌人卡不给入口）", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+
+    // 队伍卡名字是按钮；敌人卡名字是静态文本（不是可操作对象）
+    const name = await screen.findByRole("button", { name: "无名" });
+    expect(screen.queryByRole("button", { name: "纸人" })).not.toBeInTheDocument();
+
+    fireEvent.click(name);
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    await within(dialog).findByText("属性");
+    // 副本进行中家园接口会被拒，所以隐藏时装区
+    expect(within(dialog).queryByRole("heading", { name: "时装" })).not.toBeInTheDocument();
+  });
+
   it("共同框架在战斗房间同样给出三个平级入口（副本操作 / 地图 / 牌组）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
