@@ -34,13 +34,14 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
   dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
   dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/useAdvanceStage.ts
-  dungeon/OpeningRoomPanel.tsx  dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/useOpeningParty.ts  dungeon/useOpeningActions.ts  dungeon/DeckDialog.tsx  dungeon/SpoilsDialog.tsx  dungeon/AdvanceRoomDialog.tsx
+  dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/DeckDialog.tsx  dungeon/DeckBrowserDialog.tsx
+  dungeon/opening/OpeningRoomPanel.tsx  opening/SpoilsDialog.tsx  opening/AdvanceRoomDialog.tsx  opening/useOpeningActions.ts  opening/useOpeningParty.ts
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatInitPanel.tsx  combat/CombatRoundStartPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
   dungeon/combat/CombatStatus.tsx  combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/combatPhase.ts
   dungeon/combat/readCombat.ts  combat/useCombatScene.ts  combat/useCombatActions.ts  combat/useCollectLoot.ts
   entities/ecs.ts  entities/invalidateEntities.ts
-  cards/CardItem.tsx  cards/readCard.ts  cards/readCards.ts  cards/types.ts
+  cards/CardItem.tsx  cards/CardDetailDialog.tsx  cards/readCard.ts  cards/readCards.ts  cards/readAffixLabel.ts  cards/types.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeButton.tsx  session/NarrativeOverlay.tsx  session/useNarrative.ts
   session/sessionKey.ts  session/unreadBaselines.ts  session/useUnreadCount.ts

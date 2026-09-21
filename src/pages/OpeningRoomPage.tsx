@@ -1,5 +1,5 @@
 import type { Schemas } from "../api/types";
-import OpeningRoomPanel from "../features/dungeon/OpeningRoomPanel";
+import OpeningRoomPanel from "../features/dungeon/opening/OpeningRoomPanel";
 import RoomScaffold from "../features/dungeon/RoomScaffold";
 
 /**

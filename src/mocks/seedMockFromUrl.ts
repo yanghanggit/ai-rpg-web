@@ -12,6 +12,7 @@
 import { drawMockCards, initMockCombat, prepareMockPostCombat } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
 import { generateMockSpoils, initMockOpening } from "./opening";
+import { addMockRosterMember } from "./roster";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
 const DUNGEON = "副本.荒村义庄";
@@ -28,6 +29,14 @@ const SEEDS: Record<string, () => void> = {
     enterMockDungeon(DUNGEON);
     initMockOpening();
     generateMockSpoils();
+  },
+  // OPENING：队伍里有同伴（用于看 / 调试「牌组」浏览：一级名单里有三个角色）
+  "party:full": () => {
+    // 名单必须在 enter 之前补：队伍是进副本那一刻固化的
+    addMockRosterMember("角色.顾知秋");
+    addMockRosterMember("角色.小厮");
+    enterMockDungeon(DUNGEON);
+    initMockOpening();
   },
   // INITIALIZATION：刚推进到战斗房间，等待初始化
   "combat:init": () => {

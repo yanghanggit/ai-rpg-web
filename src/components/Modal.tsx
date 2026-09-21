@@ -20,14 +20,15 @@ export default function Modal({
   title: string;
   /** 标题右侧的补充信息，如「共 12 条」。 */
   meta?: string;
-  /** 面板宽度变体；`sm` 给内容少的菜单类浮窗（避免右侧大片留白）。 */
-  size?: "default" | "sm";
+  /** 面板宽度变体；`sm` 给内容少的菜单类浮窗（避免右侧大片留白）；
+   *  `fit` 给内容宽度会变的浮窗（如牌组：卡少就窄，卡多就撑到 680px）。 */
+  size?: "default" | "sm" | "fit";
   onClose: () => void;
   children: ReactNode;
 }) {
   const titleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const panelClass = size === "sm" ? "overlay-panel overlay-panel--sm" : "overlay-panel";
+  const panelClass = size === "default" ? "overlay-panel" : `overlay-panel overlay-panel--${size}`;
 
   // 打开时把焦点移进浮层：键盘用户不必先 Tab 穿过后面的整页内容
   useEffect(() => {

@@ -622,13 +622,77 @@ export const cardFixtures = {
     playable: false,
     retain: false,
   }),
+  nail: mockCard("钉棺", {
+    description: "（mock）抡起枣木钉，一钉一钉楔进棺盖的缝。",
+    cost: 1,
+    damage: 2,
+    hit_count: 2,
+    on_hit_affixes: ["[入木]:命中的段数越多，棺盖越难再开"],
+    source: "角色.无名",
+  }),
+  bell: mockCard("摇铃", {
+    description: "（mock）摄魂铃一响，满堂的纸人都慢半拍。",
+    cost: 2,
+    damage: 0,
+    block: 3,
+    target_type: "all",
+  }),
+  shroud: mockCard("裹尸布", {
+    description: "（mock）随手扯下的白布，缠在臂上挡一挡。",
+    cost: 1,
+    damage: 0,
+    block: 4,
+    retain: true,
+    self_target: true,
+  }),
+  lantern: mockCard("引魂灯", {
+    description: "（mock）灯芯只够燃一瞬，灭前把路照穿。",
+    cost: 3,
+    damage: 6,
+    ethereal: true,
+  }),
+  chant: mockCard("诵经", {
+    description: "（mock）低声诵一段往生咒，压住翻涌的阴气。",
+    cost: 1,
+    damage: 0,
+    block: 2,
+    on_turn_end_affixes: ["[余音]:回合结束时余音未散，护持仍在"],
+  }),
+  mirror: mockCard("照妖镜", {
+    description: "（mock）铜镜一转，把光碎成数道抛向四面。",
+    cost: 2,
+    damage: 3,
+    target_type: "spread",
+  }),
 };
 
 /** 队伍成员的初始牌组（按角色名）。未列出的角色用默认牌组。 */
+/**
+ * 各成员的固定牌组。
+ *
+ * 张数故意拉开：玩家 9 张（三行满）、顾知秋 5 张（最后一行不满、居中）、小厮 2 张——
+ * 这样「牌组」浏览里一行三张、多行、末行居中这三种情形在 mock 下都能一眼看到。
+ */
 export const deckFixtures: Record<string, Record<string, unknown>[]> = {
-  [blueprintFixture.player_actor]: [cardFixtures.cleave, cardFixtures.breath, cardFixtures.passive],
-  "角色.顾知秋": [cardFixtures.sweep, cardFixtures.ward],
-  "角色.小厮": [cardFixtures.cleave],
+  [blueprintFixture.player_actor]: [
+    cardFixtures.cleave,
+    cardFixtures.breath,
+    cardFixtures.passive,
+    cardFixtures.nail,
+    cardFixtures.bell,
+    cardFixtures.shroud,
+    cardFixtures.lantern,
+    cardFixtures.chant,
+    cardFixtures.mirror,
+  ],
+  "角色.顾知秋": [
+    cardFixtures.sweep,
+    cardFixtures.ward,
+    cardFixtures.nail,
+    cardFixtures.bell,
+    cardFixtures.chant,
+  ],
+  "角色.小厮": [cardFixtures.cleave, cardFixtures.shroud],
 };
 
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];

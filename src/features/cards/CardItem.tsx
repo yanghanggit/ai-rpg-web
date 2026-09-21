@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { readAffixLabel } from "./readAffixLabel";
 import type { Card, CardTargetType } from "./types";
 
 /** 目标类型 → 界面说法；`self_target` 的卡不看这个（统一显示「自身」）。 */
@@ -56,19 +57,31 @@ function statsText(card: Card): string {
  * `claimed` 标记「这张卡已经被领走」：同一张卡在候选与已领取两处出现时，已领取的那份要能一眼
  * 认出来（加绿框 + 「已领取」徽标）。这是**卡牌状态**而不是流程动作，所以用布尔 prop 表达，
  * 而不是让调用方自己拼 class。
+ *
+ * `affixes` 是两种颗粒度：`full` 给完整原文（奖励 / 战斗手牌 / 卡牌详情），`names` 只给
+ * `readAffixLabel` 出的 `[名称]`——牌组卡面要「一行三张、所有行等高」，长词缀会把卡撑高撑乱。
+ *
+ * `onSelect` 给了就把整张卡包成按钮（点击区域 = 整张卡），用于点开卡牌详情；没给就是纯展示。
+ * 详情浮窗只是「同一张卡的另一种颗粒度」，所以回到这里渲染，不另写一份卡面。
  */
 export default function CardItem({
   card,
   action,
   claimed = false,
+  affixes = "full",
+  onSelect,
 }: {
   card: Card;
   action?: ReactNode;
   /** 该卡已被领取：加视觉标记（区别于仍在候选里的同款卡）。 */
   claimed?: boolean;
+  /** 词缀颗粒度：`full` 完整原文，`names` 只留 `[名称]`。 */
+  affixes?: "full" | "names";
+  /** 给了就整张卡可点（回调拿卡本身，调用方决定开哪层浮窗）。 */
+  onSelect?: (card: Card) => void;
 }) {
-  return (
-    <li className={claimed ? "card-tile card-tile--claimed" : "card-tile"}>
+  const content = (
+    <>
       <div className="card-tile-head">
         <span className="card-tile-name">{card.name}</span>
         {claimed ? <span className="badge badge--claimed">已领取</span> : null}
@@ -86,7 +99,10 @@ export default function CardItem({
       {AFFIX_LABELS.map(([key, label]) =>
         card[key].length === 0 ? null : (
           <p key={label} className="card-tile-affixes">
-            <span className="chip">{label}</span> {card[key].join("、")}
+            <span className="chip">{label}</span>{" "}
+            {affixes === "names"
+              ? card[key].map((affix) => readAffixLabel(affix)).join(" ")
+              : card[key].join("、")}
           </p>
         ),
       )}
@@ -94,6 +110,27 @@ export default function CardItem({
       {card.source === "" ? null : <p className="muted card-tile-source">来源：{card.source}</p>}
 
       {action ? <div className="card-actions">{action}</div> : null}
+    </>
+  );
+
+  const tileClass = `card-tile${claimed ? " card-tile--claimed" : ""}${
+    onSelect ? " card-tile--open" : ""
+  }`;
+
+  return (
+    <li className={tileClass}>
+      {onSelect ? (
+        <button
+          type="button"
+          className="card-tile-open"
+          aria-label={`查看卡牌：${card.name}`}
+          onClick={() => onSelect(card)}
+        >
+          {content}
+        </button>
+      ) : (
+        content
+      )}
     </li>
   );
 }

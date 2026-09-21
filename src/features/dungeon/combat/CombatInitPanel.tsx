@@ -7,7 +7,7 @@ import type { Combatant } from "./readCombat";
 /**
  * 战斗初始化（`state = NONE / INITIALIZATION`，对应 TUI `CombatInitScreen`）。
  *
- * 进入战斗房间后**自动初始化一次**（与 `OpeningRoomPanel` 同一套）：用 ref 记住已触发过的
+ * 进入战斗房间后**自动初始化一次**（与 `opening/OpeningRoomPanel` 同一套）：用 ref 记住已触发过的
  * 房间（`combat.name`），StrictMode 下 effect 跑两次、或轮询重渲染都不会重复发任务；
  * 失败不自动重试，把「初始化战斗」按钮留给玩家手动重试。
  */

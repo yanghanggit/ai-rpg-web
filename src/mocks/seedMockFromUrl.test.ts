@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readMockCombat } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
-import { readMockOpeningInitialized, readMockSpoilsHolders } from "./opening";
+import { readMockOpeningInitialized, readMockPartyNames, readMockSpoilsHolders } from "./opening";
 import { seedMockFromUrl } from "./seedMockFromUrl";
 
 const BASE = "http://localhost/game/webdev/Game1/dungeon/room";
@@ -58,5 +58,12 @@ describe("seedMockFromUrl", () => {
     const combat = readMockCombat();
     expect(combat.state).toBe(4);
     expect(combat.result).toBe(1);
+  });
+
+  // 放最后：它会改队伍名单（module 级状态），后面的用例都靠前面的空名单
+  it("party:full → 队伍含玩家与两名同伴", () => {
+    seedMockFromUrl(`${BASE}?seed=party:full`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockPartyNames()).toEqual(["角色.无名", "角色.顾知秋", "角色.小厮"]);
   });
 });

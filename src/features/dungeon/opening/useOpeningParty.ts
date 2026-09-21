@@ -10,10 +10,10 @@
  * 奖励用 `null` 表示**尚未生成**（组件不存在），与「生成了但是空的」区分开——界面据此决定
  * 还能不能点「生成奖励」。
  */
-import { $api } from "../../api/query";
-import { readCards } from "../cards/readCards";
-import type { Card } from "../cards/types";
-import { hasComponent } from "../entities/ecs";
+import { $api } from "../../../api/query";
+import { readCards } from "../../cards/readCards";
+import type { Card } from "../../cards/types";
+import { hasComponent } from "../../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";

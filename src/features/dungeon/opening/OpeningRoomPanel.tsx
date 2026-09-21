@@ -1,15 +1,15 @@
 import { useEffect, useRef, useState } from "react";
-import { describeApiError } from "../../api/describeApiError";
-import type { Schemas } from "../../api/types";
-import { displayName } from "../../components/displayName";
-import ActorInfoDialog from "../identity/ActorInfoDialog";
-import { readStageInfo } from "../stage/readStageInfo";
-import { useStageEntity } from "../stage/useStageEntity";
+import { describeApiError } from "../../../api/describeApiError";
+import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
+import ActorInfoDialog from "../../identity/ActorInfoDialog";
+import { readStageInfo } from "../../stage/readStageInfo";
+import { useStageEntity } from "../../stage/useStageEntity";
+import DeckDialog from "../DeckDialog";
+import { useAdvanceStage } from "../useAdvanceStage";
+import { useDungeonRun } from "../useDungeonRun";
 import AdvanceRoomDialog from "./AdvanceRoomDialog";
-import DeckDialog from "./DeckDialog";
 import SpoilsDialog from "./SpoilsDialog";
-import { useAdvanceStage } from "./useAdvanceStage";
-import { useDungeonRun } from "./useDungeonRun";
 import { useOpeningActions } from "./useOpeningActions";
 import { useOpeningParty } from "./useOpeningParty";
 /**

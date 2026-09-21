@@ -34,9 +34,10 @@
 
 ## 浮窗层级
 
-- **一级**：角色信息、场景信息、蓝图信息、实体浏览器、道具管理、副本操作（副本房间）、副本信息、进入副本确认、全部叙事、牌组、奖励（副本开场）、进入下一关确认、登出确认。
-- **二级**（叠在一级之上）：选时装（`StorageCostumeDialog`）、合成确认（`CraftConfirmDialog`）。
-- 二级开着时，一级的 ESC **不响应**（用一个「二级状态非空」的守卫拦住 `onClose`），否则一次 ESC 会连关两层。
+- **一级**：角色信息、场景信息、蓝图信息、实体浏览器、道具管理、副本操作（副本房间）、副本信息、进入副本确认、全部叙事、牌组、奖励（副本开场）、队伍牌组（副本房间的牌组入口）、进入下一关确认、登出确认。
+- **二级**（叠在一级之上）：选时装（`StorageCostumeDialog`）、合成确认（`CraftConfirmDialog`）、某个角色的牌组（`DeckDialog`，叠在「队伍牌组」名单之上）。
+- **三级**（叠在二级之上）：卡牌详情（`CardDetailDialog`，叠在牌组之上）。
+- 下层开着时，上层的 ESC **不响应**（用「更上层状态非空」的守卫拦住 `onClose`），否则一次 ESC 会连关多层。
 - **同类切换不叠第三层**：点场景浮窗里的角色 → 关场景浮窗、开角色浮窗；实体浏览器同理（点名字 → 关浏览器、开对应浮窗）。这样永远不会有 ESC 该关哪一层的歧义。
 - 入口与浮窗内容之间**由页面接线**（`features/` 之间不互相依赖）：例如副本页的角色卡片只回调 `onSelectActor`，到底开哪个浮窗由页面决定。**同一个浮窗给不同页面用，靠能力开关区分**（如 `ItemManagerDialog` 的 `craftEnabled`），而不是拆成两个组件——拆开会让共用的行渲染逻辑出现两份。
 
@@ -56,17 +57,19 @@
 房间页由三个组件组成——命名分两种：**绑定 URL 的入口用 `*Route`**（`DungeonRoomRoute`）**具体屏幕用 `*Page`**（`OpeningRoomPage` / `CombatRoomPage`）。职责按「变化原因」切开：
 
 - `DungeonRoomRoute`（`src/pages/DungeonRoomRoute.tsx`）：**解析器**。只做「参数守卫 → 取 `/room` → 加载中 / 404 出口 → 按 `room.type` 二选一整页」。**房间类型是服务端派生状态，不是导航状态**，所以刻意**不**给它加路由（对照 `combatPhase`、`seedMockFromUrl` 的同一条原则），路径始终是 `/dungeon/room`；写成二选一而非无 `default` 的 `switch`，后端将来多出第三种房间类型时会**编译报错**。
-- `OpeningRoomPage`（`room.type === "opening"`）/ `CombatRoomPage`（`room.type === "combat"`）：两个**房间整页**，各自成页、各自维护。二者的差别只有正文（`OpeningRoomPanel` / `CombatRoomPanel`）与「离开副本」的前置禁用。
+- `OpeningRoomPage`（`room.type === "opening"`）/ `CombatRoomPage`（`room.type === "combat"`）：两个**房间整页**，各自成页、各自维护。二者的差别只有正文（`opening/OpeningRoomPanel` / `combat/CombatRoomPanel`）与「离开副本」的前置禁用。
+- **房间专属实现各自成文件夹**：`features/dungeon/combat/` 与 `features/dungeon/opening/` 各装「属于这个房间」的东西（房间主体与阶段面板、专属浮窗、专属 hook / 纯函数），`features/dungeon/` 顶层只留**两个房间共用的**（`RoomScaffold` / `RoomActionsDialog` / `DungeonInfoDialog` / 牌组浏览 / `useDungeonRoom` / `useDungeonRun` / `useExitDungeon` / `useAdvanceStage` / `readDungeonInfo` …）。判据是**语义归属**而不是「谁在用」：`opening/useOpeningParty` 虽然被顶层的牌组浏览也用着，但它描述的是「进副本（开场）那一刻固化的队伍 + 奖励」，归属开场，所以放 `opening/`。
 - `RoomScaffold`（`src/features/dungeon/RoomScaffold.tsx`）：**房间无关的共同框架**，两个房间页共用。唯一随房间变化的 `exitBlocked` / `exitBlockedHint` 由调用方显式传入，所以这层**不允许**出现 `room.type` 判断。**这一层要克制**：往上加的东西必须真的适用于每一种房间。
 
 - **数据**：当前房间 `GET /api/dungeons/v1/{user}/{game}/room`（只给房间，不含副本本体）；运行中的副本 `GET .../state`（「副本信息」用它展示进度）。两个查询各管一件事。
 - **标题 = 副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自 `/state`，房间名来自 `room.stage.name`（副本房间与场景一一对应，模型与 `StageComponent` 上都是固定的）；`/state` 还没回来时先只显示房间名，不把标题卡在「加载中」。
 - **标题右侧的齿轮图标「副本操作」入口**：原三个按钮（副本信息 / 叙事 / 离开副本）收进 `RoomActionsDialog`（`Modal` 的窄面板 `size="sm"`；**整行可点**，标签在左、状态在右，行间分隔线）。「副本信息」= `DungeonInfoDialog`（整体设定 / 房间 / 敌人 + **进度**）；「叙事」= `useNarrative` + `NarrativeOverlay`；「离开副本」= 回家园。**未读叙事信号上提到入口按钮**（变绿 + 角标），否则会被菜单吃掉。同一时刻只开一个浮窗：菜单 → 子浮窗是**切换**不是叠加（见「浮窗层级」）。**不提供「返回副本总览」**：按游戏逻辑，离开副本就是回家园，副本进行中也没有别的去处。
+- **齿轮旁的「牌组」入口**（黑桃图标，与齿轮平级）：`DeckBrowserDialog` —— 一级是本次副本的**队伍名单**（玩家排第一，每行「名字 + 玩家徽标 + N 张」），点某行叠出二级 `DeckDialog` 看该角色的卡面。看牌组是只读浏览，所以不折进「副本操作」菜单。数据复用 `useOpeningParty`（进副本固化的队伍 + 各人 `DeckComponent`），**hook 只在浮窗挂载时才发请求**，房间页不会为了一个入口先拉队伍。两级同属 `features/dungeon`，所以两级都在 `DeckBrowserDialog` 内部管理（一级的 ESC 在二级开着时不响应）。
 - **进度不另传参数**：`current_room_index` 就是副本模型自身的字段——静态副本（磁盘 JSON）恒为 `-1`，进行中才 `>= 0`，所以同一个浮窗给总览页与房间页用都不会误标（「第 N / M 间」与房间上的「当前所在」）。
 - **离开副本是任务接口**：`POST /api/dungeon/exit/v1/` 只返回 `job_id`，而「回家」发生在**任务内部**（队伍被传回家园场景、`PartyMemberComponent` 摘掉、满血恢复、`teardown_dungeon` 把副本重置回空副本）。所以界面是「触发 → 按钮变『退出中…』并禁用 → 等终态 → 跳家园页」，**不是**点了就跳；跳转用 `replace`，副本已不存在，返回键不该回到这一屏。
 - **离开副本的前置禁用按房间类型分两处写**：`OpeningRoomPage` 在 `!room.initialized` 时把菜单里的「离开副本」**禁用**并在页面上写明原因；`CombatRoomPage` 不预判（战斗未结束退出由后端拦），错误原样显示。服务端（`dungeon_exit_action.py`）共三道守卫：没有当前房间 / 开场未初始化 / 战斗未结束（`!combat.is_post_combat`）——除开场那条外都由后端在任务里拦，失败原因经 `useExitDungeon` 显示在页面上。没有进行中的房间时 `/room` 返回 404，`DungeonRoomRoute` 显示后端那句话，并给一个「← 返回家园」的出口。
 
-**「叙事」为什么在共同框架里**：会话消息（`GET /api/session_messages/v1/.../since`）是**会话级**资源——本局所有事件，不是某个房间产生的。战斗房间一样会追加叙事，所以入口属于共同框架（现在是「副本操作」菜单里的一项），不能塞进 `OpeningRoomPanel`。
+**「叙事」为什么在共同框架里**：会话消息（`GET /api/session_messages/v1/.../since`）是**会话级**资源——本局所有事件，不是某个房间产生的。战斗房间一样会追加叙事，所以入口属于共同框架（现在是「副本操作」菜单里的一项），不能塞进 `opening/OpeningRoomPanel`。
 
 - **入口只有一个实现**：数据与未读算法在 `features/session/useNarrative`（家园页由 `NarrativeButton` 直接渲染按钮，副本房间页把它摆进「副本操作」菜单），浮层共用一个 `NarrativeOverlay`。
 - **未读基线跨屏存活**：已看到第几条存在模块级的 `features/session/unreadBaselines`（按 `sessionKey(user, game)` 隔离），不随路由卸载。所以「进副本 → 打一会儿 → 回家园」后，副本期间产生的事件在家园页仍显示为未读。
@@ -76,8 +79,8 @@
 
 房间主体就是**准备**，对应 TUI 的 `/init` `/generate-spoils` `/pick-card` `/next`：`初始化开场 → 生成奖励 → 3 选 1 挑卡 → 进入下一关`。页面顺序是「环境叙述 → 动作按钮 → 队伍」。
 
-- **「队伍」是横排角色卡**（不再是一人一段）：卡上点角色名开 `ActorInfoDialog`、点「查看牌组」开 `DeckDialog`。顺序沿用后端给的队伍顺序（玩家在前），横排卡片就是「队伍站位」的 UX 雏形。副本里 `ActorInfoDialog` 传 `costumeEnabled={false}`——家园接口在副本进行中会被拒，所以不展示时装入口。
-- **奖励渐进式披露**：候选**不**摊在页面上；某成员有 `SpoilsComponent` 时，其角色卡上多一个「奖励」按钮，点开 `SpoilsDialog` 才看到候选卡（**竖排**，每张一个「挑选」）。该组件内部是两个队列：`candidate_cards`（待领取）与 `claimed_cards`（已领取），界面分别展示。与「先看到角色、再看到奖励卡」的流程一致。
+- **「队伍」是横排角色卡**（不再是一人一段）：卡上点角色名开 `ActorInfoDialog`、点「查看牌组」开 `DeckDialog`（此时是一级）。顺序沿用后端给的队伍顺序（玩家在前），横排卡片就是「队伍站位」的 UX 雏形。副本里 `ActorInfoDialog` 传 `costumeEnabled={false}`——家园接口在副本进行中会被拒，所以不展示时装入口。
+- **奖励渐进式披露**：候选**不**摊在页面上；某成员有 `SpoilsComponent` 时，其角色卡上多一个「奖励」按钮，点开 `opening/SpoilsDialog` 才看到候选卡（**竖排**，每张一个「挑选」）。该组件内部是两个队列：`candidate_cards`（待领取）与 `claimed_cards`（已领取），界面分别展示。与「先看到角色、再看到奖励卡」的流程一致。
 
 - **按钮只出现「当前该做的那一步」**：初始化后换成「生成奖励」；「进入下一关」常驻。
 - **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务（按房间标识做一次性 guard，StrictMode 下不会双发）；失败**不自动重试**，把「初始化开场」按钮留给玩家手动重试。这是服务端 `09674f13` 的硬前置：未初始化时不允许推进 / 退出。
@@ -86,6 +89,7 @@
 - **读写性质不同**：`初始化` / `生成奖励` / `挑卡` 是**任务接口**（走 `src/api/useJobAction.ts`），`进入下一关` 是**同步**接口（`useAdvanceStage`）。读全部走 GET，而且**不需要任何后端新增接口**：奖励（`SpoilsComponent`）与牌组（`DeckComponent`）由 `group?all_of=PartyMemberComponent` + 一次 `details` 拿到（`useOpeningParty`），场景环境叙述用 `useStageEntity`。
 - **挑卡不做二次确认**：领卡在「奖励」浮窗里完成，防误触靠卡片上的显式「挑选」按钮（与名单的「加入 / 移出」同一套心智）。领卡是**按成员各自算的**（每人一个 `SpoilsComponent`）：领完从 `candidate_cards` 出队一张、记入 `claimed_cards`（候选保留供回看）；后端当前 gameplay 只允许领一张，所以「挑选」按钮整组收起，组件本身作为「已生成」守卫保留。
 - **每个开场房只生成一次**：后端的幂等守卫看「有没有人还持有 `SpoilsComponent`」；领取后组件仍保留（只 `claimed_cards` 非空），所以「生成奖励」不会再出现。离开副本时该组件随 `PartyMemberComponent` 一并清理。
-- **卡牌展示只有一份实现**：`features/cards`（`readCard` / `CardItem`），与 `features/items` 同构——`Card` 也不在 OpenAPI 里（藏在 `ComponentSerialization.data`），所以手写类型 + 运行时逐字段校验。卡牌名**不走 `displayName`**：后端牌名就是叙事化的牌名，不带 `类型.` 前缀。
+- **卡牌展示只有一份实现**：`features/cards`（`readCard` / `readAffixLabel` / `CardItem` / `CardDetailDialog`），与 `features/items` 同构——`Card` 也不在 OpenAPI 里（藏在 `ComponentSerialization.data`），所以手写类型 + 运行时逐字段校验。卡牌名**不走 `displayName`**：后端牌名就是叙事化的牌名，不带 `类型.` 前缀。
+- **牌组浮窗按「一行最多三张、所有行严格等高」铺开**（`.card-tiles--deck`，行高用 `grid-auto-rows: 1fr`）：列数由 `card-tiles--deck-N`（N = min(卡数, 3)）给出，固定列宽让 `Modal` 的 `size="fit"` **随卡数收缩**（1 张 ~240px、3 张 ~670px），卡少不留一片空。卡面是**紧凑版**（`CardItem` 的 `affixes="names"`）：词缀只给 `[名称]`（`features/cards/readAffixLabel`，LLM 给错格式就截断），否则长词缀会把卡撑高、破坏等高；点卡叠出**三级** `CardDetailDialog` 看完整原文。奖励（Spoils）仍用竖排逐张读（`.card-tiles--stack`）——奖励是当场决策，牌组是翻看家底，两者节奏不同所以布局不同。
 - **进入下一关要确认**：推进不可逆，确认框列出「下一间（名字 + 类型）」与奖励状态。奖励**只提示、不阻止**；初始化已由按钮禁用把关（见上）。
 - **不走家园那套**：副本进行中家园接口一律被拒，所以这一屏没有道具管理（背包在家园页看），也不提供「返回副本总览」。

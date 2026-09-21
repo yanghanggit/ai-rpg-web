@@ -273,6 +273,14 @@ ul.items li {
   transform: translateY(-0.031em);
 }
 
+/* 黑桃作「牌组」入口：字形度量与 ⚙ 差很多，共用 `.icon-button` 会又大又不齐，所以单独一份。
+   实测（macOS 当前字体，48px）：⚙ 墨迹 29×30，♠ 墨迹 36×37——缩到 2.4rem 两者同量级；
+   ♠ 的墨迹正好居中在行盒里（不像 ⚙ 偏下），所以不吃那份上抬，反而要往下压 1px。 */
+.icon-button--deck {
+  font-size: 2.4rem;
+  transform: translateY(1px);
+}
+
 /* 有新叙事未看时齿轮变绿：与 .count-button--unread 同一套颜色 */
 .icon-button--unread {
   border-color: var(--ok);
@@ -329,7 +337,7 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
 }
 
 /* 每行右侧的状态（进度 / 已看 / …） */
-ul.action-list .action-meta {
+.action-meta {
   font-size: 0.9rem;
   color: var(--muted);
 }
@@ -338,6 +346,17 @@ ul.action-list .action-meta {
 .action-meta--unread {
   color: var(--ok);
   font-weight: 600;
+}
+
+/* 牌组浏览的一级名单：整行是一颗按钮（名字 + 玩家徽标在左、张数在右） */
+.deck-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.deck-row .action-meta {
+  margin-left: auto;
 }
 
 /* 小节标题行 */
@@ -397,6 +416,12 @@ ul.action-list .action-meta {
 /* 内容少的菜单类浮窗：收窄面板，避免右侧大片留白 */
 .overlay-panel--sm {
   width: min(100%, 26rem);
+}
+
+/* 内容宽度会变的浮窗：面板跟着内容收缩（上限同默认）；卡少时不会留一大片空 */
+.overlay-panel--fit {
+  width: fit-content;
+  max-width: min(100%, 680px);
 }
 
 .overlay-head {
@@ -922,6 +947,53 @@ ul.card-tiles--stack {
 .card-tile-source {
   margin: 0;
   font-size: 0.8rem;
+}
+
+/* 牌组浮窗：一行最多三张，**所有行严格等高**（`1fr` 行高由最高的那张决定，不再参差）；
+   列数由 card-tiles--deck-N（N = min(卡数, 3)）给出，固定列宽让 `fit` 面板算得准内容宽度。
+   写在 .card-tile 之后，避免 specificity 倒序。 */
+ul.card-tiles--deck {
+  display: grid;
+  gap: 0.9rem;
+  grid-auto-rows: 1fr;
+  justify-content: center;
+}
+
+ul.card-tiles--deck-1 {
+  grid-template-columns: 12.5rem;
+}
+
+ul.card-tiles--deck-2 {
+  grid-template-columns: repeat(2, 12.5rem);
+}
+
+ul.card-tiles--deck-3 {
+  grid-template-columns: repeat(3, 12.5rem);
+}
+
+/* 卡面给足高度，保持「牌」的比例 */
+ul.card-tiles--deck > .card-tile {
+  min-height: 15rem;
+}
+
+/* 整张卡可点（打开卡牌详情）：内容包一层按钮，撑满卡面（点击区域 = 整张卡） */
+.card-tile-open {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.card-tile--open:hover {
+  border-color: var(--fg);
 }
 
 /* ── 战斗房间 ─────────────────────────────────────────────── */

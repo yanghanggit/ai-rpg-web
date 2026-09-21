@@ -13,12 +13,13 @@ const links = [
   { to: "/entry", label: "玩家入口 EntryPage" },
   { to: "/game/webdev/Game1/home", label: "家园概览 HomeOverviewPage" },
   { to: "/game/webdev/Game1/dungeon", label: "副本总览 DungeonOverviewPage" },
-  { to: "/game/webdev/Game1/dungeon/room?seed=opening:ready", label: "开场 · 已初始化" },
-  { to: "/game/webdev/Game1/dungeon/room?seed=opening:spoils", label: "开场 · 已生成奖励" },
-  { to: "/game/webdev/Game1/dungeon/room?seed=combat:init", label: "战斗 · 初始化" },
-  { to: "/game/webdev/Game1/dungeon/room?seed=combat:round_start", label: "战斗 · 抓牌" },
-  { to: "/game/webdev/Game1/dungeon/room?seed=combat:turn", label: "战斗 · 出牌" },
-  { to: "/game/webdev/Game1/dungeon/room?seed=combat:post", label: "战斗 · 结算" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=opening:ready", label: "开场房间 · 已初始化" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=opening:spoils", label: "开场房间 · 已生成奖励" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=party:full", label: "开场房间 · 队伍带同伴" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:init", label: "战斗房间 · 初始化" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:round_start", label: "战斗房间 · 抓牌" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:turn", label: "战斗房间 · 出牌" },
+  { to: "/game/webdev/Game1/dungeon/room?seed=combat:post", label: "战斗房间 · 结算" },
 ];
 
 export default function DevIndexPage() {

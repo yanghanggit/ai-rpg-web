@@ -12,10 +12,10 @@
  * 接口路径 `pick_spoils/pick_card` 即这一分层；这里对应 `pickCard`。
  */
 import type { QueryClient } from "@tanstack/react-query";
-import { client, unwrap } from "../../api/client";
-import { useJobAction } from "../../api/useJobAction";
-import { invalidateEntitiesAndMessages } from "../entities/invalidateEntities";
-import { invalidateDungeons } from "./invalidateDungeons";
+import { client, unwrap } from "../../../api/client";
+import { useJobAction } from "../../../api/useJobAction";
+import { invalidateEntitiesAndMessages } from "../../entities/invalidateEntities";
+import { invalidateDungeons } from "../invalidateDungeons";
 
 export function useOpeningActions(userName: string, gameName: string) {
   const body = { user_name: userName, game_name: gameName };

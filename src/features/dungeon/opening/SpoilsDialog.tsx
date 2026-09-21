@@ -1,7 +1,7 @@
-import { displayName } from "../../components/displayName";
-import Modal from "../../components/Modal";
-import CardItem from "../cards/CardItem";
-import type { Card } from "../cards/types";
+import { displayName } from "../../../components/displayName";
+import Modal from "../../../components/Modal";
+import CardItem from "../../cards/CardItem";
+import type { Card } from "../../cards/types";
 
 /**
  * 某个队伍成员的奖励（Spoils）浮窗：**竖排**候选卡，每张一个「挑选」。

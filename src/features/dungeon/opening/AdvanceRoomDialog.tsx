@@ -1,7 +1,7 @@
-import type { Schemas } from "../../api/types";
-import { displayName } from "../../components/displayName";
-import Modal from "../../components/Modal";
-import { ROOM_TYPE_LABELS } from "./readDungeonInfo";
+import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
+import Modal from "../../../components/Modal";
+import { ROOM_TYPE_LABELS } from "../readDungeonInfo";
 
 /**
  * 「进入下一关」的确认框。

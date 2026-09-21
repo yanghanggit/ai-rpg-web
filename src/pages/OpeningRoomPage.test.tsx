@@ -189,6 +189,57 @@ describe("副本房间 · 共同框架", () => {
     await waitFor(() => expect(entry).not.toHaveClass("icon-button--unread"));
   });
 
+  it("牌组入口：一级名单（玩家在前）→ 二级紧凑卡面（词缀只留名称）→ 三级卡牌详情", async () => {
+    server.use(instantTasks());
+    addMockRosterMember("角色.顾知秋");
+    addMockRosterMember("角色.小厮");
+    enterMockDungeon("副本.荒村义庄");
+    renderOpening();
+
+    // 入口与齿轮平级，同在标题行
+    fireEvent.click(await screen.findByRole("button", { name: "牌组" }));
+
+    const list = await screen.findByRole("dialog", { name: "队伍牌组" });
+    // 每一行是一颗按钮（名字 + 张数），玩家必须排第一
+    const rows = within(list).getAllByRole("button", { name: /张$/ });
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toHaveTextContent("无名");
+    expect(rows[0]).toHaveTextContent("玩家");
+    expect(within(list).getByText("9 张")).toBeInTheDocument();
+
+    fireEvent.click(within(list).getByRole("button", { name: /顾知秋/ }));
+
+    const deck = await screen.findByRole("dialog", { name: "牌组" });
+    expect(within(deck).getByText("顾知秋 · 共 5 张")).toBeInTheDocument();
+    // 一行最多三张：5 张 → 三列、两行（行高由网格统一，不由内容撑）
+    expect(within(deck).getByRole("list")).toHaveClass("card-tiles--deck-3");
+    // 紧凑卡面只给词缀名字，不给触发倾向的描述
+    expect(within(deck).getByText("[破竹]")).toBeInTheDocument();
+    expect(within(deck).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
+    // 二级是叠在一级之上（名单没被关掉），不是同类切换
+    expect(screen.getByRole("dialog", { name: "队伍牌组" })).toBeInTheDocument();
+
+    // 点卡 → 三级「卡牌」详情：词缀是完整原文，两层的下层都还在
+    fireEvent.click(within(deck).getByRole("button", { name: "查看卡牌：撬棍横击" }));
+    const detail = await screen.findByRole("dialog", { name: "卡牌" });
+    expect(within(detail).getByText(/本段命中后更容易击穿格挡/)).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "牌组" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "队伍牌组" })).toBeInTheDocument();
+
+    // 关三级 → 回到牌组；再关牌组 → 回到名单
+    fireEvent.click(within(detail).getByRole("button", { name: "关闭" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "卡牌" })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("dialog", { name: "牌组" })).toBeInTheDocument();
+
+    fireEvent.click(within(deck).getByRole("button", { name: "关闭" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "牌组" })).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole("dialog", { name: "队伍牌组" })).toBeInTheDocument();
+  });
+
   it("离开副本：从菜单触发后入口变「退出中…」并禁用", async () => {
     server.use(exitWith(9), tasksWithStuck(9));
     enterMockDungeon("副本.荒村义庄");
@@ -298,13 +349,13 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
     await generateSpoils();
-    expect(await screen.findByText("牌组 3 张")).toBeInTheDocument();
+    expect(await screen.findByText("牌组 9 张")).toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
     fireEvent.click(within(dialog).getByRole("button", { name: "挑选 火折子" }));
 
     // 牌组 +1；候选仍在（供回看），但「挑选」按钮消失
-    expect(await screen.findByText("牌组 4 张")).toBeInTheDocument();
+    expect(await screen.findByText("牌组 10 张")).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
     expect(within(dialog).getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
     // 组件保留作为守卫：生成按钮不再回来
@@ -357,7 +408,7 @@ describe("副本房间 · 开场房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "查看牌组" }));
 
     const dialog = await screen.findByRole("dialog", { name: "牌组" });
-    expect(within(dialog).getByText("无名 · 共 3 张")).toBeInTheDocument();
+    expect(within(dialog).getByText("无名 · 共 9 张")).toBeInTheDocument();
     expect(within(dialog).getByText("剖棺")).toBeInTheDocument();
     expect(within(dialog).getByText("常驻厌胜")).toBeInTheDocument();
     // 不可出牌的卡在卡面上有标记

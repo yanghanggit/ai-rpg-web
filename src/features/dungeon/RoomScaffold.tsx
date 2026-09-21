@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { displayName } from "../../components/displayName";
 import NarrativeOverlay from "../session/NarrativeOverlay";
 import { useNarrative } from "../session/useNarrative";
+import DeckBrowserDialog from "./DeckBrowserDialog";
 import DungeonInfoDialog from "./DungeonInfoDialog";
 import RoomActionsDialog from "./RoomActionsDialog";
 import { readDungeonInfo } from "./readDungeonInfo";
@@ -17,23 +18,26 @@ import { useExitDungeon } from "./useExitDungeon";
  * 由调用方用 `exitBlocked` / `exitBlockedHint` 显式传入（开场房间未初始化时禁用；战斗房间不预判，
  * 由后端拦）。
  *
- * 负责三件事：
+ * 负责这几件事：
  * - 标题 = **副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自
  *   `/state`（房间模型没有自己的名字，界面上的房间名就是 `room.stage.name`）；`/state` 还没回来
  *   时先只显示房间名，避免标题卡在「加载中」；
  * - 标题行右侧**一个**齿轮图标「副本操作」入口：原来的 副本信息 / 叙事 / 离开副本 三个按钮折进
  *   `RoomActionsDialog`（纵向列表）。**未读叙事信号上提到这个齿轮**（变绿 + 角标），否则会被菜单吃掉；
+ * - 齿轮旁的**牌组**图标入口：`DeckBrowserDialog`（一级名单 → 二级卡面 → 三级卡牌详情）。看牌组是只读浏览，
+ *   与「副本操作」并列而不折进菜单（两者都是入口，不是子动作）；
  * - 「离开副本」是**任务接口**，而「回家」发生在任务内部（队伍被传回家园场景、副本被拆掉），
  *   所以在回调里触发、等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
  *
- * **同一时刻最多开一个浮窗**：用一个 `pane` state 表达「菜单 → 子浮窗」的**切换**而非叠加
- * （对照 docs/pages.md「同类切换不叠第三层」，否则 ESC 该关哪层有歧义）。
+ * **入口层同一时刻只开一个浮窗**：用一个 `pane` state 表达「菜单 → 子浮窗」的**切换**而非叠加
+ * （对照 docs/pages.md「同类切换不叠第三层」，否则 ESC 该关哪层有歧义）。唯一例外是「牌组」入口
+ * 内部自己管的一级 → 二级（同一 feature 的钻取，关层与 ESC 守卫都在 `DeckBrowserDialog` 里）。
  *
  * 房间正文由 `children` 传入。**这一层要克制**：往上加的东西必须真的适用于每一种房间。
  */
 
 /** 当前开着的浮窗；`null` 表示都关着。 */
-type RoomPane = "actions" | "info" | "narrative" | null;
+type RoomPane = "actions" | "info" | "narrative" | "decks" | null;
 
 export default function RoomScaffold({
   userName,
@@ -111,6 +115,17 @@ export default function RoomScaffold({
         >
           ⚙{unread > 0 ? <span className="icon-badge">{unread}</span> : null}
         </button>
+        {/* 与齿轮平级的第二个入口：看本次副本各成员的牌组（一级是名单、二级是某个人的卡面） */}
+        <button
+          type="button"
+          className="icon-button icon-button--deck"
+          aria-haspopup="dialog"
+          aria-label="牌组"
+          title="牌组"
+          onClick={() => setPane("decks")}
+        >
+          ♠
+        </button>
         {/* 图标按钮显示不下文字，退出中的反馈放在它旁边 */}
         {exit.isBusy ? <span className="muted">退出中…</span> : null}
       </div>
@@ -145,6 +160,10 @@ export default function RoomScaffold({
 
       {pane === "narrative" ? (
         <NarrativeOverlay messages={narrative.messages} onClose={() => setPane(null)} />
+      ) : null}
+
+      {pane === "decks" ? (
+        <DeckBrowserDialog userName={userName} gameName={gameName} onClose={() => setPane(null)} />
       ) : null}
     </main>
   );
