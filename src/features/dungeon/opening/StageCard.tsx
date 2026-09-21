@@ -1,6 +1,6 @@
 /**
- * 场景卡的三态。与标题行那颗兜底图标（`RoomScaffold` 的 `roomAction`）同一套判据，只是卡片更宽、
- * 能把原因写清楚。
+ * 场景卡的三态。开场房的初始化状态**只在这一处表达**（标题行没有第二颗 ↻），所以卡片要能自己
+ * 讲清运行中 / 失败 / 就绪。
  */
 export type StageCardState = "running" | "failed" | "ready";
 
@@ -12,7 +12,7 @@ const LABELS: Record<StageCardState, string> = {
 
 const TITLES: Record<StageCardState, string> = {
   running: "正在初始化开场…",
-  failed: "点这张卡重试初始化（与标题行的 ↻ 同一件事）",
+  failed: "点这张卡重试初始化",
   ready: "点这张卡看完整的场景信息（全文在浮窗里）",
 };
 
@@ -31,8 +31,8 @@ const TITLES: Record<StageCardState, string> = {
  * - `failed`：初始化失败 + 原因，**点整张卡重试**；
  * - `ready`：环境叙述，**点整张卡看全文**。
  *
- * 无障碍名统一以可见的「场景描述」开头（`场景描述：…`），既让读屏器有上下文，也避免与标题行那颗
- * 同动作的图标撞名。
+ * 无障碍名统一以可见的「场景描述」开头（`场景描述：…`），既让读屏器有上下文，也让动作名唯一
+ * （开场房不再有第二处同动作入口）。
  */
 export default function StageCard({
   state,

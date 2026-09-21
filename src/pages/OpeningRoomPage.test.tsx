@@ -286,7 +286,7 @@ describe("副本房间 · 共同框架", () => {
 });
 
 describe("副本房间 · 开场房间", () => {
-  it("自动初始化失败时：显示原因、标题行留下可点的「重试初始化开场」，结束与退出都由服务端拦", async () => {
+  it("自动初始化失败时：原因写在场景卡里、点整张卡重试，结束与退出都由服务端拦", async () => {
     const initSpy = vi.fn();
     server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒村义庄");
@@ -300,15 +300,13 @@ describe("副本房间 · 开场房间", () => {
     // 自动初始化只发一次；失败后不自动重试
     expect(initSpy).toHaveBeenCalledTimes(1);
 
-    // 失败 → 标题行那颗 ↻ 变成红色错误色，名字是「重试初始化开场」（可点）
-    const retry = screen.getByRole("button", { name: "重试初始化开场" });
-    expect(retry).toBeEnabled();
-    expect(retry).toHaveClass("icon-button--err");
+    // 标题行没有第二颗 ↻：初始化三态全在场景卡上（失败也没有兜底的那颗）
+    expect(screen.queryByRole("button", { name: "重试初始化开场" })).not.toBeInTheDocument();
 
     // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
     expect(await screen.findByRole("button", { name: "生成奖励" })).toBeDisabled();
 
-    // 未初始化 → 本间的主行动就是"把它跑起来"，「结束开局准备」这件事根本不存在；
+    // 未初始化 → 「结束开局准备」这件事根本不存在；
     // 页面上也没有解释性提示行（初始化状态写在场景卡里，不需要再说一遍）
     expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
     expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
@@ -319,15 +317,15 @@ describe("副本房间 · 开场房间", () => {
     expect(
       await screen.findByText("离开副本失败：开场房间尚未初始化，无法退出"),
     ).toBeInTheDocument();
-    // 人还在本间（副本没被拆）
-    expect(screen.getByRole("button", { name: "重试初始化开场" })).toBeInTheDocument();
+    // 人还在本间（副本没被拆），场景卡仍是可点的重试入口
+    expect(screen.getByRole("button", { name: "场景描述：重试初始化开场" })).toBeInTheDocument();
 
-    // 点场景卡重试（与标题行那颗 ↻ 同一件事）
+    // 点场景卡重试（本间唯一的重试入口）
     fireEvent.click(stageCard);
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(2));
 
-    // 标题行那颗是兜底：同样能重试
-    fireEvent.click(retry);
+    // 再点一次依旧重试（不套一次性 guard）
+    fireEvent.click(stageCard);
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(3));
   });
 
@@ -351,7 +349,7 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.queryByRole("dialog", { name: "场景信息" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "关闭" }));
 
-    // 「回到地图」卡：与标题行那颗 → 同一件事（body 上这份更显眼、更好点）
+    // 「回到地图」卡：「结束本间」的唯一入口（更显眼、更好点）
     fireEvent.click(within(stage).getByRole("button", { name: "结束开局准备（回到地图）" }));
     expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
   });
@@ -371,16 +369,18 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.queryByText(/3 选 1/)).not.toBeInTheDocument();
   });
 
-  it("进入开场房间自动初始化一次；完成后标题行那颗图标从 ↻（初始化）变成 →（结束本间）", async () => {
+  it("进入开场房间自动初始化一次；标题行始终没有本间的主行动（都在正文卡片上）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 自动初始化完成后：本间的主行动从「初始化」换成「结束开局准备」
-    await waitForInit();
-    const finish = screen.getByRole("button", { name: "结束开局准备" });
-    expect(finish).toHaveTextContent("→");
+    // 初始化中：标题行也没有 ↻（运行中状态写在场景卡上）
     expect(screen.queryByRole("button", { name: /初始化开场/ })).not.toBeInTheDocument();
+
+    // 初始化完成后：标题行也没有 →，结束本间只剩正文右侧那张卡
+    await waitForInit();
+    expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).toBeInTheDocument();
   });
 
   it("生成奖励：不摊在页面上，角色卡那颗按钮从「生成奖励」变成「获取奖励」，弹窗里竖排 3 张候选", async () => {
@@ -511,7 +511,7 @@ describe("副本房间 · 开场房间", () => {
     renderOpening();
     await waitForInit();
 
-    fireEvent.click(screen.getByRole("button", { name: "结束开局准备" }));
+    fireEvent.click(screen.getByRole("button", { name: "结束开局准备（回到地图）" }));
 
     // 落点是地图（房间之间那一站）：标题只留副本名，房间那一行标「已完成」，动作搬到下一间那一行。
     // 推进不在这里发生——队伍的位置只在地图上由「前往下一间」改变。
@@ -531,18 +531,18 @@ describe("副本房间 · 开场房间", () => {
     const reward = screen.getByRole("button", { name: "获取奖励" });
     expect(reward).toHaveClass("button--pending");
     expect(reward).toHaveAttribute("title", "还有候选卡未领：结束本间后就无法再领取了。");
-    // 同一件事也做到标题行那颗「结束本间」上：一按就永久失去，所以它也变提醒色
-    const finish = screen.getByRole("button", { name: "结束开局准备" });
-    expect(finish).toHaveClass("icon-button--warn");
+    // 同一件事也做到「回到地图」卡上（结束本间的唯一入口）：一按就永久失去，所以它也变提醒色
+    const finish = screen.getByRole("button", { name: "结束开局准备（回到地图）" });
+    expect(finish).toHaveClass("stage-next--warn");
     expect(finish).toHaveAttribute(
       "title",
       "结束开局准备（回到地图）—— 还有候选卡未领，结束本间后就无法再领取了。",
     );
     // 结束动作照旧可用（不套二次确认）
-    expect(screen.getByRole("button", { name: "结束开局准备" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).toBeEnabled();
   });
 
-  it("奖励都领完之后：卡上的「!」与标题行的提醒色一起消失", async () => {
+  it("奖励都领完之后：卡上的「!」与「回到地图」卡的提醒色一起消失", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
@@ -553,8 +553,8 @@ describe("副本房间 · 开场房间", () => {
     expect(await screen.findByRole("button", { name: "查看奖励" })).not.toHaveClass(
       "button--pending",
     );
-    expect(screen.getByRole("button", { name: "结束开局准备" })).not.toHaveClass(
-      "icon-button--warn",
+    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).not.toHaveClass(
+      "stage-next--warn",
     );
   });
 });

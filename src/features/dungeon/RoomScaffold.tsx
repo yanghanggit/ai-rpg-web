@@ -44,8 +44,8 @@ type RoomPane = "actions" | "info" | "narrative" | "decks" | null;
 /**
  * 本间的**主行动**：标题行最右边那颗状态相关的图标（由页面算好传进来，本层只负责画）。
  *
- * 为什么是状态相关的字形而不是固定文案：这个槽位的含义随本间状态变（还没开始 → 把它跑起来；
- * 已经可以走了 → 结束本间），而图标按钮显示不下文字，所以动作名全靠 `label` / `title`。
+ * 为什么是状态相关的字形而不是固定文案：这个槽位的含义随本间状态变（战斗还没打完时没有这件事 →
+ * 槽位空着；打完了 → 「结束本间」），而图标按钮显示不下文字，所以动作名全靠 `label` / `title`。
  */
 export interface RoomAction {
   /** 单色字形。 */
@@ -54,10 +54,8 @@ export interface RoomAction {
   label: string;
   /** 更长的悬停说明（后果、原因）；不给就用 `label`。 */
   title?: string;
-  /** 运行中：禁用 + 字形转起来（本间正在自动做这件事）。 */
-  busy?: boolean;
-  /** `warn` = 下一步会失去什么；`err` = 出错了等着你处理；默认中性色。 */
-  tone?: "plain" | "warn" | "err";
+  /** `warn` = 下一步会失去什么；默认中性色。 */
+  tone?: "plain" | "warn";
   /** 字形的字号 / 基线微调类（不同字形墨迹差很多，见 `index.css`）。 */
   iconClass: string;
   onActivate: () => void;
@@ -83,7 +81,7 @@ export default function RoomScaffold({
   roomName?: string;
   /** 是否渲染「副本信息」入口（⚑）。地图页自己就是房间清单，所以关掉。 */
   showInfo?: boolean;
-  /** 本间的主行动（标题行那颗状态相关的图标）；不给就不渲染（地图页就没有）。 */
+  /** 本间的主行动（标题行那颗状态相关的图标）；不给就不渲染（地图页、开场房都没有）。 */
   roomAction?: RoomAction | null;
   children: ReactNode;
 }) {
@@ -171,27 +169,19 @@ export default function RoomScaffold({
           ♠
         </button>
         {/* 本间的主行动：放在三个「副本入口」右侧并拉开一点。左边三个是同一类（看副本），
-            这颗是"现在该做什么"——由页面按本间状态算好（开场房：初始化中 / 重试 / 结束本间）。 */}
+            这颗是“现在该做什么”——由页面按本间状态算好（战斗房：打完了才有「结束本次战斗」，
+            没打完就是 `null`，槽位空着）。 */}
         {roomAction === null ? null : (
           <button
             type="button"
             className={`icon-button icon-button--room ${roomAction.iconClass}${
-              roomAction.tone === "warn"
-                ? " icon-button--warn"
-                : roomAction.tone === "err"
-                  ? " icon-button--err"
-                  : ""
+              roomAction.tone === "warn" ? " icon-button--warn" : ""
             }`}
             aria-label={roomAction.label}
             title={roomAction.title ?? roomAction.label}
-            disabled={roomAction.busy}
             onClick={roomAction.onActivate}
           >
-            {roomAction.busy ? (
-              <span className="icon-spin">{roomAction.icon}</span>
-            ) : (
-              roomAction.icon
-            )}
+            {roomAction.icon}
           </button>
         )}
         {/* 图标按钮显示不下文字，退出中的反馈放在它旁边 */}

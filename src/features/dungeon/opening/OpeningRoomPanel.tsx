@@ -17,7 +17,7 @@ import type { OpeningActions } from "./useOpeningActions";
  * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 结束本间」：
  * - **场景卡**（横置、固定大小，`StageCard`）：环境叙述（当前场景的 `EnvironmentComponent`）。
  *   初始化中显示「进行中…」、失败显示原因且**点整张卡重试**、好了就显示叙述且**点整张卡看全文**
- *   （弹 `StageInfoDialog`）——与标题行那颗兜底图标同一套状态，只是卡片更宽、能写清楚；
+ *   （弹 `StageInfoDialog`）——**开场房的初始化三态只在这一处表达**（标题行没有第二颗 ↻）；
  * - 场景卡右边那张「回到地图」卡：本间的下一步（初始化完成后才出现）；
  * - **队伍**（**没有可见标题**：卡上写着名字，“队伍”是废话）：竖着的角色卡，一张挨一张横排
  *   （顺序即后端给的队伍顺序，玩家在前）——卡面是「名字 + 属性（HP/ATK/DEF）+ DECK 张数」，
@@ -30,15 +30,15 @@ import type { OpeningActions } from "./useOpeningActions";
  * **卡片是这一屏的基调**：横置的场景卡（横 = 场景 / 进度）、旁边一张横置的「回到地图」卡，
  * 下面一排竖置的角色卡（竖 = 人）。
  *
- * **本层没有工具栏**：本间的主行动（初始化中 / 重试初始化 / 结束本间）**主 body 与标题行各有一份**
- * ——body 上是场景卡与「回到地图」卡（更好点、更好观察），标题行那颗（`RoomScaffold` 的
- * `roomAction`，由页面算）是**兜底**：同一套动作在两个地方都有入口，不靠字形让人猜。
+ * **本层没有工具栏**：本间的两个动作都在正文里——「结束本间」是场景行右边那张「回到地图」卡
+ * （更好点、更好观察），初始化三态都在场景卡上。所以标题行只留三个「副本入口」，`RoomScaffold`
+ * 的 `roomAction` 槽位在开场房是空的（同一件事只留一个入口）。
  *
  * **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务
- * （在页面里做，按房间标识做一次性 guard）；失败**不自动重试**，改由标题行那颗 ↻ 手动重试
- * （服务端要求先初始化才能推进 / 退出）。
+ * （在页面里做，按房间标识做一次性 guard）；失败**不自动重试**，改由场景卡手动重试
+ * （失败时点整张卡；服务端要求先初始化才能推进 / 退出）。
  *
- * **本间是一扇单向门**：标题行那颗 → 一旦按下就回地图，而**已结束的房间进不去**（地图上不再提供
+ * **本间是一扇单向门**：「回到地图」卡一旦按下就回地图，而**已结束的房间进不去**（地图上不再提供
  * "进入房间"）。奖励候选本来就挂在队伍成员身上、只有当前还是开场房时才能领
  * （`activate_pick_spoils_card` 要求 `is_current_room_dungeon_opening`），所以没领的卡就永久
  * 留在那里——这是设计上要的惩罚，所以只**提醒不阻止**（提醒就在卡上那颗按钮）。
@@ -74,7 +74,7 @@ export default function OpeningRoomPanel({
   actions: OpeningActions;
   /** 本次副本固化的队伍与奖励（页面取一次传下来）：角色卡的内容。 */
   party: DungeonParty;
-  /** 本间的结束动作（回地图 / 离开副本）：与标题行那颗 → 同一件事，这张卡只是更显眼。 */
+  /** 本间的结束动作（回地图 / 离开副本）：这张「回到地图」卡就是它在本屏的**唯一入口**。 */
   finish: { caption: string; hint: string; onActivate: () => void };
 }) {
   const stage = useStageEntity(userName, gameName, room.stage.name);
@@ -90,6 +90,10 @@ export default function OpeningRoomPanel({
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
 
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
+
+  // 还有人没领奖励 → 「回到地图」卡也变成提醒色：那一步一按，没领的卡就永久失去了
+  // （与角色卡上那颗按钮同一份判据，见 `hasUnclaimedRewards`）
+  const unclaimed = party.party.some(hasUnclaimedRewards);
 
   // 场景卡的三态：未初始化 = 还在跑 / 跑失败；初始化完成 = 叙述可看（全文点开）
   const stageState: StageCardState = !room.initialized
@@ -123,7 +127,7 @@ export default function OpeningRoomPanel({
     <>
       {/* 场景行：**横置**的场景卡（固定大小，叙述超出三行就省略）+ 右侧「回到地图」卡。
           这两张卡（横 = 场景 / 进度）与下面竖置的角色卡（竖 = 人）构成这一屏的卡片基调。
-          卡上的状态与标题行那颗兜底图标同源：初始化中 → 失败可点重试 → 就绪可点看全文。 */}
+          卡上的状态就是初始化三态的唯一表达：初始化中 → 失败可点重试 → 就绪可点看全文。 */}
       <section className="stage-row" aria-label="场景描述">
         <StageCard
           state={stageState}
@@ -133,14 +137,16 @@ export default function OpeningRoomPanel({
           }
         />
 
-        {/* 初始化完成后才出现：本间的下一步（回到地图 / 最后一间则是离开副本）。与标题行那颗 → 是
-            同一件事，这里更显眼也更好点，那颗是兜底。 */}
+        {/* 初始化完成后才出现：本间的下一步（回到地图 / 最后一间则是离开副本）。这是「结束本间」的
+            唯一入口（标题行不再重复）；还有候选卡未领时它也变提醒色、后果写进 title。 */}
         {room.initialized ? (
           <button
             type="button"
-            className="stage-next"
+            className={unclaimed ? "stage-next stage-next--warn" : "stage-next"}
             aria-label={`结束开局准备（${finish.caption}）`}
-            title={`结束开局准备（${finish.caption}）—— ${finish.hint}`}
+            title={`结束开局准备（${finish.caption}）—— ${
+              unclaimed ? "还有候选卡未领，结束本间后就无法再领取了。" : finish.hint
+            }`}
             onClick={finish.onActivate}
           >
             <span className="stage-next-arrow" aria-hidden="true">

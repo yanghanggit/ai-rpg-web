@@ -1,7 +1,7 @@
 import type { Schemas } from "../../api/types";
 import { readNextRoom } from "./readNextRoom";
 
-/** 「结束本间」之后去哪儿：一份文案 + 一个去处，供标题行那颗图标与正文的卡片共用。 */
+/** 「结束本间」之后去哪儿：一份文案 + 一个去处，供两个房间页的结束动作（标题行图标 / 正文卡片）共用。 */
 export interface RoomFinish {
   /** 括号里的去向（「回到地图」/「离开副本」）——两个房间页各自的动作名不同，去向是同一个。 */
   caption: string;
