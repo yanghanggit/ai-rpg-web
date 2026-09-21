@@ -3,7 +3,7 @@ import type { Schemas } from "../api/types";
 import CombatRoomPanel from "../features/dungeon/combat/CombatRoomPanel";
 import { useCombatScene } from "../features/dungeon/combat/useCombatScene";
 import RoomScaffold, { type RoomAction } from "../features/dungeon/RoomScaffold";
-import { readNextRoom } from "../features/dungeon/readNextRoom";
+import { readRoomFinish } from "../features/dungeon/readRoomFinish";
 import { readRoomGuards } from "../features/dungeon/readRoomGuards";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useExitDungeon } from "../features/dungeon/useExitDungeon";
@@ -42,25 +42,9 @@ export default function CombatRoomPage({
   // 还有战利品没收 → 「结束本间」也该是提醒色（没收的那些就留在身上拿不到了）
   const lootPending = scene.loot.length > 0;
 
-  // 本间之后没房间了（最后一间）：结束本间 = 离开副本回家园（服务端推进在这种情况下必然拒绝）。
-  // `/state` 还没回来时按"还有下一间"处理（→ 地图）：地图那一屏对"没有可前往的房间"有兜底文案，
-  // 指回「离开副本」，所以这个亚秒级窗口不会把人带错地方。
-  const finishesRun = run.data !== undefined && readNextRoom(run.data.dungeon) === null;
-  // 打输了也一样：唯一出路是离开副本（服务端 `is_lost` 分支）
-  const leavesRun = finishesRun || guards.defeated;
-
-  /**
-   * 结束之后去哪儿：还有下一间 → **房间之间**（地图，前进在那边点）；没有（或打输了）→ 直接
-   * 离开副本回家园。文案与去处合成一份描述，免得标题行与正文各说一套。
-   */
-  const finish = leavesRun
-    ? {
-        caption: "离开副本",
-        hint: guards.defeated
-          ? "战斗失败，只能离开副本回家园。"
-          : "这是最后一间，结束后离开副本回家园。",
-      }
-    : { caption: "回到地图", hint: "本间结束后进不来。" };
+  // 「结束本间」之后去哪儿：还有下一间 → 房间之间的地图（前进在那边点）；最后一间或打输了 →
+  // 直接离开副本回家园。去向与措辞与开场房共用一份（`readRoomFinish`）。
+  const finish = readRoomFinish(run.data, guards.defeated);
 
   // 副本内一律 replace：没有"后退"，只有前进与放弃离开（见 DungeonMapPanel）
   const action: RoomAction | null = guards.done
@@ -72,7 +56,7 @@ export default function CombatRoomPage({
         }`,
         tone: lootPending ? "warn" : "plain",
         iconClass: "icon-button--leave",
-        onActivate: leavesRun
+        onActivate: finish.leavesRun
           ? () => exit.start()
           : () => navigate(`/game/${userName}/${gameName}/dungeon/map`, { replace: true }),
       }

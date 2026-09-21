@@ -4,9 +4,9 @@ import type { Schemas } from "../api/types";
 import { hasUnclaimedRewards } from "../features/dungeon/opening/hasUnclaimedRewards";
 import OpeningRoomPanel from "../features/dungeon/opening/OpeningRoomPanel";
 import { useOpeningActions } from "../features/dungeon/opening/useOpeningActions";
-import { useOpeningParty } from "../features/dungeon/opening/useOpeningParty";
 import RoomScaffold, { type RoomAction } from "../features/dungeon/RoomScaffold";
-import { readNextRoom } from "../features/dungeon/readNextRoom";
+import { readRoomFinish } from "../features/dungeon/readRoomFinish";
+import { useDungeonParty } from "../features/dungeon/useDungeonParty";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useExitDungeon } from "../features/dungeon/useExitDungeon";
 
@@ -39,11 +39,7 @@ export default function OpeningRoomPage({
   const exit = useExitDungeon(userName, gameName);
   const run = useDungeonRun(userName, gameName);
   const actions = useOpeningActions(userName, gameName);
-  const party = useOpeningParty(userName, gameName);
-
-  // 本间之后没有房间了（只剩开场房的那种副本也一样）：结束本间 = 离开副本回家园
-  // （服务端 advance_stage 在这种情况下必然拒绝："副本已全部通关"）
-  const finishesRun = run.data !== undefined && readNextRoom(run.data.dungeon) === null;
+  const party = useDungeonParty(userName, gameName);
 
   // 自动初始化只对「本房间」触发一次：ref 记住已触发过的房间标识——StrictMode 下 effect 跑两次、
   // 或轮询导致重渲染都不会重复发任务；失败后不自动重试，改由标题行那颗图标手动重试。
@@ -61,23 +57,13 @@ export default function OpeningRoomPage({
   // 副本内一律 replace：没有"后退"，只有前进与放弃离开（见 DungeonMapPanel）
   const toMap = () => navigate(`/game/${userName}/${gameName}/dungeon/map`, { replace: true });
 
-  /**
-   * 「结束本间」结束之后去哪儿——**同一份描述供标题行那颗图标与正文那张卡共用**
-   * （它们本来就是同一件事，不该各写一套）。
-   * - 还有下一间：送到**房间之间**（地图），前进那一步在那边点（唯一能改变队伍位置的地方）；
-   * - 本间之后没有房间了：直接离开副本回家园（服务端 `advance_stage` 在这种情况下必然拒绝）。
-   */
-  const finish = finishesRun
-    ? {
-        caption: "离开副本",
-        hint: "这是最后一间，结束后离开副本回家园。",
-        onActivate: () => exit.start(),
-      }
-    : {
-        caption: "回到地图",
-        hint: "本间结束后进不来。",
-        onActivate: toMap,
-      };
+  // 「结束本间」之后去哪儿（还有下一间 → 地图；最后一间 → 直接离开副本）：去向与措辞与战斗房
+  // 共用一份（`readRoomFinish`），这里只接上本页的动作。开场房不会"打输"，所以 `defeated` 恒为假。
+  const finishPlan = readRoomFinish(run.data, false);
+  const finish = {
+    ...finishPlan,
+    onActivate: finishPlan.leavesRun ? () => exit.start() : toMap,
+  };
 
   // 还有人没领奖励 → 「结束本间」也该是提醒色：那一步一按，没领的卡就永久失去了
   const unclaimed = party.party.some(hasUnclaimedRewards);

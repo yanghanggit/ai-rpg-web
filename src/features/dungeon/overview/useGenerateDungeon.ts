@@ -5,9 +5,9 @@
  * （后端注释也写明「请通过会话消息查询结果」）——等待与失效交给 `src/api/useJobAction.ts`
  * （见 docs/api-layer.md 六）。
  */
-import { client, unwrap } from "../../api/client";
-import { useJobAction } from "../../api/useJobAction";
-import { invalidateDungeons } from "./invalidateDungeons";
+import { client, unwrap } from "../../../api/client";
+import { useJobAction } from "../../../api/useJobAction";
+import { invalidateDungeons } from "../invalidateDungeons";
 
 export function useGenerateDungeon(userName: string, gameName: string) {
   const job = useJobAction({

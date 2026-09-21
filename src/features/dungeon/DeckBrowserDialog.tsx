@@ -2,7 +2,7 @@ import { useState } from "react";
 import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
 import DeckDialog from "./DeckDialog";
-import { type OpeningPartyMember, useOpeningParty } from "./opening/useOpeningParty";
+import { type DungeonPartyMember, useDungeonParty } from "./useDungeonParty";
 
 /**
  * 玩家控制的角色排在第一位，其余保持后端给的顺序（`sort` 稳定，所以不会被重排）。
@@ -10,7 +10,7 @@ import { type OpeningPartyMember, useOpeningParty } from "./opening/useOpeningPa
  * 队伍顺序本应由后端固定（进副本时的名单顺序），但「第一个是玩家」是**界面要求**，
  * 不指望上游顺带保证，所以在这里显式排一次。
  */
-function orderPlayerFirst(members: OpeningPartyMember[]): OpeningPartyMember[] {
+function orderPlayerFirst(members: DungeonPartyMember[]): DungeonPartyMember[] {
   return [...members].sort((a, b) => Number(b.player) - Number(a.player));
 }
 
@@ -18,7 +18,7 @@ function orderPlayerFirst(members: OpeningPartyMember[]): OpeningPartyMember[] {
  * 「牌组」浏览浮窗：**一级**是本次副本的队伍名单（玩家排在第一位），点某一行叠出**二级**
  * `DeckDialog` 看该角色的牌组（再点卡则是 `DeckDialog` 自己管的三级卡牌详情）。
  *
- * 数据复用 `useOpeningParty`（进副本时固化的队伍快照 + 各成员的 `DeckComponent`），不新增接口；
+ * 数据复用 `useDungeonParty`（进副本时固化的队伍快照 + 各成员的 `DeckComponent`），不新增接口；
  * hook 只在本浮窗挂载时才发请求，所以房间页不会为了一个入口先把队伍拉下来。
  *
  * **两层都在本组件内管理**：二级开着时一级的 `onClose` 不响应，避免一次 ESC 连关两层
@@ -34,7 +34,7 @@ export default function DeckBrowserDialog({
   gameName: string;
   onClose: () => void;
 }) {
-  const party = useOpeningParty(userName, gameName);
+  const party = useDungeonParty(userName, gameName);
   /** 二级选中的角色名；`null` 表示只看一级名单。 */
   const [selected, setSelected] = useState<string | null>(null);
 

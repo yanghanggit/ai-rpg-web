@@ -12,9 +12,9 @@
  * （跳转到副本房间页），与 `lobby/useStartGame` 的用法一致。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { client, unwrap } from "../../api/client";
-import { invalidateHomeState } from "../home/invalidateHomeState";
-import { invalidateDungeons } from "./invalidateDungeons";
+import { client, unwrap } from "../../../api/client";
+import { invalidateHomeState } from "../../home/invalidateHomeState";
+import { invalidateDungeons } from "../invalidateDungeons";
 
 export function useEnterDungeon(userName: string, gameName: string) {
   const queryClient = useQueryClient();

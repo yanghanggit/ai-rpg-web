@@ -14,10 +14,10 @@
  * 只该有一份，复制第二份等于把「读 `ComponentSerialization.data`」这件事写错两次的机会翻倍
  * （单向依赖，items 不依赖 dungeon，不构成环）。见 docs/conventions.md 三。
  */
-import { $api } from "../../api/query";
-import { readItems } from "../items/readItems";
-import { readPartyMember } from "../roster/readPartyMember";
-import { usePartyRoster } from "../roster/usePartyRoster";
+import { $api } from "../../../api/query";
+import { readItems } from "../../items/readItems";
+import { readPartyMember } from "../../roster/readPartyMember";
+import { usePartyRoster } from "../../roster/usePartyRoster";
 
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
 

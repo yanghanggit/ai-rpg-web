@@ -9,8 +9,8 @@
  * 合成一个 hook 而不是六个，是因为它们共用后端**同一把玩家锁**：界面上一次只应放行一个动作，
  * 所以 `isBusy` 必须合起来看。
  *
- * 结算的「收取战利品」是**同步**接口（直接返回 message，没有 job），不属于这里；
- * 「进入下一关」复用 `useAdvanceStage`。
+ * 结算的「收取战利品」是**同步**接口（直接返回 message，没有 job），不属于这里。
+ * 推进（进入下一间）也不在这里：那是地图上的动作（`map/useAdvanceStage`）。
  */
 import type { QueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../../api/client";

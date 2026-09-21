@@ -1,6 +1,10 @@
 /**
- * 副本开场的**队伍状态**：每个成员的战斗属性（`CharacterStatsComponent`）、牌组（`DeckComponent`）
+ * **本次副本的队伍**：每个成员的战斗属性（`CharacterStatsComponent`）、牌组（`DeckComponent`）
  * 与奖励（`SpoilsComponent`）。
+ *
+ * 属于**副本**而不是"开场房"：队伍在进副本那一刻固化，开场房用它（角色卡上的属性 / `DECK N` /
+ * 奖励），标题行的「牌组」入口（`DeckBrowserDialog`）在任何一屏都用它——所以它留在顶层。
+ * 奖励只有开场房有（`SpoilsComponent` 只在开场房挂上），其余时候解析出来是 `null`。
  *
  * 两步取数（与 `useEnterPreview` 同一手法，不需要新接口）：
  * 1. group 端点按 `PartyMemberComponent` 拿到**副本内的队伍**——进副本那一刻固化，含玩家自己，
@@ -11,16 +15,16 @@
  * 奖励用 `null` 表示**尚未生成**（组件不存在），与「生成了但是空的」区分开——界面据此决定
  * 还能不能点「生成奖励」。
  */
-import { $api } from "../../../api/query";
-import type { Schemas } from "../../../api/types";
-import { readCards } from "../../cards/readCards";
-import type { Card } from "../../cards/types";
-import { hasComponent, readCharacterStats } from "../../entities/ecs";
+import { $api } from "../../api/query";
+import type { Schemas } from "../../api/types";
+import { readCards } from "../cards/readCards";
+import type { Card } from "../cards/types";
+import { hasComponent, readCharacterStats } from "../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
 
-export interface OpeningPartyMember {
+export interface DungeonPartyMember {
   name: string;
   /** 是不是玩家控制的角色（界面标「（你）」）。 */
   player: boolean;
@@ -31,9 +35,9 @@ export interface OpeningPartyMember {
   spoils: { candidateCards: Card[]; claimedCards: Card[] } | null;
 }
 
-export type OpeningParty = ReturnType<typeof useOpeningParty>;
+export type DungeonParty = ReturnType<typeof useDungeonParty>;
 
-export function useOpeningParty(userName: string, gameName: string) {
+export function useDungeonParty(userName: string, gameName: string) {
   const members = $api.useQuery(
     "get",
     GROUP_PATH,
@@ -61,7 +65,7 @@ export function useOpeningParty(userName: string, gameName: string) {
 
   // 保持队伍顺序（玩家在前、其余同名单），查不到的实体跳过
   const byName = new Map(details.data?.entities.map((entity) => [entity.name, entity]) ?? []);
-  const party: OpeningPartyMember[] = (members.data ?? []).flatMap((name) => {
+  const party: DungeonPartyMember[] = (members.data ?? []).flatMap((name) => {
     const entity = byName.get(name);
     if (entity === undefined) {
       return [];

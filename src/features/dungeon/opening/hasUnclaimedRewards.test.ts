@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Card } from "../../cards/types";
+import type { DungeonPartyMember } from "../useDungeonParty";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
-import type { OpeningPartyMember } from "./useOpeningParty";
 
 const card: Card = {
   uuid: "",
@@ -23,7 +23,7 @@ const card: Card = {
   source: "",
 };
 
-function member(claimedCards: Card[] | null, candidateCards: Card[] = [card]): OpeningPartyMember {
+function member(claimedCards: Card[] | null, candidateCards: Card[] = [card]): DungeonPartyMember {
   return {
     name: "角色.无名",
     player: true,

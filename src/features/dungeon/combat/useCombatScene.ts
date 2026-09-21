@@ -1,7 +1,7 @@
 /**
  * 战斗房间的「场景快照」：参战者名单 + 各人的战斗数据。
  *
- * 两步取数（与 `useOpeningParty` 同一手法，不需要新接口）：
+ * 两步取数（与 `useDungeonParty` 同一手法，不需要新接口）：
  * 1. group 端点按 `PartyMemberComponent` 拿到**副本内的队伍**（进副本时固化，含玩家）；
  * 2. 参战者名单 = 队伍名 + 当前房间场景里的怪物名（`room.stage.actors` 里 `type=Monster`）。
  *    一次 details 把全部组件取回，再交给 `readCombatant` 解析。

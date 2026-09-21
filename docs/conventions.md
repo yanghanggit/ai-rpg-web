@@ -32,13 +32,15 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   identity/ActorInfoDialog.tsx  identity/readActorInfo.ts  identity/useActorEntity.ts  identity/usePlayerActor.ts
   costume/StorageCostumeDialog.tsx  costume/useStorageCostumes.ts  costume/useCostumeAction.ts
   stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
-  dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
-  dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/useAdvanceStage.ts
-  dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/DeckDialog.tsx  dungeon/DeckBrowserDialog.tsx
-  dungeon/DungeonRoomList.tsx  dungeon/readNextRoom.ts
+  dungeon/DungeonInfoDialog.tsx  dungeon/DungeonRoomList.tsx  dungeon/readDungeonInfo.ts  dungeon/readNextRoom.ts
+  dungeon/readRoomGuards.ts  dungeon/readRoomFinish.ts
+  dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/DungeonRunGate.tsx  dungeon/DeckDialog.tsx  dungeon/DeckBrowserDialog.tsx
+  dungeon/useDungeonParty.ts  dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/invalidateDungeons.ts
+  dungeon/overview/DungeonPanel.tsx  overview/EnterDungeonDialog.tsx  overview/useDungeonList.ts  overview/useGenerateDungeon.ts
+  dungeon/overview/useEnterDungeon.ts  overview/useEnterPreview.ts
+  dungeon/map/DungeonMapPanel.tsx  map/useAdvanceStage.ts
   dungeon/opening/OpeningRoomPanel.tsx  opening/StageCard.tsx  opening/SpoilsDialog.tsx  opening/hasUnclaimedRewards.ts
-  dungeon/opening/useOpeningActions.ts  opening/useOpeningParty.ts
-  dungeon/map/DungeonMapPanel.tsx
+  dungeon/opening/useOpeningActions.ts
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatInitPanel.tsx  combat/CombatRoundStartPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
   dungeon/combat/CombatStatus.tsx  combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/combatPhase.ts
@@ -106,7 +108,8 @@ pages ──┬──▶ features ──┬──▶ components
 
 - 只允许**上层依赖下层**：`api/` 不得 import `features/` 或 `pages/`；`components/` 不得 import `features/` 或 `pages/`。
 - **`features/` 之间不互相依赖**。需要共享时：与契约有关 → 下沉 `api/`；纯展示 → 下沉 `components/`；确实是新领域 → 新建 `<domain>`。
-- **领域长到一定规模时，允许在领域内再分子目录。** 例：`features/dungeon/combat/` 收纳「战斗房间」这一**自包含切片**（阶段机 `combatPhase`、读取 `readCombat`、取数/动作 `useCombatScene`/`useCombatActions`、五个 Panel），与副本生命周期（进/退/生成/推进、开场房）分开维护。子目录仍是**同一个 domain**：`combat/` 里引用 `../useAdvanceStage`、`../invalidateDungeons` 属于**域内依赖**，不产生 feature→feature 边；`.tsx` 仍落在 `src/features/**`，命名规则不变。判据是「这块东西变了、别处不用动」，不是「文件太多」。（同理：副本进行中的三屏各自成目录——`map/`（地图）、`opening/`、`combat/`；两屏共用的东西（入口门 `DungeonRunGate`、共同框架 `RoomScaffold`、判据 `readRoomGuards`）留在 `dungeon/` 顶层。）
+- **领域长到一定规模时，允许在领域内再分子目录。** 例：`features/dungeon/combat/` 收纳「战斗房间」这一**自包含切片**（阶段机 `combatPhase`、读取 `readCombat`、取数/动作 `useCombatScene`/`useCombatActions`、五个 Panel），与副本生命周期（进/退/生成/推进、开场房）分开维护。子目录仍是**同一个 domain**：`combat/` 里引用 `../useDungeonParty`、`../invalidateDungeons` 属于**域内依赖**，不产生 feature→feature 边；`.tsx` 仍落在 `src/features/**`，命名规则不变。判据是「这块东西变了、别处不用动」，不是「文件太多」。
+- **副本领域就是按这条规则切的**：四张屏各自一个目录——`overview/`（备战）、`map/`（房间之间那一站）、`opening/`（开场房）、`combat/`（战斗房）；**顶层只留被两张以上屏（或共同框架）用到的东西**：入口门 `DungeonRunGate`、框架 `RoomScaffold`、它的三个入口浮窗（`RoomActionsDialog` / `DungeonInfoDialog` / `DeckBrowserDialog` + `DeckDialog`）、共用行组件 `DungeonRoomList`、共用取数（`useDungeonParty` / `useDungeonRun` / `useDungeonRoom` / `useExitDungeon`）、共用判据与失效（`readDungeonInfo` / `readNextRoom` / `readRoomGuards` / `invalidateDungeons`）。每个屏自己的动作 hook 跟着屏走（地图的 `useAdvanceStage` 在 `map/`、战斗的 `useCombatActions` 在 `combat/`、开场的 `useOpeningActions` 在 `opening/`）。
 - **唯一的例外：道具。** `features/items` 是「一件道具长什么样」的唯一实现——**解析**（`readItems` + `Item`）与**展示**（`ItemRow`，含名字 `×N`、中文类型 chip）都在那里，其它领域直接复用（现有使用者：`costume` 的穿/脱、`dungeon` 的出征点验），**不得另行解析、也不得另写一种样式**。理由：读 `ComponentSerialization.data` 是运行时逐字段校验，复制第二份等于把「字段名写错」的机会翻倍；展示分叉则会让同一种道具在两个浮窗里长得不一样。而且这是**单向**依赖（items 不反向依赖任何领域），不形成环。
 - **第二个共享基础领域：实体 / 组件。** `features/entities` 是「实体与组件载荷怎么读」的唯一实现——通用访问（`ecs.ts`：`getComponent` / `hasComponent` / 字段读取 `readString|readNumber|readBoolean`）与跨领域共用的类型化读取器（`readCharacterStats`）都集中在那里；查询失效口径（`invalidateEntities.ts`）也已在此。其它领域直接复用（现有使用者：`identity` / `stage` / `dungeon` / `cards` / `items` / `blueprint` / `costume` / `home`），**不得各自再写 `isRecord` / `findComponent` / `readStats`**。理由同上：`ComponentSerialization.data` 是 `Dict[str, Any]`，逐字段校验的副本越多，字段名写错的机会越多。依赖同样是**单向**的（entities 不反向依赖任何领域），不形成环。领域专属的组件读取器（手牌 / 牌堆 / 时装…）仍留在各自领域，不进 `ecs.ts`。
 - **第三个共享领域：队伍名单。** `features/roster` 是「队伍名单 / 同伴编成」的唯一实现——名单读取（`readPartyRoster` / `usePartyRoster`）、成员出征信息（`readPartyMember`）、候选与增删（`useRosterCandidates` / `useRosterAction` / `invalidateRoster`）、面板（`RosterPanel`）都在那里。副本的出征点验（`dungeon/useEnterPreview`）直接复用其名单与成员读取，**单向**（roster 只依赖 `api` / `components` / `entities`，不反向依赖任何领域），不形成环。

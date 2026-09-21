@@ -1,4 +1,4 @@
-import { displayName } from "../../components/displayName";
+import { displayName } from "../../../components/displayName";
 import { useDungeonList } from "./useDungeonList";
 
 /**

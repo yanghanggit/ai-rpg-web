@@ -5,8 +5,8 @@ import { displayName } from "../../../components/displayName";
 import DungeonRoomList, { type DungeonRoomRow } from "../DungeonRoomList";
 import { readDungeonInfo } from "../readDungeonInfo";
 import { readRoomGuards } from "../readRoomGuards";
-import { useAdvanceStage } from "../useAdvanceStage";
 import { useDungeonRun } from "../useDungeonRun";
+import { useAdvanceStage } from "./useAdvanceStage";
 
 /**
  * 副本地图（正文；整页是 `pages/DungeonMapPage`）——**房间之间那一站**。

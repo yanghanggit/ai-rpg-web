@@ -1,4 +1,4 @@
-import type { OpeningPartyMember } from "./useOpeningParty";
+import type { DungeonPartyMember } from "../useDungeonParty";
 
 /**
  * 这个成员还有候选卡没领（`SpoilsComponent` 在、候选还有、且一张都没领）。
@@ -10,7 +10,7 @@ import type { OpeningPartyMember } from "./useOpeningParty";
  * 两处都只是**提醒**：服务端把领卡硬绑在"当前房间还是这间开场房"，所以没领就是失去——
  * 这是设计要的惩罚，界面绝不阻止（见 `OpeningRoomPanel` 的单向门说明）。
  */
-export function hasUnclaimedRewards(member: OpeningPartyMember): boolean {
+export function hasUnclaimedRewards(member: DungeonPartyMember): boolean {
   return (
     member.spoils !== null &&
     member.spoils.candidateCards.length > 0 &&

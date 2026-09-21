@@ -6,11 +6,11 @@ import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import StageInfoDialog from "../../stage/StageInfoDialog";
 import { useStageEntity } from "../../stage/useStageEntity";
+import type { DungeonParty, DungeonPartyMember } from "../useDungeonParty";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
 import StageCard, { type StageCardState } from "./StageCard";
 import type { OpeningActions } from "./useOpeningActions";
-import type { OpeningParty, OpeningPartyMember } from "./useOpeningParty";
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
  *
@@ -25,7 +25,7 @@ import type { OpeningParty, OpeningPartyMember } from "./useOpeningParty";
  *   本成员的奖励入口，**三态**：生成奖励 → 获取奖励 → 查看奖励（见下）。卡片的形状与牌组 /
  *   奖励里的**卡面同一套**（窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
  *   **卡上不再有「查看牌组」**：牌组已由标题行的「牌组」入口统一提供（`RoomScaffold`，同一份
- *   `useOpeningParty`），不在房间里再开一个口子——两个入口会各自演化出两份卡面。
+ *   `useDungeonParty`），不在房间里再开一个口子——两个入口会各自演化出两份卡面。
  *
  * **卡片是这一屏的基调**：横置的场景卡（横 = 场景 / 进度）、旁边一张横置的「回到地图」卡，
  * 下面一排竖置的角色卡（竖 = 人）。
@@ -73,7 +73,7 @@ export default function OpeningRoomPanel({
   /** 本间的动作（页面持有唯一实例后传下来）：角色卡上的奖励按钮用它。 */
   actions: OpeningActions;
   /** 本次副本固化的队伍与奖励（页面取一次传下来）：角色卡的内容。 */
-  party: OpeningParty;
+  party: DungeonParty;
   /** 本间的结束动作（回地图 / 离开副本）：与标题行那颗 → 同一件事，这张卡只是更显眼。 */
   finish: { caption: string; hint: string; onActivate: () => void };
 }) {
@@ -112,7 +112,7 @@ export default function OpeningRoomPanel({
               : "（暂无环境描写）";
 
   /** 某张角色卡上那颗按钮现在该写什么：生成奖励 → 获取奖励 → 查看奖励。 */
-  function spoilsLabel(member: OpeningPartyMember): string {
+  function spoilsLabel(member: DungeonPartyMember): string {
     if (member.spoils === null) {
       return actions.spoils.isBusy ? "生成中…" : "生成奖励";
     }

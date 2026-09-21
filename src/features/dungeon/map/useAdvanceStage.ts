@@ -14,9 +14,9 @@
  * 返回原生 mutation：调用方用 `mutate(undefined, { onSuccess })` 接自己的后续动作（换屏）。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { client, unwrap } from "../../api/client";
-import { invalidateEntitiesAndMessages } from "../entities/invalidateEntities";
-import { refetchDungeons } from "./invalidateDungeons";
+import { client, unwrap } from "../../../api/client";
+import { invalidateEntitiesAndMessages } from "../../entities/invalidateEntities";
+import { refetchDungeons } from "../invalidateDungeons";
 
 export function useAdvanceStage(userName: string, gameName: string) {
   const queryClient = useQueryClient();
