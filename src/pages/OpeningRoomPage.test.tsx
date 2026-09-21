@@ -292,12 +292,12 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 环境叙述固定区始终在（正文由 EnvironmentComponent 的 narrative 提供）
-    const narrative = await screen.findByRole("region", { name: "环境叙述" });
-    expect(await within(narrative).findByText(/义庄前院 的环境叙述/)).toBeInTheDocument();
+    // 初始化失败写在场景卡里：卡片本身变成本间的主行动（点整张卡重试）
+    const stage = await screen.findByRole("region", { name: "场景描述" });
+    const stageCard = within(stage).getByRole("button", { name: "场景描述：重试初始化开场" });
+    expect(stageCard).toHaveTextContent("初始化失败");
 
     // 自动初始化只发一次；失败后不自动重试
-    expect(await screen.findByText(/开场动作失败/)).toBeInTheDocument();
     expect(initSpy).toHaveBeenCalledTimes(1);
 
     // 失败 → 标题行那颗 ↻ 变成红色错误色，名字是「重试初始化开场」（可点）
@@ -306,7 +306,7 @@ describe("副本房间 · 开场房间", () => {
     expect(retry).toHaveClass("icon-button--err");
 
     // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
-    expect(screen.getByRole("button", { name: "生成奖励" })).toBeDisabled();
+    expect(await screen.findByRole("button", { name: "生成奖励" })).toBeDisabled();
 
     // 未初始化 → 服务端不允许推进 / 退出，所以本间的结束动作根本不出现，退出入口禁用并说明原因
     expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
@@ -319,9 +319,38 @@ describe("副本房间 · 开场房间", () => {
     expect(within(menu).getByRole("button", { name: "离开副本" })).toBeDisabled();
     fireEvent.click(within(menu).getByRole("button", { name: "关闭" }));
 
-    // 手动重试会再发一次初始化
-    fireEvent.click(retry);
+    // 点场景卡重试（与标题行那颗 ↻ 同一件事）
+    fireEvent.click(stageCard);
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(2));
+
+    // 标题行那颗是兜底：同样能重试
+    fireEvent.click(retry);
+    await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(3));
+  });
+
+  it("初始化完成后：场景卡上是环境叙述，点卡看全文；右侧「回到地图」卡就是本间的下一步", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒村义庄");
+    renderOpening();
+    await waitForInit();
+
+    // 初始化中之后：卡面换成环境叙述（超出三行在卡上省略，全文在浮窗里）
+    const stage = screen.getByRole("region", { name: "场景描述" });
+    const card = within(stage).getByRole("button", { name: "场景描述：查看场景信息" });
+    expect(card).toHaveTextContent(/义庄前院 的环境叙述/);
+
+    // 点卡 → 场景信息浮窗：完整叙述 + 场景内角色；点角色即换成角色浮窗（同类切换不叠层）
+    fireEvent.click(card);
+    const dialog = await screen.findByRole("dialog", { name: "场景信息" });
+    expect(await within(dialog).findByText(/门轴涩住/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "无名" }));
+    expect(await screen.findByRole("dialog", { name: "角色信息" })).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "场景信息" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "关闭" }));
+
+    // 「回到地图」卡：与标题行那颗 → 同一件事（body 上这份更显眼、更好点）
+    fireEvent.click(within(stage).getByRole("button", { name: "结束开局准备（回到地图）" }));
+    expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
   });
 
   it("队伍区没有可见标题（卡上有名字就够），玩家卡片标「玩家」，不再有「3 选 1」提示", async () => {

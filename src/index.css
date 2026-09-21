@@ -966,18 +966,81 @@ li.dungeon-room--current {
 
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 
-/* 环境叙述：这一屏的正文开场白（房间名由页面标题给出）。
-   页面是宽幅页（队伍卡横排），但散文限宽——可读行长与全站文字页一致。
-   始终占位的固定区：加载中 / 空也保留高度，避免下方按钮与内容跳动。 */
-.opening-narrative {
-  max-width: 42rem;
-  min-height: 6.5rem;
+/* 场景行：**横置的场景卡**（固定大小）+ 右侧那张「回到地图」卡。
+   横置是刻意的：横 = 场景 / 进度，竖 = 人（下面的角色卡）。两张卡同高，并排成一行。 */
+.stage-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.9rem;
   margin: 1.5rem 0 0;
-  line-height: 1.75;
 }
 
-.opening-narrative p {
-  margin: 0;
+/* 场景卡：**固定大小**（换房间、初始化前后都不跳——原来靠 min-height 占位，现在由卡片尺寸保证），
+   所以叙述超出就三行省略，全文在浮窗里。骨架始终一样，只有正文随状态变。 */
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  width: min(100%, 26rem);
+  /* 高度跟宽度一起定死：卡片是这一屏的量尺，不能因为描述长短而变形 */
+  height: 9rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 12px;
+  text-align: left;
+}
+
+/* 卡面上的角色名：小一号的静默标签（与正文拉开层次，且不随状态变） */
+.stage-card-label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+/* 正文：三行省略；`-webkit-box` 是 line-clamp 的标准写法 */
+.stage-card-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  line-height: 1.6;
+}
+
+/* 初始化失败：原因用错误色（与页面上的错误行同一套颜色） */
+.stage-card--failed .stage-card-body {
+  color: var(--err);
+}
+
+/* 进行中：不可点（没什么可做的），但不用变灰——它只是还没轮到 */
+.stage-card--running {
+  opacity: 1;
+  cursor: default;
+}
+
+.stage-card--running .stage-card-body {
+  color: var(--muted);
+}
+
+/* 「回到地图」卡：形状上与场景卡同一族（横置、同高），里面就一个箭头 + 一行小字 */
+.stage-next {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 9.5rem;
+  min-height: 9rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+}
+
+.stage-next-arrow {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.stage-next-caption {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 /* 队伍的角色卡：**竖着的矩形卡牌**（与牌组 / 奖励里的卡面同一形状语言——窄而高，一行几张由

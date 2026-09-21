@@ -4,17 +4,21 @@ import type { Schemas } from "../../../api/types";
 import { displayName } from "../../../components/displayName";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
+import StageInfoDialog from "../../stage/StageInfoDialog";
 import { useStageEntity } from "../../stage/useStageEntity";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
+import StageCard, { type StageCardState } from "./StageCard";
 import type { OpeningActions } from "./useOpeningActions";
 import type { OpeningParty, OpeningPartyMember } from "./useOpeningParty";
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
  *
  * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 结束本间」：
- * - 场景环境叙述（当前场景的 `EnvironmentComponent`）：**始终占位**的固定区（加载中 / 空也保留
- *   高度，避免下方内容跳动）；
+ * - **场景卡**（横置、固定大小，`StageCard`）：环境叙述（当前场景的 `EnvironmentComponent`）。
+ *   初始化中显示「进行中…」、失败显示原因且**点整张卡重试**、好了就显示叙述且**点整张卡看全文**
+ *   （弹 `StageInfoDialog`）——与标题行那颗兜底图标同一套状态，只是卡片更宽、能写清楚；
+ * - 场景卡右边那张「回到地图」卡：本间的下一步（初始化完成后才出现）；
  * - **队伍**（**没有可见标题**：卡上写着名字，“队伍”是废话）：竖着的角色卡，一张挨一张横排
  *   （顺序即后端给的队伍顺序，玩家在前）——卡面是「名字 + 属性（HP/ATK/DEF）+ DECK 张数」，
  *   点卡上的名字开角色信息浮窗；卡底那颗按钮是
@@ -23,9 +27,12 @@ import type { OpeningParty, OpeningPartyMember } from "./useOpeningParty";
  *   **卡上不再有「查看牌组」**：牌组已由标题行的「牌组」入口统一提供（`RoomScaffold`，同一份
  *   `useOpeningParty`），不在房间里再开一个口子——两个入口会各自演化出两份卡面。
  *
- * **本层没有工具栏**：本间的主行动（初始化中 / 重试初始化 / 结束本间）在**标题行**
- * （`RoomScaffold` 的 `roomAction`，由页面算——那些动作的状态在页面上），这里只留「奖励」这类
- * **挂在成员身上**的动作。
+ * **卡片是这一屏的基调**：横置的场景卡（横 = 场景 / 进度）、旁边一张横置的「回到地图」卡，
+ * 下面一排竖置的角色卡（竖 = 人）。
+ *
+ * **本层没有工具栏**：本间的主行动（初始化中 / 重试初始化 / 结束本间）**主 body 与标题行各有一份**
+ * ——body 上是场景卡与「回到地图」卡（更好点、更好观察），标题行那颗（`RoomScaffold` 的
+ * `roomAction`，由页面算）是**兜底**：同一套动作在两个地方都有入口，不靠字形让人猜。
  *
  * **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务
  * （在页面里做，按房间标识做一次性 guard）；失败**不自动重试**，改由标题行那颗 ↻ 手动重试
@@ -40,7 +47,7 @@ import type { OpeningParty, OpeningPartyMember } from "./useOpeningParty";
  * （`OpeningRoomPage` 的 `RoomScaffold`），不在这一层重复。「进入下一间」属于地图
  * （`map/DungeonMapPanel`）：推进是整局副本的前进动作，不是某个房间的动作。
  *
- * 注意这一层的「叙事」二字指场景环境叙述（`opening-narrative` 段），与按钮打开的
+ * 注意这一层的「叙事」二字指场景环境叙述（现在写在场景卡里），与按钮打开的
  * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。
  *
  * **奖励渐进式披露**：不摊在页面上，角色卡上只留那一颗三态按钮，点开才展开候选卡。「挑选」
@@ -58,6 +65,7 @@ export default function OpeningRoomPanel({
   room,
   actions,
   party,
+  onFinishRoom,
 }: {
   userName: string;
   gameName: string;
@@ -66,9 +74,13 @@ export default function OpeningRoomPanel({
   actions: OpeningActions;
   /** 本次副本固化的队伍与奖励（页面取一次传下来）：角色卡的内容。 */
   party: OpeningParty;
+  /** 本间的结束动作（回地图）：与标题行那颗 → 同一件事，这张「回到地图」卡更显眼。 */
+  onFinishRoom: () => void;
 }) {
   const stage = useStageEntity(userName, gameName, room.stage.name);
 
+  // 正在看场景全文（非空即打开场景信息浮窗）
+  const [isStageOpen, setIsStageOpen] = useState(false);
   // 正在看奖励的成员（原始名）；非空即打开奖励浮窗
   const [spoilsMember, setSpoilsMember] = useState<string | null>(null);
   // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
@@ -79,8 +91,25 @@ export default function OpeningRoomPanel({
 
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 
-  // 页面级动作失败的原因（初始化 / 生成奖励）；领卡失败在奖励浮窗内显示
-  const actionError = actions.init.error ?? actions.spoils.error;
+  // 场景卡的三态：未初始化 = 还在跑 / 跑失败；初始化完成 = 叙述可看（全文点开）
+  const stageState: StageCardState = !room.initialized
+    ? actions.init.error === null
+      ? "running"
+      : "failed"
+    : "ready";
+  // 卡面正文：三种状态共用同一条位置（卡片骨架不变形）；叙述可能已生成但还没取回来
+  const stageBody =
+    stageState === "failed"
+      ? `初始化失败：${actions.init.error}`
+      : stageState === "running"
+        ? "进行中…"
+        : narrative !== null
+          ? narrative
+          : stage.isError
+            ? `无法获取环境叙述：${describeApiError(stage.error)}`
+            : stage.isPending
+              ? "加载中…"
+              : "（暂无环境描写）";
 
   /** 某张角色卡上那颗按钮现在该写什么：生成奖励 → 获取奖励 → 查看奖励。 */
   function spoilsLabel(member: OpeningPartyMember): string {
@@ -92,22 +121,40 @@ export default function OpeningRoomPanel({
 
   return (
     <>
-      {/* 环境叙述固定区：始终占位（加载中 / 空也保留高度），避免下方内容跳动 */}
-      <section className="opening-narrative" aria-label="环境叙述">
-        {stage.isPending ? <p className="muted">加载中…</p> : null}
-        {stage.isError ? (
-          <p className="error">无法获取环境叙述：{describeApiError(stage.error)}</p>
+      {/* 场景行：**横置**的场景卡（固定大小，叙述超出三行就省略）+ 右侧「回到地图」卡。
+          这两张卡（横 = 场景 / 进度）与下面竖置的角色卡（竖 = 人）构成这一屏的卡片基调。
+          卡上的状态与标题行那颗兜底图标同源：初始化中 → 失败可点重试 → 就绪可点看全文。 */}
+      <section className="stage-row" aria-label="场景描述">
+        <StageCard
+          state={stageState}
+          body={stageBody}
+          onActivate={
+            stageState === "failed" ? () => actions.init.start() : () => setIsStageOpen(true)
+          }
+        />
+
+        {/* 初始化完成后才出现：本间的下一步（回地图）。与标题行那颗 → 是同一件事，
+            这里更显眼也更好点，那颗是兜底。 */}
+        {room.initialized ? (
+          <button
+            type="button"
+            className="stage-next"
+            aria-label="结束开局准备（回到地图）"
+            title="结束开局准备（回到地图）—— 本间结束后进不来。"
+            onClick={onFinishRoom}
+          >
+            <span className="stage-next-arrow" aria-hidden="true">
+              →
+            </span>
+            <span className="stage-next-caption">回到地图</span>
+          </button>
         ) : null}
-        {stage.isSuccess ? (
-          narrative === null ? (
-            <p className="muted">（暂无环境叙述）</p>
-          ) : (
-            <p>{narrative}</p>
-          )
+
+        {/* 初始化失败已写在场景卡里（那颗 ↻ 也变红），这里只说奖励那一支；领卡失败在奖励浮窗内显示 */}
+        {actions.spoils.error ? (
+          <p className="error">生成奖励失败：{actions.spoils.error}</p>
         ) : null}
       </section>
-
-      {actionError ? <p className="error">开场动作失败：{actionError}</p> : null}
 
       {/* 这一块**不超可见标题**（卡上写着名字，「队伍」是废话）——靠与上面环境叙述的距离分组，
           留个无障碍名让读屏器与测试还能指认它。 */}
@@ -185,6 +232,22 @@ export default function OpeningRoomPanel({
           ))}
         </div>
       </section>
+
+      {isStageOpen ? (
+        <StageInfoDialog
+          userName={userName}
+          gameName={gameName}
+          stageName={room.stage.name}
+          // 开场房里「场景内角色」就是这一局的队伍（进副本/推进时被搬进这间场景），不必另取一份
+          actorNames={party.party.map((member) => member.name)}
+          // 同类切换不叠层：点场景里的角色 → 关场景浮窗、换角色浮窗（与家园页同一套）
+          onSelectActor={(actorName) => {
+            setIsStageOpen(false);
+            setInfoActor(actorName);
+          }}
+          onClose={() => setIsStageOpen(false)}
+        />
+      ) : null}
 
       {spoilsMember === null || spoilsOf === null ? null : (
         <SpoilsDialog

@@ -35,7 +35,8 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   dungeon/DungeonPanel.tsx  dungeon/DungeonInfoDialog.tsx  dungeon/readDungeonInfo.ts  dungeon/useDungeonList.ts  dungeon/useGenerateDungeon.ts  dungeon/invalidateDungeons.ts
   dungeon/useDungeonRoom.ts  dungeon/useDungeonRun.ts  dungeon/useExitDungeon.ts  dungeon/useAdvanceStage.ts
   dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/DeckDialog.tsx  dungeon/DeckBrowserDialog.tsx
-  dungeon/opening/OpeningRoomPanel.tsx  opening/SpoilsDialog.tsx  opening/useOpeningActions.ts  opening/useOpeningParty.ts
+  dungeon/opening/OpeningRoomPanel.tsx  opening/StageCard.tsx  opening/SpoilsDialog.tsx  opening/hasUnclaimedRewards.ts
+  dungeon/opening/useOpeningActions.ts  opening/useOpeningParty.ts
   dungeon/map/DungeonMapPanel.tsx  map/AdvanceRoomDialog.tsx
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatInitPanel.tsx  combat/CombatRoundStartPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx

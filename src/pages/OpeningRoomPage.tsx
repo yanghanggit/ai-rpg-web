@@ -112,6 +112,7 @@ export default function OpeningRoomPage({
         room={room}
         party={party}
         actions={actions}
+        onFinishRoom={toMap}
       />
     </RoomScaffold>
   );
