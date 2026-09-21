@@ -844,15 +844,36 @@ ul.dungeon-cards > li {
   display: flex;
 }
 
-/* 副本详情：房间列表 */
-/* 房间清单：浮窗给到 lg 宽，所以按可用宽度自动分列（窄浮窗自动退回单列），
-   宽面板不留一大片空；列表不显示序号（display:grid 会去掉 ::marker），左缩进保留作层级 */
+/* 房间清单：「副本信息」浮窗与副本地图**共用同一种"行"**——同一份 `readDungeonInfo` 数据，
+   两处形状一致（序号 + 房间名 + 徐标 + 敌人），地图只是多一层"当前所在"的描边与动作。
+   **一列一间、从上往下读**：并排分列会让短内容右侧留一大片空白，也不像"一份清单"。 */
 ol.dungeon-rooms {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
-  gap: 0.9rem 2rem;
-  margin: 0.5rem 0 0;
-  padding-left: 1.4rem;
+  gap: 0.6rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+li.dungeon-room {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+}
+
+/* 队伍所在的那一间：描边加重（「副本信息」浮窗里对应绿色的「当前所在」徐标） */
+li.dungeon-room--current {
+  border-color: var(--fg);
+}
+
+/* 序号是清单上的刻度，用等宽字体对齐 */
+.dungeon-room-index {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
 }
 
 .dungeon-room-head {
@@ -875,35 +896,8 @@ ol.dungeon-rooms {
 
 /* 地图 = 一条纵线：副本本身是**线性**的（模型就是 rooms[] + 一个 current_room_index，
    没有分叉、没有边），所以刻意不做分叉图，免得让玩家以为能选路。
-   节点只读展示「已完成 / 你在这里 / 下一间 / 未到达」，动作由下面的工具栏给出。 */
-.map-nodes {
-  display: grid;
-  gap: 0.6rem;
-  margin: 0.9rem 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.map-node {
-  display: grid;
-  grid-template-columns: 1.75rem 1fr;
-  align-items: baseline;
-  gap: 0.25rem 0.75rem;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid var(--border);
-  border-radius: 0.5rem;
-}
-
-/* 队伍所在的那一间：描边加重（同一份数据在「副本信息」浮窗里是绿色「当前所在」徽标） */
-.map-node--current {
-  border-color: var(--fg);
-}
-
-/* 序号是地图上的里程碑刻度，用等宽字体对齐 */
-.map-node-index {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--muted);
-}
+   节点只读展示「已完成 / 你在这里 / 下一间 / 未到达」，动作由下面的工具栏给出。
+   行本身的形状（`ol.dungeon-rooms` / `li.dungeon-room`）与「副本信息」浮窗共用，见上。 */
 
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 
@@ -918,6 +912,26 @@ ol.dungeon-rooms {
 }
 
 .opening-narrative p {
+  margin: 0;
+}
+
+/* 队伍的角色卡：**竖着的矩形卡牌**（与牌组 / 奖励里的卡面同一形状语言——窄而高，一行几张由
+   容器宽度决定）。`.cards` 本身是通排的宽卡（家园页的副本卡），所以用修饰类只改队伍这一处。 */
+.cards--party {
+  grid-template-columns: repeat(auto-fill, minmax(min(12.5rem, 100%), 1fr));
+  gap: 1rem;
+}
+
+.cards--party .card {
+  min-height: 15rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 12px;
+}
+
+/* 卡面属性：一行一项（横排会被卡宽挤断，"DEF" 与数字拆两行更难看） */
+.actor-card-stats {
+  display: grid;
+  gap: 0.15rem;
   margin: 0;
 }
 

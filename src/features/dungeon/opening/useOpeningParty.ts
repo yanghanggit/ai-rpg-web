@@ -1,5 +1,6 @@
 /**
- * 副本开场的**队伍状态**：每个成员的牌组（`DeckComponent`）与奖励（`SpoilsComponent`）。
+ * 副本开场的**队伍状态**：每个成员的战斗属性（`CharacterStatsComponent`）、牌组（`DeckComponent`）
+ * 与奖励（`SpoilsComponent`）。
  *
  * 两步取数（与 `useEnterPreview` 同一手法，不需要新接口）：
  * 1. group 端点按 `PartyMemberComponent` 拿到**副本内的队伍**——进副本那一刻固化，含玩家自己，
@@ -11,9 +12,10 @@
  * 还能不能点「生成奖励」。
  */
 import { $api } from "../../../api/query";
+import type { Schemas } from "../../../api/types";
 import { readCards } from "../../cards/readCards";
 import type { Card } from "../../cards/types";
-import { hasComponent } from "../../entities/ecs";
+import { hasComponent, readCharacterStats } from "../../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
@@ -22,6 +24,8 @@ export interface OpeningPartyMember {
   name: string;
   /** 是不是玩家控制的角色（界面标「（你）」）。 */
   player: boolean;
+  /** 战斗属性（`CharacterStatsComponent`）；读不出来给 `null`，宁可少显示也不猜。 */
+  stats: Schemas["CharacterStats"] | null;
   deck: Card[];
   /** `null` = 尚未生成奖励（Spoils）；否则给出两个队列：待领取候选与已领取。 */
   spoils: { candidateCards: Card[]; claimedCards: Card[] } | null;
@@ -64,6 +68,7 @@ export function useOpeningParty(userName: string, gameName: string) {
       {
         name,
         player: hasComponent(entity, "PlayerComponent"),
+        stats: readCharacterStats(entity),
         deck: readCards(entity.components, "DeckComponent"),
         // `SpoilsComponent` 不存在 = 尚未生成奖励；存在则给出两个队列
         spoils: hasComponent(entity, "SpoilsComponent")

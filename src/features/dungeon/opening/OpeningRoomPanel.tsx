@@ -5,7 +5,6 @@ import { displayName } from "../../../components/displayName";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import { useStageEntity } from "../../stage/useStageEntity";
-import DeckDialog from "../DeckDialog";
 import SpoilsDialog from "./SpoilsDialog";
 import { useOpeningActions } from "./useOpeningActions";
 import { useOpeningParty } from "./useOpeningParty";
@@ -16,9 +15,12 @@ import { useOpeningParty } from "./useOpeningParty";
  * - 场景环境叙述（当前场景的 `EnvironmentComponent`）：**始终占位**的固定区（加载中 / 空也保留
  *   高度，避免下方按钮与内容跳动），放在动作按钮上方；
  * - 当前该做的动作按钮，最后一个是**本间的结束动作**（`onFinishRoom`，回地图）；
- * - **队伍**：横排的角色卡（顺序即后端给的队伍顺序，玩家在前），点卡上的名字开角色信息浮窗、
- *   卡上有「查看牌组」；有奖励时多一个「奖励」按钮，点开在浮窗里**竖排**候选卡挑选。
- *   横排卡片就是「队伍站位」的 UX 雏形。
+ * - **队伍**：竖着的角色卡，一张挨一张横排（顺序即后端给的队伍顺序，玩家在前）——卡面是
+ *   「名字 + 属性（HP/ATK/DEF）+ 牌组张数」，点卡上的名字开角色信息浮窗；有奖励时卡上多一个
+ *   「奖励」按钮，点开在浮窗里**竖排**候选卡挑选。卡片的形状与牌组 / 奖励里的**卡面同一套**
+ *   （窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
+ *   **卡上不再有「查看牌组」**：牌组已由标题行的「牌组」入口统一提供（`RoomScaffold`，同一份
+ *   `useOpeningParty`），不在房间里再开一个口子——两个入口会各自演化出两份卡面。
  *
  * **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务；
  * 失败不自动重试，把「初始化开场」按钮留给玩家手动重试（服务端要求先初始化才能推进 / 退出）。
@@ -59,8 +61,6 @@ export default function OpeningRoomPanel({
   const autoInitRoom = useRef<string | null>(null);
   const roomId = `${userName}\u0000${gameName}\u0000${room.stage.name}`;
 
-  // 正在看牌组的成员（原始名）；非空即打开牌组浮窗
-  const [deckMember, setDeckMember] = useState<string | null>(null);
   // 正在看奖励的成员（原始名）；非空即打开奖励浮窗
   const [spoilsMember, setSpoilsMember] = useState<string | null>(null);
   // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
@@ -85,7 +85,6 @@ export default function OpeningRoomPanel({
       member.spoils.candidateCards.length > 0 &&
       member.spoils.claimedCards.length === 0,
   );
-  const deckCards = party.party.find((member) => member.name === deckMember)?.deck ?? [];
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 
   // 页面级动作失败的原因（初始化 / 生成奖励）；领卡失败在奖励浮窗内显示
@@ -145,8 +144,8 @@ export default function OpeningRoomPanel({
 
         {party.isPending ? <p className="muted">加载中…</p> : null}
 
-        {/* 横排的角色卡：顺序沿用后端给的队伍顺序（玩家在前），就是「站位」的 UX 雏形 */}
-        <div className="cards">
+        {/* 竖着的角色卡一张挨一张横排：顺序沿用后端给的队伍顺序（玩家在前），就是「站位」的 UX 雏形 */}
+        <div className="cards cards--party">
           {party.party.map((member) => (
             <article key={member.name} className="card actor-card">
               <div className="card-head">
@@ -161,27 +160,32 @@ export default function OpeningRoomPanel({
                 {member.player ? <span className="badge">玩家</span> : null}
               </div>
 
+              {/* 属性是副本里最要紧的状态（血量会变），排在最前；一行一项，横排会被卡宽挤断 */}
+              {member.stats === null ? null : (
+                <p className="muted actor-card-stats">
+                  <span>
+                    HP {member.stats.hp}/{member.stats.max_hp}
+                  </span>
+                  <span>ATK {member.stats.attack}</span>
+                  <span>DEF {member.stats.defense}</span>
+                </p>
+              )}
+
               <p className="muted">牌组 {member.deck.length} 张</p>
 
-              <div className="card-actions">
-                <button type="button" onClick={() => setDeckMember(member.name)}>
-                  查看牌组
-                </button>
-                {/* 奖励候选不摊在页面上：有奖励时卡上多一个「奖励」按钮，点开浮窗看 */}
-                {member.spoils === null ? null : (
+              {/* 奖励候选不摊在页面上：有奖励时卡上多一个「奖励」按钮，点开浮窗看。
+                  牌组不在这里开口子——标题行的「牌组」入口已经能看全队（同一份 useOpeningParty）。 */}
+              {member.spoils === null ? null : (
+                <div className="card-actions">
                   <button type="button" onClick={() => setSpoilsMember(member.name)}>
                     奖励
                   </button>
-                )}
-              </div>
+                </div>
+              )}
             </article>
           ))}
         </div>
       </section>
-
-      {deckMember === null ? null : (
-        <DeckDialog memberName={deckMember} cards={deckCards} onClose={() => setDeckMember(null)} />
-      )}
 
       {spoilsMember === null || spoilsOf === null ? null : (
         <SpoilsDialog

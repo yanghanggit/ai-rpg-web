@@ -405,19 +405,16 @@ describe("副本房间 · 开场房间", () => {
     expect(within(dialog).queryByRole("button", { name: /时装/ })).not.toBeInTheDocument();
   });
 
-  it("牌组浮窗：点开看这个成员现在有哪些牌", async () => {
+  it("角色卡上不再有「查看牌组」：牌组入口只有标题行那一份", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    fireEvent.click(await screen.findByRole("button", { name: "查看牌组" }));
-
-    const dialog = await screen.findByRole("dialog", { name: "牌组" });
-    expect(within(dialog).getByText("无名 · 共 9 张")).toBeInTheDocument();
-    expect(within(dialog).getByText("剖棺")).toBeInTheDocument();
-    expect(within(dialog).getByText("常驻厌胜")).toBeInTheDocument();
-    // 不可出牌的卡在卡面上有标记
-    expect(within(dialog).getByText("不可出牌")).toBeInTheDocument();
+    // 卡上只留「牌组 N 张」这行状态（有奖励时才多一个「奖励」按钮）
+    expect(await screen.findByText("牌组 9 张")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "查看牌组" })).not.toBeInTheDocument();
+    // 同一份数据仍然看得到：入口上提到标题行（一级名单 → 二级卡面，分开用例覆盖）
+    expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
   });
 
   it("叙事入口只有一份，在「副本操作」菜单里（开场房间体内不再渲染）", async () => {

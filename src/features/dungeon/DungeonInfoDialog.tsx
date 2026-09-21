@@ -42,31 +42,37 @@ export default function DungeonInfoDialog({
       </dl>
 
       <h3>房间</h3>
+      {/* 一列一间、从上往下读；行形状与副本地图共用（序号 + 房间名 + 徐标 + 敌人） */}
       <ol className="dungeon-rooms">
-        {info.rooms.map((room) => (
-          <li key={room.stageName}>
-            <div className="dungeon-room-head">
-              <span className="mono">{displayName(room.stageName)}</span>
-              <span className={room.type === "combat" ? "badge badge--combat" : "badge"}>
-                {room.typeLabel}
-              </span>
-              {room.isCurrent ? <span className="badge badge--current">当前所在</span> : null}
+        {info.rooms.map((room, index) => (
+          <li key={room.stageName} className="dungeon-room">
+            <span className="dungeon-room-index" aria-hidden="true">
+              {index + 1}
+            </span>
+            <div>
+              <div className="dungeon-room-head">
+                <span className="mono">{displayName(room.stageName)}</span>
+                <span className={room.type === "combat" ? "badge badge--combat" : "badge"}>
+                  {room.typeLabel}
+                </span>
+                {room.isCurrent ? <span className="badge badge--current">当前所在</span> : null}
+              </div>
+              {room.monsters.length === 0 ? (
+                <p className="muted">（无敌人）</p>
+              ) : (
+                <ul className="plain dungeon-monsters">
+                  {room.monsters.map((monster) => (
+                    <li key={monster.name}>
+                      <span className="mono">{displayName(monster.name)}</span>{" "}
+                      <span className="muted">
+                        HP {monster.character_stats.max_hp} · ATK {monster.character_stats.attack} ·
+                        DEF {monster.character_stats.defense}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            {room.monsters.length === 0 ? (
-              <p className="muted">（无敌人）</p>
-            ) : (
-              <ul className="plain dungeon-monsters">
-                {room.monsters.map((monster) => (
-                  <li key={monster.name}>
-                    <span className="mono">{displayName(monster.name)}</span>{" "}
-                    <span className="muted">
-                      HP {monster.character_stats.max_hp} · ATK {monster.character_stats.attack} ·
-                      DEF {monster.character_stats.defense}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
           </li>
         ))}
       </ol>

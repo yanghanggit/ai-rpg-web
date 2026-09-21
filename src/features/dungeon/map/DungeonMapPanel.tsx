@@ -87,7 +87,7 @@ export default function DungeonMapPanel({
           <p className="error">无法获取副本进度：{describeApiError(run.error)}</p>
         ) : null}
 
-        <ol className="map-nodes">
+        <ol className="dungeon-rooms">
           {rooms.map((node, index) => {
             const current = index === currentIndex;
             const status = current
@@ -103,9 +103,9 @@ export default function DungeonMapPanel({
             return (
               <li
                 key={node.stageName}
-                className={current ? "map-node map-node--current" : "map-node"}
+                className={current ? "dungeon-room dungeon-room--current" : "dungeon-room"}
               >
-                <span className="map-node-index" aria-hidden="true">
+                <span className="dungeon-room-index" aria-hidden="true">
                   {index + 1}
                 </span>
                 <div>
