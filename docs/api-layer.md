@@ -99,6 +99,7 @@ JWT 后端已预留，接入时只需登录后写入 token。
 - `src/test/setup.ts` 统一 `listen / resetHandlers / close`，`onUnhandledRequest: "error"`。
 - handlers 与 fixtures 在 `src/mocks/`，**mock 模式（pnpm dev:mock）与测试共用同一套**，用例内用 `server.use(...)` 覆盖特定接口。
 - 用例内用 `server.use(http.get(api("/path"), () => HttpResponse.json(...)))` 注册当次 handler。
+- **路径守卫**：`src/mocks/handlers.ts` 的 handler 用的是真实路径字符串，不在 openapi-fetch 的类型检查范围内。`src/mocks/handlers.test.ts` 会把每个 handler 路径与 `pnpm gen:api` 生成的 `src/api/schemaPaths.ts`（契约路径清单）比对，后端改路径而 mock 忘同步时直接报错（参数写法 `{user_name}` / `:userName` 归一后比较）。
 - 断言请求体：在 handler 里 `await request.json()` 收集后断言。
 - 测试真实走 `globalThis.fetch`，因此客户端必须**延迟解析** `globalThis.fetch`（`client.ts` 已处理）。
 
@@ -115,7 +116,7 @@ server.use(
 
 | 场景 | 处理 |
 | ------ | ------ |
-| SSE（任务） | `src/api/sse.ts` 的 `streamSseData()` + `apiUrl()`（流式 `fetch`）。目前唯一的 SSE 端点是 `GET /api/tasks/v1/watch/{job_id}`；会话消息走上面的增量轮询 |
+| SSE（任务） | `src/api/sse.ts` 的 `streamSseData()` + `apiUrl()`（流式 `fetch`）。路径用 `client.ts` 的 `fillPath()` 填充（模板必须是 `keyof paths`，端点写错编译期报错）。目前唯一的 SSE 端点是 `GET /api/tasks/v1/watch/{job_id}`；会话消息走上面的增量轮询 |
 | 后端静态图片 | 直接渲染 URL（`apiUrl()` 拼接），不硬编码静态前缀 |
 | 任务（job 模式） | 绝大多数动作接口返回 `job_id` 而**非**新状态。**「触发 → 等终态 → 失效刷新」统一用 `src/api/useJobAction.ts`**（它内部用 `src/api/useTask.ts` 经 SSE `GET /api/tasks/v1/watch/{job_id}` 等终态，并把四种失败来源合成一条文案）；各领域只提供「怎么发请求」和「完事失效什么」。**禁止把拿到 `job_id` 当作"操作已完成"。** |
 | 任务查询的两种边界 | `job_id` 是整数（OpenAPI 里为 `integer`），非法输入由后端返回 422；未知 id 则推 `{"error":"task_not_found"}` 事件——客户端按连接错误（`streamError`）处理，并保留超时兜底。 |

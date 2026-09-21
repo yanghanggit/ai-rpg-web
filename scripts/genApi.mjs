@@ -108,3 +108,26 @@ execFileSync("openapi-typescript", [specPath, "-o", "src/api/schema.d.ts"], {
   stdio: "inherit",
 });
 console.log("Done: src/api/schema.d.ts");
+
+/**
+ * 额外生成一份「路径清单」运行时产物。
+ *
+ * schema.d.ts 只有类型，测试里没法在运行时枚举契约路径；而 MSW handler 用的是真实
+ * 路径字符串，不在 openapi-fetch 的类型检查范围内。后端改路径后，生产代码 typecheck
+ * 会报错，但 mock 里的字符串不会——二者可能悄悄漂移。这里把 spec.paths 的键落成
+ * `as const` 数组，供 `src/mocks/handlers.test.ts` 的守卫测试比对。
+ */
+const schemaPathsFile = "src/api/schemaPaths.ts";
+const pathKeys = Object.keys(spec.paths ?? {}).sort();
+writeFileSync(
+  schemaPathsFile,
+  [
+    "// 由 scripts/genApi.mjs 从后端 OpenAPI 生成，请勿手改。",
+    "// 开发期不提交（见 .gitignore）；后端契约变更后运行 `pnpm gen:api` 重新生成。",
+    "export const API_PATHS = [",
+    ...pathKeys.map((path) => `  ${JSON.stringify(path)},`),
+    "] as const;",
+    "",
+  ].join("\n"),
+);
+console.log(`Done: ${schemaPathsFile}`);

@@ -11,6 +11,7 @@ dist-ssr
 
 # 由 openapi-typescript 生成的类型（pnpm gen:api 重新生成）
 src/api/schema.d.ts
+src/api/schemaPaths.ts
 
 # 测试与覆盖率
 coverage

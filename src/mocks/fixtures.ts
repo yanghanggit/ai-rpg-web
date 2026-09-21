@@ -451,6 +451,7 @@ export const dungeonFixture: Schemas["Dungeon"] = {
   current_room_index: -1,
   setup_entities: false,
   assets: {},
+  archive_summary: "",
   rooms: [
     {
       type: "opening",
@@ -485,6 +486,7 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
   current_room_index: -1,
   setup_entities: false,
   assets: {},
+  archive_summary: "",
 };
 
 /**

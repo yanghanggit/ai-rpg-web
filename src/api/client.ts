@@ -81,3 +81,20 @@ export function unwrap<T>(result: { data?: T; error?: unknown; response: Respons
 export function apiUrl(path: string): string {
   return `${API_BASE_URL}${path}`;
 }
+
+/**
+ * 用参数填充 OpenAPI 路径模板（`/a/{id}/b` → `/a/1/b`）。
+ *
+ * 模板必须是生成契约里的路径字面量（`keyof paths`），端点写错或后端删掉该路径时
+ * 编译期就会报错——这是 SSE / 静态资源等不走 openapi-fetch、无法自动替换 path 参数的
+ * 场景下，避免手拼字符串脱离契约的兜底。
+ */
+export function fillPath(template: keyof paths, params: Record<string, string | number>): string {
+  return template.replace(/\{([^}]+)\}/g, (_match, key: string) => {
+    const value = params[key];
+    if (value === undefined) {
+      throw new Error(`缺少路径参数 "${key}"：${template}`);
+    }
+    return encodeURIComponent(String(value));
+  });
+}

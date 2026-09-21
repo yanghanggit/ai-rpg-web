@@ -23,6 +23,7 @@
  * - 任务状态直接用 procrastinate 的原始枚举，后端不做任何映射。
  */
 import { useEffect, useState } from "react";
+import { fillPath } from "./client";
 import { streamSseData } from "./sse";
 import type { Schemas } from "./types";
 
@@ -100,7 +101,11 @@ export function useTask(jobId: number | null | undefined, options: UseTaskOption
     let stopped = false;
 
     const consume = async () => {
-      const path = `/api/tasks/v1/watch/${jobId}?timeout_seconds=${timeoutSeconds}`;
+      // 路径锚定到生成契约：`fillPath` 的模板必须是 `keyof paths`，
+      // 后端改动 watch 端点时这里会在编译期失败，而不是运行时静默连错地址。
+      const path = `${fillPath("/api/tasks/v1/watch/{job_id}", {
+        job_id: jobId,
+      })}?timeout_seconds=${timeoutSeconds}`;
       for await (const payload of streamSseData(path, { signal: controller.signal })) {
         if (stopped) {
           return;

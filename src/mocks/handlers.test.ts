@@ -1,7 +1,10 @@
+import { HttpHandler } from "msw";
 import { describe, expect, it } from "vitest";
-import { client, unwrap } from "../api/client";
+import { API_BASE_URL, client, unwrap } from "../api/client";
+import { API_PATHS } from "../api/schemaPaths";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
 import { blueprintFixture } from "./fixtures";
+import { handlers } from "./handlers";
 
 const USER = "webdev";
 const GAME = "Game1";
@@ -85,5 +88,39 @@ describe("战斗房间接口（mock handlers）", () => {
     });
     // 没有战利品时后端 409
     expect(result.response.status).toBe(409);
+  });
+});
+
+/**
+ * 契约守卫：MSW handler 用的是真实路径字符串，不在 openapi-fetch 的类型检查范围内。
+ * 后端改了路径、`pnpm gen:api` 更新了 schema 后，生产代码会 typecheck 失败，但
+ * `handlers.ts` 里的字符串不会——`schemaPaths.ts` 就是为这道守卫生成的运行时路径清单。
+ *
+ * 参数写法两边不同，比对前先归一：契约用 `{user_name}`，MSW 用 `:userName`。
+ */
+function normalizePath(path: string): string {
+  return path.replace(/\{[^}]*\}/g, "{}").replace(/\/:[^/]+/g, "/{}");
+}
+
+/** handler 注册的完整 URL 去掉 base，回到契约里的相对路径。 */
+function handlerPath(handler: HttpHandler): string | null {
+  const { path } = handler.info;
+  if (typeof path !== "string") {
+    return null;
+  }
+  return path.startsWith(API_BASE_URL) ? path.slice(API_BASE_URL.length) : path;
+}
+
+describe("MSW handler 路径守卫", () => {
+  it("每个 handler 路径都存在于生成的 OpenAPI 契约中", () => {
+    const contract = new Set(API_PATHS.map(normalizePath));
+    const orphans = handlers
+      .flatMap((handler) => (handler instanceof HttpHandler ? [handler] : []))
+      .map(handlerPath)
+      .filter((path): path is string => path !== null)
+      .map(normalizePath)
+      .filter((path) => !contract.has(path));
+
+    expect(orphans).toEqual([]);
   });
 });
