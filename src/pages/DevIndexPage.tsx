@@ -14,7 +14,7 @@
  */
 const links = [
   { to: "/", label: "启动屏 LaunchPage" },
-  { to: "/entry", label: "玩家入口 EntryPage" },
+  { to: "/lobby", label: "玩家入口 LobbyPage" },
   { to: "/game/webdev/Game1/home", label: "家园概览 HomeOverviewPage" },
   { to: "/game/webdev/Game1/dungeon", label: "副本总览 DungeonOverviewPage" },
   {

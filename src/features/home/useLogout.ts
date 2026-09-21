@@ -25,7 +25,7 @@ export function useLogout(userName: string, gameName: string) {
       ),
     onSuccess: () => {
       queryClient.clear();
-      navigate("/entry", { replace: true });
+      navigate("/lobby", { replace: true });
     },
   });
 }

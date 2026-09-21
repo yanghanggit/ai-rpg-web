@@ -9,7 +9,7 @@
  * 所以失效口径用 `invalidateHomeState`（场景 + 叙事）+ `invalidateDungeons`（副本状态）。
  *
  * 返回的是原生 mutation：调用方（页面）用 `mutate(name, { onSuccess })` 接自己的后续动作
- * （跳转到副本房间页），与 `entry/useStartGame` 的用法一致。
+ * （跳转到副本房间页），与 `lobby/useStartGame` 的用法一致。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../api/client";

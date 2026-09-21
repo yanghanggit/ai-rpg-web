@@ -98,9 +98,9 @@ function detailsFor(label: string | RegExp): HTMLElement {
   return details;
 }
 
-describe("玩家入口页 /entry", () => {
+describe("玩家入口页 /lobby", () => {
   it("展示自动生成的玩家名、蓝图下拉，以及所选蓝图详情", async () => {
-    renderApp("/entry");
+    renderApp("/lobby");
 
     // 玩家名带日期时间，且不是输入框
     expect(await screen.findByText(/^player-\d{8}-\d{6}-[0-9a-f]{8}$/)).toBeInTheDocument();
@@ -122,7 +122,7 @@ describe("玩家入口页 /entry", () => {
   });
 
   it("蓝图详情标题带当前蓝图名；世界实体与两个道具容器默认折叠", async () => {
-    renderApp("/entry");
+    renderApp("/lobby");
 
     expect(await screen.findByRole("heading", { name: "蓝图详情：Game1" })).toBeInTheDocument();
 
@@ -135,7 +135,7 @@ describe("玩家入口页 /entry", () => {
   });
 
   it("物品显示类型标签、名字与数量", async () => {
-    renderApp("/entry");
+    renderApp("/lobby");
 
     expect(await screen.findByText(/^随身背包（2）/)).toBeInTheDocument();
     expect(screen.getByText(/^储物箱（1）/)).toBeInTheDocument();
@@ -158,7 +158,7 @@ describe("玩家入口页 /entry", () => {
       ),
     );
 
-    renderApp("/entry");
+    renderApp("/lobby");
     expect(await screen.findByRole("heading", { name: "蓝图详情：Game1" })).toBeInTheDocument();
     expect(screen.getByText("战役设定-Game1")).toBeInTheDocument();
 
@@ -201,7 +201,7 @@ describe("玩家入口页 /entry", () => {
       }),
     );
 
-    renderApp("/entry");
+    renderApp("/lobby");
     fireEvent.change(await screen.findByLabelText("游戏名"), { target: { value: "Game2" } });
     expect(await screen.findByText(/主角-Game2/)).toBeInTheDocument();
 
@@ -227,7 +227,7 @@ describe("玩家入口页 /entry", () => {
         HttpResponse.json({ detail: "boom" }, { status: 500 }),
       ),
     );
-    renderApp("/entry");
+    renderApp("/lobby");
 
     expect(await screen.findByText(/无法获取蓝图列表/)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "登录 → 新游戏" })).toBeDisabled();
@@ -243,7 +243,7 @@ describe("玩家入口页 /entry", () => {
       ),
     );
 
-    renderApp("/entry");
+    renderApp("/lobby");
     await screen.findByLabelText("游戏名");
     fireEvent.click(screen.getByRole("button", { name: "登录 → 新游戏" }));
 

@@ -23,10 +23,10 @@ src/api/                 # 基础设施：传输层与契约适配，无业务�
   schema.d.ts            #   生成物，只读
   client.ts  query.ts  types.ts  serverInfo.ts  sse.ts  useTask.ts  useJobAction.ts  describeApiError.ts
 src/pages/               # 路由级组件：`*Route`（绑定 URL 的入口）/ `*Page`（具体屏幕）
-  LaunchPage.tsx  EntryPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx
+  LaunchPage.tsx  LobbyPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx
   DungeonRoomRoute.tsx  OpeningRoomPage.tsx  CombatRoomPage.tsx  DevIndexPage.tsx
 src/features/<domain>/   # 领域组件、hook、纯函数
-  entry/useStartGame.ts  entry/generatePlayerName.ts
+  lobby/useStartGame.ts  lobby/generatePlayerName.ts
   blueprint/BlueprintDetails.tsx  blueprint/BlueprintInfoDialog.tsx  blueprint/useBlueprint.ts
   home/useSwitchStage.ts  home/findStageOfActor.ts  home/EntityBrowserDialog.tsx
   identity/ActorInfoDialog.tsx  identity/readActorInfo.ts  identity/useActorEntity.ts  identity/usePlayerActor.ts
@@ -75,9 +75,9 @@ src/main.tsx             # 入口
 组件归属看**变化原因**，不看"当前被谁引用"：
 
 - `BlueprintDetails` 处理 `Blueprint` / `Stage` / `Actor` → **蓝图结构**变它才变 → 属于 `blueprint`，不属于入口流程。
-- `useStartGame` 是"登录 → 开局"这个**流程** → **流程**变它才变 → 属于 `entry`。
+- `useStartGame` 是"登录 → 开局"这个**流程** → **流程**变它才变 → 属于 `lobby`。
 
-因此：**只被一个页面用 ≠ 属于那个页面。** 现在放 `entry` 只是因为还没出现第二个使用者（YAGNI）；一旦家园页/dungeon 页也要展示蓝图，就提升到 `src/features/blueprint/`，**不要复制**。
+因此：**只被一个页面用 ≠ 属于那个页面。** 现在放 `lobby` 只是因为还没出现第二个使用者（YAGNI）；一旦家园页/dungeon 页也要展示蓝图，就提升到 `src/features/blueprint/`，**不要复制**。
 
 ## 二、文件命名
 
@@ -125,7 +125,7 @@ pages ──┬──▶ features ──┬──▶ components
 - **最小支持宽度 = 1024px，唯一基线。** 这是本节所有断点的取值来源：媒体查询统一用 `@media (min-width: 1024px)`，不要出现别的断点数字。比 1024px 更窄的视口只保证「不横向溢出」，不保证排法好看。
 - 页面外层统一用 `.page`（窄栏、居中，宽屏不铺满）。需要横向空间的页面加 `.page--wide`，它在 `@media (min-width: 1024px)` 放宽到 1180px。
 - 多列一律交给 CSS Grid：`repeat(auto-fill, minmax(min(Npx, 100%), 1fr))`。`min(Npx, 100%)` 是**防横向溢出**的兜底（与手机兼容无关，任何宽度都保留），列数随可用宽度自动变化。**不要写固定列数**。
-- 需要桌面多列时用网格容器（如 `.entry-layout`、`.link-grid`），不要把内容写两遍。
+- 需要桌面多列时用网格容器（如 `.lobby-layout`、`.link-grid`），不要把内容写两遍。
 - 文字类页面保持窄栏（控制可读行长）；长值（URL、UUID）用 `overflow-wrap: anywhere` 防溢出。
 
 新增页面默认 `.page`；只有确实需要更多横向空间才加 `.page--wide`，并给出桌面多列排法。

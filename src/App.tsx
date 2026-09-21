@@ -3,9 +3,9 @@ import DevIndexPage from "./pages/DevIndexPage";
 import DungeonMapPage from "./pages/DungeonMapPage";
 import DungeonOverviewPage from "./pages/DungeonOverviewPage";
 import DungeonRoomRoute from "./pages/DungeonRoomRoute";
-import EntryPage from "./pages/EntryPage";
 import HomeOverviewPage from "./pages/HomeOverviewPage";
 import LaunchPage from "./pages/LaunchPage";
+import LobbyPage from "./pages/LobbyPage";
 
 /**
  * 路由表。页面组件放 src/pages/，领域逻辑放 src/features/。
@@ -22,7 +22,7 @@ import LaunchPage from "./pages/LaunchPage";
 
       <Routes>
         <Route path="/" element={<LaunchPage />} />
-        <Route path="/entry" element={<EntryPage />} />
+        <Route path="/lobby" element={<LobbyPage />} />
         <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
         <Route path="/game/:userName/:gameName/dungeon" element={<DungeonOverviewPage />} />
         {/* 副本进行中：**地图**是运行点（进入副本的落点、房间结束后的归处以反未来的重开定位），

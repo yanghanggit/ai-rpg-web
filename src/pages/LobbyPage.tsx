@@ -2,18 +2,18 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { $api } from "../api/query";
 import BlueprintDetails from "../features/blueprint/BlueprintDetails";
-import { generatePlayerName } from "../features/entry/generatePlayerName";
-import { useStartGame } from "../features/entry/useStartGame";
+import { generatePlayerName } from "../features/lobby/generatePlayerName";
+import { useStartGame } from "../features/lobby/useStartGame";
 
 /**
- * 玩家入口页。
+ * 游戏大厅页：进入游戏前的选择/准备（起名字、选蓝图开局）。
  *
  * - 玩家名：自动生成（带日期），当前不可编辑。
  * - 游戏名：从后端蓝图列表选择，不能手填——蓝图必须是服务器支持的。
  *
  * 这是占位形态：后续角色选择、读档等会替换掉这里的表单。
  */
-export default function EntryPage() {
+export default function LobbyPage() {
   const navigate = useNavigate();
   const [playerName] = useState(generatePlayerName);
 
@@ -34,7 +34,7 @@ export default function EntryPage() {
         <Link to="/">← 返回启动屏</Link>
       </p>
 
-      <div className="entry-layout">
+      <div className="lobby-layout">
         <div>
           <dl className="facts">
             <dt>玩家名</dt>

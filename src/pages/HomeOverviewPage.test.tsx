@@ -17,7 +17,7 @@ function renderHome() {
       <MemoryRouter initialEntries={["/game/webdev/Game1/home"]}>
         <Routes>
           <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
-          <Route path="/entry" element={<p>玩家入口页占位</p>} />
+          <Route path="/lobby" element={<p>玩家入口页占位</p>} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
