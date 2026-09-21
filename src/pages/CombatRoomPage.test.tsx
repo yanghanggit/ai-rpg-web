@@ -49,13 +49,15 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getAllByText("怪物")).toHaveLength(2);
   });
 
-  it("共同框架在战斗房间同样给出「牌组」入口（与齿轮平级）", async () => {
+  it("共同框架在战斗房间同样给出三个平级入口（副本操作 / 副本信息 / 牌组）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
     await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" });
-    fireEvent.click(screen.getByRole("button", { name: "牌组" }));
+    expect(screen.getByRole("button", { name: /副本操作/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "副本信息" })).toBeInTheDocument();
 
+    fireEvent.click(screen.getByRole("button", { name: "牌组" }));
     const list = await screen.findByRole("dialog", { name: "队伍牌组" });
     // 队友没入队时名单里只有玩家（牌组是点开才拉的，所以要等）
     expect(await within(list).findByRole("button", { name: /无名/ })).toHaveTextContent("玩家");

@@ -21,7 +21,7 @@ export default function DungeonInfoDialog({
   const info = readDungeonInfo(dungeon);
 
   return (
-    <Modal title="副本信息" meta={displayName(dungeon.name)} onClose={onClose}>
+    <Modal title="副本信息" meta={displayName(dungeon.name)} size="lg" onClose={onClose}>
       <p>{info.profile}</p>
 
       <dl className="facts">

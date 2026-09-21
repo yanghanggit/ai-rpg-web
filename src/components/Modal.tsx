@@ -21,8 +21,9 @@ export default function Modal({
   /** 标题右侧的补充信息，如「共 12 条」。 */
   meta?: string;
   /** 面板宽度变体；`sm` 给内容少的菜单类浮窗（避免右侧大片留白）；
-   *  `fit` 给内容宽度会变的浮窗（如牌组：卡少就窄，卡多就撑到 680px）。 */
-  size?: "default" | "sm" | "fit";
+   *  `fit` 给内容宽度会变的浮窗（如牌组：卡少就窄，卡多就撑到 680px）；
+   *  `lg` 给内容多的浮窗（如副本信息：整份房间与敌人清单）。 */
+  size?: "default" | "sm" | "fit" | "lg";
   onClose: () => void;
   children: ReactNode;
 }) {

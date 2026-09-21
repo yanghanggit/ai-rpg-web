@@ -281,6 +281,13 @@ ul.items li {
   transform: translateY(1px);
 }
 
+/* 黑旗作「副本信息」入口（地图上的当前位置 / 进度）：墨迹 25×32（48px），比 ⚙ 窄而高，
+   缩到 2.8rem 时高度与 ⚙ 同为 30px；墨迹在行盒里比 ⚙ 略靠上，所以上抬量小一点。 */
+.icon-button--info {
+  font-size: 2.8rem;
+  transform: translateY(-0.022em);
+}
+
 /* 有新叙事未看时齿轮变绿：与 .count-button--unread 同一套颜色 */
 .icon-button--unread {
   border-color: var(--ok);
@@ -422,6 +429,11 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
 .overlay-panel--fit {
   width: fit-content;
   max-width: min(100%, 680px);
+}
+
+/* 内容多的浮窗（副本信息：整份房间与敌人清单）：比默认宽一档，一屏读得下 */
+.overlay-panel--lg {
+  width: min(100%, 900px);
 }
 
 .overlay-head {
@@ -830,9 +842,12 @@ ul.dungeon-cards > li {
 }
 
 /* 副本详情：房间列表 */
+/* 房间清单：浮窗给到 lg 宽，所以按可用宽度自动分列（窄浮窗自动退回单列），
+   宽面板不留一大片空；列表不显示序号（display:grid 会去掉 ::marker），左缩进保留作层级 */
 ol.dungeon-rooms {
   display: grid;
-  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
+  gap: 0.9rem 2rem;
   margin: 0.5rem 0 0;
   padding-left: 1.4rem;
 }

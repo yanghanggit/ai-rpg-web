@@ -73,7 +73,7 @@ async function openSpoils(memberName: string) {
   return screen.findByRole("dialog", { name: "奖励" });
 }
 
-/** 打开「副本操作」菜单（副本信息 / 叙事 / 离开副本 三个动作都收在这一个入口里）。 */
+/** 打开「副本操作」菜单（叙事 / 离开副本 两个动作收在这一个入口里）。 */
 async function openActions() {
   fireEvent.click(await screen.findByRole("button", { name: /副本操作/ }));
   return screen.findByRole("dialog", { name: "副本操作" });
@@ -91,21 +91,25 @@ describe("副本房间 · 共同框架", () => {
     expect(screen.queryByText("开场")).not.toBeInTheDocument();
   });
 
-  it("标题右侧的「副本操作」齿轮入口；菜单里有三个动作，没有返回副本总览的入口", async () => {
+  it("标题行三个平级入口（副本操作 / 副本信息 / 牌组）；菜单里只剩叙事 / 离开副本", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
     await screen.findByRole("heading", { name: OPENING_HEADING });
-    // 三个动作不再直接摊在页面上
-    expect(screen.queryByRole("button", { name: "副本信息" })).not.toBeInTheDocument();
+    // 三个入口都在标题行上、彼此平级
+    expect(screen.getByRole("button", { name: /副本操作/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "副本信息" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
+    // 「离开副本」仍然不直接摊在页面上，只在菜单里
     expect(screen.queryByRole("button", { name: "离开副本" })).not.toBeInTheDocument();
 
     const menu = await openActions();
-    expect(within(menu).getByRole("button", { name: "副本信息" })).toBeInTheDocument();
     // 叙事入口在共同框架（不分房间类型），与家园页共用同一套数据/未读算法
     expect(within(menu).getByRole("button", { name: "叙事" })).toBeInTheDocument();
     expect(within(menu).getByRole("button", { name: "离开副本" })).toBeInTheDocument();
+    // 「副本信息」已提到标题行，不再是菜单里的一项
+    expect(within(menu).queryByRole("button", { name: "副本信息" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /返回副本总览/ })).not.toBeInTheDocument();
   });
 
@@ -122,13 +126,12 @@ describe("副本房间 · 共同框架", () => {
     expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
   });
 
-  it("副本信息：展示副本进度，并标出队伍当前所在的房间", async () => {
+  it("副本信息：从标题行直接打开，展示副本进度，并标出队伍当前所在的房间", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    const menu = await openActions();
-    const infoEntry = within(menu).getByRole("button", { name: "副本信息" });
+    const infoEntry = await screen.findByRole("button", { name: "副本信息" });
     // 「副本信息」要等 `/state` 回来才有内容，在此之前是禁用的
     await waitFor(() => expect(infoEntry).toBeEnabled());
     fireEvent.click(infoEntry);
