@@ -4,6 +4,7 @@
   --muted: #6b7280;
   --ok: #16a34a;
   --err: #dc2626;
+  --warn: #b45309;
   --border: #e5e7eb;
   --bg: #ffffff;
 }
@@ -14,6 +15,7 @@
     --muted: #9ca3af;
     --ok: #4ade80;
     --err: #f87171;
+    --warn: #fbbf24;
     --border: #374151;
     --bg: #0b0f14;
   }
@@ -233,6 +235,22 @@ ul.items li {
   align-items: center;
   gap: 0.6rem;
   margin: 1.75rem 0 0.5rem;
+}
+
+/* 「还有东西没拿，而且本间一结束就永久失去」：按钮换成提醒色 + 一个「!」。
+   比这件事单占一行页面提示省地方，而且能精确指到**哪一个**动作上；
+   具体后果（“结束本间后就无法再…了”）放在按钮的 title 里。
+   `--ok` 留给“有新东西”（未读叙事）；这里是“有期限的机会”，所以另起一个色。 */
+.button--pending {
+  border-color: var(--warn);
+  color: var(--warn);
+  font-weight: 600;
+}
+
+/* 「!」是装饰：不进无障碍名字（屏幕阅读器只读按钮本身的动作名） */
+.button-mark {
+  margin-left: 0.4rem;
+  font-weight: 700;
 }
 
 /* 叙事未读通知按钮 */

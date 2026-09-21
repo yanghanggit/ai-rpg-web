@@ -71,10 +71,18 @@ export default function CombatPostPanel({
       <div className="toolbar">
         <button
           type="button"
+          className={loot.length === 0 ? undefined : "button--pending"}
           disabled={collect.isPending || loot.length === 0}
+          // 后果放在 title 里：不再为它单占一行页面提示
+          title={loot.length === 0 ? undefined : "结束本间后就无法再收了。"}
           onClick={() => collect.mutate()}
         >
           {collect.isPending ? "收取中…" : `收取战利品（${loot.length}）`}
+          {loot.length === 0 ? null : (
+            <span className="button-mark" aria-hidden="true">
+              !
+            </span>
+          )}
         </button>
         {/* 本间的结束动作：回地图。之后本间进不来，没收拾的就没机会了 */}
         <button type="button" onClick={onFinishRoom}>
@@ -82,9 +90,6 @@ export default function CombatPostPanel({
         </button>
       </div>
       {collectError ? <p className="error">收取战利品失败：{collectError}</p> : null}
-      {loot.length === 0 ? null : (
-        <p className="muted">还有战利品未收取：结束本间后就无法再收了。</p>
-      )}
 
       <section>
         <div className="section-head">

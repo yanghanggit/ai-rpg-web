@@ -162,13 +162,15 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
   });
 
-  it("结算：未收的战利品只提示不阻止（没收拾就没机会了）", async () => {
+  it("结算：未收的战利品只提示不阻止（「!」长在收取按钮上，后果在 title 里）", async () => {
     enterMockDungeon("副本.荒村义庄");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
 
-    expect(await screen.findByText(/还有战利品未收取/)).toBeInTheDocument();
+    const collect = await screen.findByRole("button", { name: "收取战利品（1）" });
+    expect(collect).toHaveClass("button--pending");
+    expect(collect).toHaveAttribute("title", "结束本间后就无法再收了。");
     expect(screen.getByRole("button", { name: "结束本次战斗" })).toBeEnabled();
   });
 });

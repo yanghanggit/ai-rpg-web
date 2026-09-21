@@ -485,13 +485,16 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.getByRole("button", { name: "前往下一间" })).toBeEnabled();
   });
 
-  it("未领的奖励只提示不阻止：结束本间前写明「结束后无法再领取」（惩罚是设计要的）", async () => {
+  it("未领的奖励只提示不阻止：「!」长在那张卡的按钮上，后果写在 title 里（惩罚是设计要的）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
     await generateSpoils();
 
-    expect(screen.getByText(/还有候选卡未领/)).toBeInTheDocument();
+    // 提醒不另占一行页面提示，而是做在按钮上（提醒色 + 「!」，可看到的文案仍是动作名）
+    const reward = screen.getByRole("button", { name: "获取奖励" });
+    expect(reward).toHaveClass("button--pending");
+    expect(reward).toHaveAttribute("title", "还有候选卡未领：结束本间后就无法再领取了。");
     // 结束动作照旧可用（不套二次确认）
     expect(screen.getByRole("button", { name: "结束开局准备" })).toBeEnabled();
   });

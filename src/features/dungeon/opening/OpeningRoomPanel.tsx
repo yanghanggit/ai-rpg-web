@@ -86,16 +86,19 @@ export default function OpeningRoomPanel({
   const narrative =
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
 
-  const spoilsPending = party.party.some(
-    (member) =>
-      member.spoils !== null &&
-      member.spoils.candidateCards.length > 0 &&
-      member.spoils.claimedCards.length === 0,
-  );
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 
   // 页面级动作失败的原因（初始化 / 生成奖励）；领卡失败在奖励浮窗内显示
   const actionError = actions.init.error ?? actions.spoils.error;
+
+  /** 这个成员还有候选卡没领——按钮就该带「!」：惩罚是“结束本间即失去”，所以只提醒、不阻止。 */
+  function hasUnclaimed(member: OpeningPartyMember): boolean {
+    return (
+      member.spoils !== null &&
+      member.spoils.candidateCards.length > 0 &&
+      member.spoils.claimedCards.length === 0
+    );
+  }
 
   /** 某张角色卡上那颗按钮现在该写什么：生成奖励 → 获取奖励 → 查看奖励。 */
   function spoilsLabel(member: OpeningPartyMember): string {
@@ -140,9 +143,6 @@ export default function OpeningRoomPanel({
       {!room.initialized && !actions.init.isBusy ? (
         <p className="muted">开场房间尚未初始化，结束本间与离开副本都还不行。</p>
       ) : null}
-      {room.initialized && spoilsPending ? (
-        <p className="muted">还有候选卡未领：结束本间后就无法再领取了。</p>
-      ) : null}
       {actionError ? <p className="error">开场动作失败：{actionError}</p> : null}
       {party.isError ? <p className="error">无法获取队伍状态：{String(party.error)}</p> : null}
 
@@ -185,7 +185,9 @@ export default function OpeningRoomPanel({
               </p>
 
               {/* 卡上唯一一颗按钮 = 本成员的奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励。
-                  生成是**整队一次**的动作（点哪张卡上的都一样），所以给 button 加 title 说明。 */}
+                  生成是**整队一次**的动作（点哪张卡上的都一样），所以给 button 加 title 说明。
+                  「还有候选卡未领」不另外占一行页面提示：它就是第二态本身，
+                  所以把提醒做到按钮上（提醒色 + 「!」），后果写进 title。 */}
               <div className="card-actions">
                 {member.spoils === null ? (
                   <button
@@ -198,8 +200,22 @@ export default function OpeningRoomPanel({
                     {spoilsLabel(member)}
                   </button>
                 ) : (
-                  <button type="button" onClick={() => setSpoilsMember(member.name)}>
+                  <button
+                    type="button"
+                    className={hasUnclaimed(member) ? "button--pending" : undefined}
+                    title={
+                      hasUnclaimed(member)
+                        ? "还有候选卡未领：结束本间后就无法再领取了。"
+                        : "本成员的奖励（已领取的也可以回看）"
+                    }
+                    onClick={() => setSpoilsMember(member.name)}
+                  >
                     {spoilsLabel(member)}
+                    {hasUnclaimed(member) ? (
+                      <span className="button-mark" aria-hidden="true">
+                        !
+                      </span>
+                    ) : null}
                   </button>
                 )}
               </div>
