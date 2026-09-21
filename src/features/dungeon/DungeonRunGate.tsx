@@ -9,7 +9,7 @@ import { useDungeonRoom } from "./useDungeonRoom";
  * 供副本进行中的两条路由共用（`DungeonMapPage` 地图、`DungeonRoomRoute` 房间）。
  *
  * 它只做守卫，**不决定屏幕**——拿到房间后用 `children(room)` 交给调用方渲染，
- * 所以两条路由各自保持"我是哪一屏"的完整决策权（对照 docs/pages.md「副本进行中（地图 + 房间）」）。
+ * 所以两条路由各自保持"我是哪一屏"的完整决策权（对照 docs/pages.md「副本进行中（房间 + 地图）」）。
  *
  * 判断顺序是**先看有没有 data、再看状态**，这不是口味问题：
  * react-query 允许「有 data + 报错」共存（`isRefetchError: isError && hasData`），

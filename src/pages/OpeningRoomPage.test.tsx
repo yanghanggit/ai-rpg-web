@@ -286,7 +286,7 @@ describe("副本房间 · 共同框架", () => {
 });
 
 describe("副本房间 · 开场房间", () => {
-  it("自动初始化失败时：显示原因、标题行留下可点的「重试初始化开场」，并锁住结束与退出", async () => {
+  it("自动初始化失败时：显示原因、标题行留下可点的「重试初始化开场」，结束与退出都由服务端拦", async () => {
     const initSpy = vi.fn();
     server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒村义庄");
@@ -308,16 +308,19 @@ describe("副本房间 · 开场房间", () => {
     // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
     expect(await screen.findByRole("button", { name: "生成奖励" })).toBeDisabled();
 
-    // 未初始化 → 服务端不允许推进 / 退出，所以本间的结束动作根本不出现，退出入口禁用并说明原因
+    // 未初始化 → 本间的主行动就是"把它跑起来"，「结束开局准备」这件事根本不存在；
+    // 页面上也没有解释性提示行（初始化状态写在场景卡里，不需要再说一遍）
     expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "开场房间尚未初始化：先完成初始化（进房间会自动跑，失败可重试），才能结束本间或离开副本。",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
+
+    // 「离开副本」不做客户端预判：按钮可点，点下去由服务端拦（原因原样显示）
     const menu = await openActions();
-    expect(within(menu).getByRole("button", { name: "离开副本" })).toBeDisabled();
-    fireEvent.click(within(menu).getByRole("button", { name: "关闭" }));
+    fireEvent.click(within(menu).getByRole("button", { name: "离开副本" }));
+    expect(
+      await screen.findByText("离开副本失败：开场房间尚未初始化，无法退出"),
+    ).toBeInTheDocument();
+    // 人还在本间（副本没被拆）
+    expect(screen.getByRole("button", { name: "重试初始化开场" })).toBeInTheDocument();
 
     // 点场景卡重试（与标题行那颗 ↻ 同一件事）
     fireEvent.click(stageCard);
@@ -502,7 +505,7 @@ describe("副本房间 · 开场房间", () => {
     expect(within(menu).getAllByRole("button", { name: "叙事" })).toHaveLength(1);
   });
 
-  it("结束开局准备：本间的结束动作回到地图，**不**推进副本（索引还是第 1 间）", async () => {
+  it("结束开局准备：把人送到房间之间的地图（本间结束，队伍位置还没变）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
@@ -510,13 +513,12 @@ describe("副本房间 · 开场房间", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "结束开局准备" }));
 
-    // 落点是地图：标题仍是第 1 间（房间结束不推进，前进是地图上的动作）
+    // 落点是地图（房间之间那一站）：标题只留副本名，房间那一行标「已完成」，动作搬到下一间那一行。
+    // 推进不在这里发生——队伍的位置只在地图上由「前往下一间」改变。
     expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
-    expect(
-      await screen.findByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" }),
-    ).toBeInTheDocument();
-    // 本间已结束 → 地图上的前进动作是「前往下一间」（而不是回到本间）
+    expect(await screen.findByRole("heading", { name: "荒村义庄" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "前往下一间" })).toBeEnabled();
+    expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
   });
 
   it("未领的奖励只提示不阻止：「!」长在那张卡的按钮上，后果写在 title 里（惩罚是设计要的）", async () => {

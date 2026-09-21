@@ -65,7 +65,7 @@ export default function OpeningRoomPanel({
   room,
   actions,
   party,
-  onFinishRoom,
+  finish,
 }: {
   userName: string;
   gameName: string;
@@ -74,8 +74,8 @@ export default function OpeningRoomPanel({
   actions: OpeningActions;
   /** 本次副本固化的队伍与奖励（页面取一次传下来）：角色卡的内容。 */
   party: OpeningParty;
-  /** 本间的结束动作（回地图）：与标题行那颗 → 同一件事，这张「回到地图」卡更显眼。 */
-  onFinishRoom: () => void;
+  /** 本间的结束动作（回地图 / 离开副本）：与标题行那颗 → 同一件事，这张卡只是更显眼。 */
+  finish: { caption: string; hint: string; onActivate: () => void };
 }) {
   const stage = useStageEntity(userName, gameName, room.stage.name);
 
@@ -133,20 +133,20 @@ export default function OpeningRoomPanel({
           }
         />
 
-        {/* 初始化完成后才出现：本间的下一步（回地图）。与标题行那颗 → 是同一件事，
-            这里更显眼也更好点，那颗是兜底。 */}
+        {/* 初始化完成后才出现：本间的下一步（回到地图 / 最后一间则是离开副本）。与标题行那颗 → 是
+            同一件事，这里更显眼也更好点，那颗是兜底。 */}
         {room.initialized ? (
           <button
             type="button"
             className="stage-next"
-            aria-label="结束开局准备（回到地图）"
-            title="结束开局准备（回到地图）—— 本间结束后进不来。"
-            onClick={onFinishRoom}
+            aria-label={`结束开局准备（${finish.caption}）`}
+            title={`结束开局准备（${finish.caption}）—— ${finish.hint}`}
+            onClick={finish.onActivate}
           >
             <span className="stage-next-arrow" aria-hidden="true">
               →
             </span>
-            <span className="stage-next-caption">回到地图</span>
+            <span className="stage-next-caption">{finish.caption}</span>
           </button>
         ) : null}
 

@@ -8,9 +8,13 @@
  * 需要重跑 `main.tsx::enableMocking` 才能把 mock 状态造出来（见 `mocks/seedMockFromUrl`），
  * 而 SPA 跳转不会重跑 boot。顺带的好处是每次进来都是全新的 mock 内存态。
  *
- * **副本进行中的两屏都从地图进**：地图是运行点（`/dungeon/map`），房间（`/dungeon/room`）是从
- * 地图上「进入房间」才到的地方。带 `seed` 的链接把状态造好之后再落到地图，所以在地图上往下点
- * 一步，看到的就是种子对应的那一间。
+ * **副本进行中只有两屏**：地图（`/dungeon/map`，**房间之间那一站**——刚进入副本、以及某个房间
+ * 结束后都停在那里）与房间（`/dungeon/room`，开场房 / 战斗房都在这一条路由里，按服务端给的
+ * `room.type` 分发）。
+ *
+ * 地图只列**三种状态**（其余都是不可能的，所以这里也没有对应深链）：刚进入副本（还没进第 1 间）、
+ * 两间之间（本间已结束、还有下一间）、以及"没有可前往的房间"的兜底（正常流程走不到，房间的结束
+ * 动作会直接离开副本）。战斗没结束时地图会被转发回房间，所以没有"战斗未结束的地图"这种链接。
  */
 const links = [
   { to: "/", label: "启动屏 LaunchPage" },
@@ -19,14 +23,12 @@ const links = [
   { to: "/game/webdev/Game1/dungeon", label: "副本总览 DungeonOverviewPage" },
   {
     to: "/game/webdev/Game1/dungeon/map?seed=opening:fresh",
-    label: "副本地图 · 刚进入副本（本间未结束）",
+    label: "副本地图 · 刚进入副本（还没进第 1 间）",
   },
   {
     to: "/game/webdev/Game1/dungeon/map?seed=party:full",
-    label: "副本地图 · 本间已结束（队伍带同伴）",
+    label: "副本地图 · 下一个房间前（队伍带同伴）",
   },
-  { to: "/game/webdev/Game1/dungeon/map?seed=combat:turn", label: "副本地图 · 战斗未结束" },
-  { to: "/game/webdev/Game1/dungeon/map?seed=combat:post", label: "副本地图 · 最后一间已结束" },
   {
     to: "/game/webdev/Game1/dungeon/room?seed=opening:init-failed",
     label: "开场房间 · 初始化失败",

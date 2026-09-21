@@ -6,14 +6,15 @@ import OpeningRoomPanel from "../features/dungeon/opening/OpeningRoomPanel";
 import { useOpeningActions } from "../features/dungeon/opening/useOpeningActions";
 import { useOpeningParty } from "../features/dungeon/opening/useOpeningParty";
 import RoomScaffold, { type RoomAction } from "../features/dungeon/RoomScaffold";
-import { readRoomGuards } from "../features/dungeon/readRoomGuards";
+import { readNextRoom } from "../features/dungeon/readNextRoom";
+import { useDungeonRun } from "../features/dungeon/useDungeonRun";
+import { useExitDungeon } from "../features/dungeon/useExitDungeon";
 
 /**
  * 开场房间整页（`room.type === "opening"`）。
  *
  * 与 `CombatRoomPage` 共用 `RoomScaffold`（标题 / 副本信息 / 叙事 / 离开副本），
- * 这里只写**开场房间与别的房间不同的那三件事**：
- * - 「离开副本」的前置禁用（服务端要求先初始化完才能退出）——判据统一走 `readRoomGuards`；
+ * 这里只写**开场房间与别的房间不同的那两件事**：
  * - **本间的主行动**（标题行最右那颗状态相关的图标）：初始化中 / 重试初始化 / 结束本间。
  *   它是开场房间特有的两态：还没初始化时唯一的动作就是「把它跑起来」，能走了才是「结束本间」；
  * - 所以**本间的数据与动作由页面持有**：`useOpeningActions` 只允许一个实例（见该 hook 注释），
@@ -35,9 +36,14 @@ export default function OpeningRoomPage({
   room: Schemas["OpeningRoom"];
 }) {
   const navigate = useNavigate();
-  const guards = readRoomGuards(room);
+  const exit = useExitDungeon(userName, gameName);
+  const run = useDungeonRun(userName, gameName);
   const actions = useOpeningActions(userName, gameName);
   const party = useOpeningParty(userName, gameName);
+
+  // 本间之后没有房间了（只剩开场房的那种副本也一样）：结束本间 = 离开副本回家园
+  // （服务端 advance_stage 在这种情况下必然拒绝："副本已全部通关"）
+  const finishesRun = run.data !== undefined && readNextRoom(run.data.dungeon) === null;
 
   // 自动初始化只对「本房间」触发一次：ref 记住已触发过的房间标识——StrictMode 下 effect 跑两次、
   // 或轮询导致重渲染都不会重复发任务；失败后不自动重试，改由标题行那颗图标手动重试。
@@ -55,6 +61,24 @@ export default function OpeningRoomPage({
   // 副本内一律 replace：没有"后退"，只有前进与放弃离开（见 DungeonMapPanel）
   const toMap = () => navigate(`/game/${userName}/${gameName}/dungeon/map`, { replace: true });
 
+  /**
+   * 「结束本间」结束之后去哪儿——**同一份描述供标题行那颗图标与正文那张卡共用**
+   * （它们本来就是同一件事，不该各写一套）。
+   * - 还有下一间：送到**房间之间**（地图），前进那一步在那边点（唯一能改变队伍位置的地方）；
+   * - 本间之后没有房间了：直接离开副本回家园（服务端 `advance_stage` 在这种情况下必然拒绝）。
+   */
+  const finish = finishesRun
+    ? {
+        caption: "离开副本",
+        hint: "这是最后一间，结束后离开副本回家园。",
+        onActivate: () => exit.start(),
+      }
+    : {
+        caption: "回到地图",
+        hint: "本间结束后进不来。",
+        onActivate: toMap,
+      };
+
   // 还有人没领奖励 → 「结束本间」也该是提醒色：那一步一按，没领的卡就永久失去了
   const unclaimed = party.party.some(hasUnclaimedRewards);
 
@@ -69,12 +93,12 @@ export default function OpeningRoomPage({
       return {
         icon: "→",
         label: "结束开局准备",
-        title: unclaimed
-          ? "结束开局准备（回到地图）—— 还有候选卡未领，结束本间后就无法再领取了。"
-          : "结束开局准备（回到地图）—— 本间结束后进不来。",
+        title: `结束开局准备（${finish.caption}）—— ${
+          unclaimed ? "还有候选卡未领，结束本间后就无法再领取了。" : finish.hint
+        }`,
         tone: unclaimed ? "warn" : "plain",
         iconClass: "icon-button--leave",
-        onActivate: toMap,
+        onActivate: finish.onActivate,
       };
     }
     if (actions.init.error !== null) {
@@ -101,9 +125,8 @@ export default function OpeningRoomPage({
     <RoomScaffold
       userName={userName}
       gameName={gameName}
+      exit={exit}
       roomName={room.stage.name}
-      exitBlocked={guards.exitBlocked}
-      exitBlockedHint={guards.exitBlockedHint ?? undefined}
       roomAction={readAction()}
     >
       <OpeningRoomPanel
@@ -112,7 +135,7 @@ export default function OpeningRoomPage({
         room={room}
         party={party}
         actions={actions}
-        onFinishRoom={toMap}
+        finish={finish}
       />
     </RoomScaffold>
   );

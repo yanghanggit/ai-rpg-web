@@ -148,18 +148,21 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByRole("button", { name: "收取战利品（0）" })).toBeDisabled();
   });
 
-  it("结算：本间的结束动作回到地图（不推进副本）", async () => {
+  it("结算：这是最后一间，结束本间 = 直接离开副本回家园（不再绕一次地图）", async () => {
+    server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
 
+    // 落点要看 `/state`（有没有下一间），所以等标题把进度显出来（标题与判据用的是同一个查询）
+    await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" });
     fireEvent.click(await screen.findByRole("button", { name: "结束本次战斗" }));
 
-    // 落点是地图：索引还停在第 2 间（结束不推进），且本间已结束、进不去了
-    expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
-    expect(await screen.findByText("你在这里（已结束）")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
+    // 本间之后没有房间了：服务端推进必然拒绝（"副本已全部通关"），所以直接走退出那条路。
+    // 中间不再停一次地图——那一屏此刻没有任何可做的事。
+    expect(await screen.findByText("家园页占位")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "地图" })).not.toBeInTheDocument();
   });
 
   it("结算：未收的战利品只提示不阻止（「!」长在收取按钮上，后果在 title 里）", async () => {
@@ -176,7 +179,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(finish).toHaveClass("icon-button--warn");
     expect(finish).toHaveAttribute(
       "title",
-      "结束本次战斗（回到地图）—— 还有战利品未收取，结束本间后就无法再收了。",
+      "结束本次战斗（离开副本）—— 还有战利品未收取，结束本间后就无法再收了。",
     );
     expect(finish).toBeEnabled();
   });

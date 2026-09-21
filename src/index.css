@@ -922,7 +922,8 @@ ol.dungeon-rooms {
 
 li.dungeon-room {
   display: grid;
-  grid-template-columns: 1.75rem 1fr;
+  /* 第三列是行尾的动作按钮：只有地图给（「副本信息」浮窗是只读版，那一列自然空着） */
+  grid-template-columns: 1.75rem 1fr auto;
   align-items: baseline;
   gap: 0.25rem 0.75rem;
   padding: 0.6rem 0.9rem;
@@ -933,6 +934,14 @@ li.dungeon-room {
 /* 队伍所在的那一间：描边加重（「副本信息」浮窗里对应绿色的「当前所在」徐标） */
 li.dungeon-room--current {
   border-color: var(--fg);
+}
+
+/* 行尾的动作（地图：进入房间 / 前往下一间）：贴着自己那一行，按哪颗走哪条 —— 按钮位置本身
+   就在说明"能去哪、只能去哪"（将来选路就是多行各带一颗）。比默认按钮小一号，免得行被撑高。 */
+.dungeon-room-action {
+  align-self: center;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.9rem;
 }
 
 /* 序号是清单上的刻度，用等宽字体对齐 */
@@ -960,9 +969,9 @@ li.dungeon-room--current {
 /* ── 副本地图（进行中） ─────────────────────────────────────── */
 
 /* 地图 = 一条纵线：副本本身是**线性**的（模型就是 rooms[] + 一个 current_room_index，
-   没有分叉、没有边），所以刻意不做分叉图，免得让玩家以为能选路。
-   节点只读展示「已完成 / 你在这里 / 下一间 / 未到达」，动作由下面的工具栏给出。
-   行本身的形状（`ol.dungeon-rooms` / `li.dungeon-room`）与「副本信息」浮窗共用，见上。 */
+   没有分叉、没有边），所以刻意不做分叉图，免得让玩家以为能选路；将来真支持选路时，长出来的是
+   "多行各带一颗动作按钮"（见 `DungeonRoomList`）。
+   行形状（`ol.dungeon-rooms` / `li.dungeon-room`）与「副本信息」浮窗共用，见上。 */
 
 /* ── 副本开场房间 ───────────────────────────────────────────── */
 

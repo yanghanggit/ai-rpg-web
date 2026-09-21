@@ -25,7 +25,7 @@ import LobbyPage from "./pages/LobbyPage";
         <Route path="/lobby" element={<LobbyPage />} />
         <Route path="/game/:userName/:gameName/home" element={<HomeOverviewPage />} />
         <Route path="/game/:userName/:gameName/dungeon" element={<DungeonOverviewPage />} />
-        {/* 副本进行中：**地图**是运行点（进入副本的落点、房间结束后的归处以反未来的重开定位），
+        {/* 副本进行中：**地图**是房间之间那一站（进入副本的落点、房间结束后的归处），
             它在服务端没有对应物，只是把「队伍在哪一间 + 进度」画出来 */}
         <Route path="/game/:userName/:gameName/dungeon/map" element={<DungeonMapPage />} />
         {/* 副本进行中：房间（开场 / 战斗）——房间类型由 DungeonRoomRoute 从 /room 解析 */}

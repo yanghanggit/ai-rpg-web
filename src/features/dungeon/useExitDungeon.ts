@@ -39,3 +39,6 @@ export function useExitDungeon(userName: string, gameName: string) {
     error: job.error,
   };
 }
+
+/** 这个 hook 的形状（页面持有它、传给 `RoomScaffold`，顺便也给房间的结束动作调 `start`）。 */
+export type ExitDungeon = ReturnType<typeof useExitDungeon>;

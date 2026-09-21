@@ -109,6 +109,11 @@ export function readMockCombatParticipants(): string[] {
 }
 
 /** 当前战斗数据快照（深拷贝）。 */
+/** 服务端 `combat.is_post_combat` 的 mock 版（退出 / 推进的前置之一）。 */
+export function isMockPostCombat(): boolean {
+  return combat.state === STATE_POST_COMBAT;
+}
+
 export function readMockCombat(): Schemas["Combat"] {
   return clone(combat);
 }

@@ -7,15 +7,12 @@ import DeckBrowserDialog from "./DeckBrowserDialog";
 import DungeonInfoDialog from "./DungeonInfoDialog";
 import RoomActionsDialog from "./RoomActionsDialog";
 import { useDungeonRun } from "./useDungeonRun";
-import { useExitDungeon } from "./useExitDungeon";
+import type { ExitDungeon } from "./useExitDungeon";
 
 /**
  * 副本房间的**房间无关框架**：所有房间都相同的那一圈。
  *
- * 由两个房间页复用：`OpeningRoomPage`（开场）与 `CombatRoomPage`（战斗）。所以这里
- * **不允许**出现 `room.type` 一类的房间专属判断——唯一随房间变化的是「离开副本」是否前置禁用，
- * 由调用方用 `exitBlocked` / `exitBlockedHint` 显式传入（开场房间未初始化时禁用；战斗房间不预判，
- * 由后端拦）。
+ * 由两个房间页 + 地图页复用。所以这里**不允许**出现 `room.type` 一类的房间专属判断。
  *
  * 负责这几件事：
  * - 标题 = **副本名 (当前/总数) 房间名**，如「荒村义庄 (1/2) 义庄前院」。副本名与进度来自
@@ -29,6 +26,8 @@ import { useExitDungeon } from "./useExitDungeon";
  *   3. 黑桃「牌组」→ `DeckBrowserDialog`（一级名单 → 二级卡面 → 三级卡牌详情）。
  * - 「离开副本」是**任务接口**，而「回家」发生在任务内部（队伍被传回家园场景、副本被拆掉），
  *   所以在回调里触发、等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
+ *   **客户端不预判能不能走**（"本间还没结束"这类前置由服务端在接口/任务里拦），被拒的原因原样显示
+ *   在页面上——所以这里既没有禁用状态，也没有解释性提示行。
  * - `roomAction`（本间的**主行动**，标题行最右那颗状态相关的图标）只在这里占个位：
  *   “本间现在该做什么”由页面算（每个房间不一样），本层不判断房间、也不认识路由。
  *
@@ -67,27 +66,29 @@ export interface RoomAction {
 export default function RoomScaffold({
   userName,
   gameName,
+  exit,
   roomName,
-  exitBlocked = false,
-  exitBlockedHint,
+  showInfo = true,
   roomAction = null,
   children,
 }: {
   userName: string;
   gameName: string;
-  /** 当前房间的显示名（原始名，即 `room.stage.name`；本层只负责经 `displayName` 展示）。 */
-  roomName: string;
-  /** 「离开副本」是否前置禁用（服务端会在任务里拒绝不合法时机，这里只拦确定要拦的）。 */
-  exitBlocked?: boolean;
-  /** 禁用「离开副本」时写给玩家的原因。 */
-  exitBlockedHint?: string;
+  /** 「离开副本」的状态与触发（页面持有唯一实例后传下来：房间的结束动作也可能用到它）。 */
+  exit: ExitDungeon;
+  /**
+   * 当前房间的显示名（原始名，即 `room.stage.name`；本层只负责经 `displayName` 展示）。
+   * **不给就是"不在某一间房里"**（地图页）：标题只留副本名，连进度也不显示。
+   */
+  roomName?: string;
+  /** 是否渲染「副本信息」入口（⚑）。地图页自己就是房间清单，所以关掉。 */
+  showInfo?: boolean;
   /** 本间的主行动（标题行那颗状态相关的图标）；不给就不渲染（地图页就没有）。 */
   roomAction?: RoomAction | null;
   children: ReactNode;
 }) {
   const navigate = useNavigate();
   const run = useDungeonRun(userName, gameName);
-  const exit = useExitDungeon(userName, gameName);
 
   const [pane, setPane] = useState<RoomPane>(null);
 
@@ -106,7 +107,9 @@ export default function RoomScaffold({
   }, [exit.isExited, homePath, navigate]);
 
   const dungeon = run.data?.dungeon ?? null;
+  // 进度与房间名是一体的：只有"在某一间房里"时才有「(1/2) 房间名」这半截标题
   const progress =
+    roomName !== undefined &&
     dungeon !== null &&
     dungeon.current_room_index >= 0 &&
     dungeon.current_room_index < dungeon.rooms.length
@@ -127,7 +130,8 @@ export default function RoomScaffold({
       <div className="page-head">
         <h1>
           {dungeonName}
-          {progress} {displayName(roomName)}
+          {progress}
+          {roomName === undefined ? null : ` ${displayName(roomName)}`}
         </h1>
         <button
           type="button"
@@ -140,18 +144,21 @@ export default function RoomScaffold({
         >
           ⚙{unread > 0 ? <span className="icon-badge">{unread}</span> : null}
         </button>
-        {/* 与齿轮平级的第二个入口：副本信息（地图与当前进度）。`/state` 没回来时没有内容可展，先禁用 */}
-        <button
-          type="button"
-          className="icon-button icon-button--info"
-          aria-haspopup="dialog"
-          aria-label="副本信息"
-          title="副本信息"
-          disabled={run.data === undefined}
-          onClick={() => setPane("info")}
-        >
-          ⚑
-        </button>
+        {/* 与齿轮平级的第二个入口：副本信息（整体设定 / 房间 / 敌人）。`/state` 没回来时没有内容可展，先禁用。
+            地图页不渲染它（`showInfo=false`）：那一屏本来就是房间清单，再开一个浮窗看同一份清单是多余的。 */}
+        {!showInfo ? null : (
+          <button
+            type="button"
+            className="icon-button icon-button--info"
+            aria-haspopup="dialog"
+            aria-label="副本信息"
+            title="副本信息"
+            disabled={run.data === undefined}
+            onClick={() => setPane("info")}
+          >
+            ⚑
+          </button>
+        )}
         {/* 与齿轮平级的第三个入口：看本次副本各成员的牌组（一级是名单、二级是某个人的卡面） */}
         <button
           type="button"
@@ -191,15 +198,13 @@ export default function RoomScaffold({
         {exit.isBusy ? <span className="muted">退出中…</span> : null}
       </div>
 
-      {exitBlocked && exitBlockedHint ? <p className="muted">{exitBlockedHint}</p> : null}
+      {/* 被服务端拒的原因（失败可能发生在任务里，所以提示只能挂在页面上，不能塞回菜单浮窗） */}
       {exit.error ? <p className="error">离开副本失败：{exit.error}</p> : null}
 
       {children}
 
       {pane === "actions" ? (
         <RoomActionsDialog
-          exitBlocked={exitBlocked}
-          exitBlockedHint={exitBlockedHint}
           exitBusy={exit.isBusy}
           narrative={{ seen: narrative.seen, total: narrative.total, unread }}
           onOpenNarrative={() => setPane("narrative")}

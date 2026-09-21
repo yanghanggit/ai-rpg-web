@@ -2,43 +2,32 @@ import type { Schemas } from "../../api/types";
 import { COMBAT_RESULT, COMBAT_STATE } from "./combat/combatPhase";
 
 /**
- * 房间侧的服务端前置条件（纯函数，无 React / 网络）——**镜像**服务端两处的房间检查：
- * - `services/dungeon_advance_action.py`：能不能推进下一间（开场房看 `initialized`，战斗房看
- *   `is_post_combat`，战斗失败与没有下一间都不能推）；
- * - `services/dungeon_exit_action.py`：能不能离开副本（开场房未初始化时拦）。
+ * 本房间的**状态判据**（纯函数，无 React / 网络）：本间结束了没有、打输了没有。
  *
- * **为什么要镜像**：地图页必须能表达「下一间现在能不能点」，否则无从禁用 / 说明。
- * 口径只用于**禁用与说明**，绝不替代后端校验——点下去后端仍会重新判一次，失败原因原样显示。
- * 这与开场房间一直以来的 `exitBlocked` 是同一条原则（见 docs/pages.md）。
+ * **它不是服务端规则的镜像**——"能不能推进 / 能不能离开副本"一律由服务端在接口里判，客户端
+ * 不预先替它决定（`dungeon_advance_action.py` / `dungeon_exit_action.py` 的前置检查只有那两处
+ * 实现）。客户端只用这里的两条，都是**本间状态自身**的事实：
+ * - `done`：本间的活儿干完了没有（开场房 = 已初始化，战斗房 = 已结算）。它决定**本间的主行动长
+ *   什么样**（`RoomScaffold` 那颗图标）：没干完就是"把本间跑起来 / 重试"，干完了才是"结束本间"；
+ * - `defeated`：战斗打输了。打输之后没有"下一间"可去，所以结束本间 = 直接离开副本。
  *
- * 三处刻意的精确（写错就会“看着能点、点了被拒”）：
- * - **战斗的「已结束」只认 `state === POST_COMBAT`，不是 `combatPhase === "post"`**：
- *   `combatPhase` 把 `COMPLETE` 也算进 `post`，比服务端的 `is_post_combat` 宽。
- *   （`COMPLETE` 是同一轮 pipeline 内的瞬态：`CombatPostCombatTransitionSystem` 紧跟在
- *   `CombatOutcomeSystem` 后面，所以 web 实际上观察不到它——但判据仍要与服务端一字不差。）
- * - **战斗失败不能推进**（服务端的 `is_lost` 分支），此时唯一的出路是离开副本。
- * - **离开副本只前置禁用确定已知的那一种**（开场房未初始化）；战斗未结束那条**不预判**，
- *   由后端在任务里拦——所以战斗房间永远返回 `exitBlocked: false`。
+ * **「离开副本」不再有客户端前置禁用**：它是个例外动作（放弃整局），点下去由服务端拦，被拒的原因
+ * 原样显示在页面上（`dungeon_exit_action.py` 三种情形都有现成的话：尚未进入房间 / 战斗未结束 /
+ * 开场房间尚未初始化）。所以既不写镜像、也不写解释性提示——那句话只能比服务端更早或更晚地
+ * 说同一件事。
  *
- * 「没有下一间（副本已全部通关）」不在这里：那是「副本整局」的判断，属于地图页（它手里有
- * `/state` 的完整房间表），不属于「这一个房间」。
+ * 一处刻意的精确：**战斗的「已结束」只认 `state === POST_COMBAT`，不是 `combatPhase === "post"`**。
+ * `combatPhase` 把 `COMPLETE` 也算进 `post`，比服务端的 `is_post_combat` 宽（`COMPLETE` 是同一轮
+ * pipeline 内的瞬态：`CombatPostCombatTransitionSystem` 紧跟在 `CombatOutcomeSystem` 后面，web
+ * 实际上观察不到它）。
  */
 export function readRoomGuards(room: Schemas["DungeonRoomResponse"]["room"]) {
   if (room.type === "opening") {
-    const initialized = room.initialized;
     return {
-      /** 本房间是否已结束：服务端推进的房间侧前置（也是「本间的活儿干完了」）。 */
-      done: initialized,
-      /** 未结束时给玩家看的原因（与服务端同一句话）。 */
-      pendingReason: initialized ? null : "开场房间尚未初始化，无法推进",
-      /** 战斗已失败：只能离开副本，不能推进（开场房恒为 false）。 */
+      /** 本房间是否已结束：开场房的活儿是"初始化"（叙事 + 牌库）。 */
+      done: room.initialized,
+      /** 战斗已失败（开场房恒为 false）。 */
       defeated: false,
-      /** 「离开副本」是否**前置禁用**。 */
-      exitBlocked: !initialized,
-      /** 禁用「离开副本」时写给玩家的原因。 */
-      exitBlockedHint: initialized
-        ? null
-        : "开场房间尚未初始化：先完成初始化（进房间会自动跑，失败可重试），才能结束本间或离开副本。",
     };
   }
 
@@ -46,9 +35,7 @@ export function readRoomGuards(room: Schemas["DungeonRoomResponse"]["room"]) {
   const done = state === COMBAT_STATE.POST_COMBAT;
   return {
     done,
-    pendingReason: done ? null : "战斗未结束，无法推进",
+    /** 输了就没有"下一间"：唯一的去处是离开副本。 */
     defeated: done && result === COMBAT_RESULT.LOSE,
-    exitBlocked: false,
-    exitBlockedHint: null,
   };
 }

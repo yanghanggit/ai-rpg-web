@@ -8,13 +8,19 @@
  */
 import type { Schemas } from "../api/types";
 import {
+  isMockPostCombat,
   readMockCombat,
   readMockCombatParticipants,
   resetMockCombat,
   resetMockCombatState,
 } from "./combat";
 import { blueprintFixture, dungeonFixture, emptyDungeonFixture } from "./fixtures";
-import { enterMockOpeningParty, leaveMockOpening, readMockPartyNames } from "./opening";
+import {
+  enterMockOpeningParty,
+  leaveMockOpening,
+  readMockOpeningInitialized,
+  readMockPartyNames,
+} from "./opening";
 import { readMockRosterNames } from "./roster";
 import { moveMockActorsToStage, resetMockStages } from "./stages";
 
@@ -113,6 +119,27 @@ export function enterMockDungeon(name: string): { ok: true } | { ok: false; erro
   // 队伍被搬到第一间房的场景（战斗房间还要额外放上怪物并复位战斗）
   syncMockRoomPlacement();
   return { ok: true };
+}
+
+/**
+ * 退出副本的前置（对应 `dungeon_exit_action.py` 阶段 1 的三条检查），拒绝原因与后端同话。
+ *
+ * **这套判断只在 mock 里写一遍**，客户端不做（点下去由服务端拦、原因原样显示）。mock 要是"来者
+ * 不拒"，dev 下这条路径就永远看不到——而那正是客户端唯一该依赖的那条路径。
+ */
+export function readMockExitRefusal(): string | null {
+  const dungeon = runningDungeon();
+  const room = dungeon?.rooms[runningRoomIndex];
+  if (dungeon === undefined || room === undefined) {
+    return "尚未进入副本房间，无法退出";
+  }
+  if (room.type === "combat" && !isMockPostCombat()) {
+    return "战斗未结束，无法退出";
+  }
+  if (room.type === "opening" && !readMockOpeningInitialized()) {
+    return "开场房间尚未初始化，无法退出";
+  }
+  return null;
 }
 
 /** 退出副本：与后端任务一样，退出后世界回到「没有副本在跑」（副本拆掉、队伍解散）。 */

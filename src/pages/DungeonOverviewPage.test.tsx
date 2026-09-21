@@ -65,8 +65,9 @@ describe("副本总览 · 可用副本（静态模型数据）", () => {
     // 战斗房间列出敌人的 HP / ATK / DEF
     expect(within(dialog).getByText("棺中殭尸")).toBeInTheDocument();
     expect(within(dialog).getByText(/HP 16/)).toBeInTheDocument();
-    // 开场房间没有敌人
-    expect(within(dialog).getByText("（无敌人）")).toBeInTheDocument();
+    // 开场房间没有敌人（那一行只有名字与类型徐标，不列敌人）
+    const openingRow = within(dialog).getByText("义庄前院").closest("li");
+    expect(openingRow).not.toHaveTextContent("HP");
   });
 
   it("生成新副本：触发任务，完成后列表出现新副本", async () => {
@@ -207,7 +208,7 @@ describe("副本总览 · 道具管理（出征前整理行装）", () => {
 });
 
 describe("副本总览 · 进入副本（最终确认）", () => {
-  it("确认浮窗展示队伍与背包，确认后发起进入并切到**副本地图**（运行点）", async () => {
+  it("确认浮窗展示队伍与背包，确认后发起进入并切到**副本地图**（房间之间那一站）", async () => {
     addMockRosterMember("角色.顾知秋");
     server.use(
       http.post(api("/api/home/enter_dungeon/v1/"), async ({ request }) => {

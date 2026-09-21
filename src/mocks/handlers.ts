@@ -30,6 +30,7 @@ import {
   readMockDungeonRoom,
   readMockDungeonState,
   readMockDungeons,
+  readMockExitRefusal,
 } from "./dungeons";
 import {
   blueprintFixture,
@@ -462,6 +463,11 @@ export const handlers = [
   // 退出副本：真实后端是异步任务（只返回 job_id），且状态变化由任务完成；
   // mock 里不模拟这个时间差，同步把副本状态复位（与「生成副本」同一做法）
   http.post(api("/api/dungeon/exit/v1/"), () => {
+    // 与后端同一套前置：本间还没结束就拒（客户端不再预判，所以这条路径必须真的存在）
+    const refusal = readMockExitRefusal();
+    if (refusal !== null) {
+      return HttpResponse.json({ detail: refusal }, { status: 409 });
+    }
     exitMockDungeon();
     return HttpResponse.json({
       job_id: createMockTask(),
