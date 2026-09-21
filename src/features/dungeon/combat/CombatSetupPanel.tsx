@@ -15,10 +15,13 @@ import type { CombatActions } from "./useCombatActions";
  * 布局对齐「横 = 场景 / 竖 = 人」：上面一排**敌人**卡、中间**场景卡 + 开始卡**、下面一排**队伍**卡，
  * 卡面风格延续开场房间（`opening/OpeningRoomPanel` 的场景卡与角色卡）。
  *
- * **开始卡是本屏唯一的动作**：它把玩家"送进对局"——没初始化就先跑 `init`，`init` 成功（状态变
- * `ONGOING`）后接着跑 `draw`，一次点击就落到**第一回合**。`init` 与 `draw` 是后端两个独立 job，
- * 这里用 `startRequested` 把它们接起来（`init` 完成 → 查询失效 → 本组件以新 `combat.state` 重渲染
- * → effect 补发 `draw`）。开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
+ * **进入战斗房间自动初始化一次**（与开场房间同一套）：用 ref 记住已触发过的战斗，StrictMode 下
+ * effect 跑两次、或轮询重渲染都不会重复发任务；失败不自动重试——「开始」那颗按钮就是重试入口。
+ * 所以本屏会先短暂显示「准备中…」，初始化成功后变成「开始」。
+ *
+ * **开始卡是本屏唯一的动作**：初始化完成后点它开启**第一回合**（`draw`）。若 init 还没成功
+ * （失败后重试那条路），点它会先补 `init`、成功后由 `startRequested` effect 接上 `draw`——总之
+ * 一次点击落到第一回合；开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
  *
  * 卡片只留**必要信息**：名字 + 身份 + 一行 `HP / 攻 / 防`。能量 / 格挡 / 牌堆在开局前全是 0，
  * 先不显示（它们属于回合行动那一屏）。**队伍卡的名字可点开角色信息浮窗**（与开场房的角色卡
@@ -49,11 +52,23 @@ export default function CombatSetupPanel({
   // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
 
+  const initStart = actions.init.start;
+  const draw = actions.draw.start;
+
+  // 自动初始化只对「本战场」触发一次：ref 记住已触发过的战斗，StrictMode 下 effect 跑两次、
+  // 或轮询导致重渲染都不会重复发任务；失败后不自动重试，改由「开始」那颗按钮手动重试。
+  const autoInitRoom = useRef<string | null>(null);
+  useEffect(() => {
+    if (combat.state === COMBAT_STATE.ONGOING || autoInitRoom.current === combat.name) {
+      return;
+    }
+    autoInitRoom.current = combat.name;
+    initStart();
+  }, [combat.name, combat.state, initStart]);
+
   // 点过一次「开始」但 init 还没落地：init 成功（state 变 ONGOING）后由下面的 effect 补发 draw。
   // 用 ref 记住"玩家想开局"这个意图，而不是让按钮连点两次。
   const startRequested = useRef(false);
-  const draw = actions.draw.start;
-
   useEffect(() => {
     if (!startRequested.current || combat.state !== COMBAT_STATE.ONGOING) {
       return;
@@ -62,7 +77,7 @@ export default function CombatSetupPanel({
     draw();
   }, [combat.state, draw]);
 
-  /** 开局（未初始化 → init；已初始化 → draw）。`init` 完成后 effect 会接上 `draw`。 */
+  /** 开局：已初始化 → `draw`；还没（失败重试）→ 先 `init`，成功后 effect 接上 `draw`。 */
   function handleStart() {
     if (actions.isBusy) {
       return;
@@ -72,7 +87,7 @@ export default function CombatSetupPanel({
       return;
     }
     startRequested.current = true;
-    actions.init.start();
+    initStart();
   }
 
   const monsters = combatants.filter((combatant) => combatant.faction === "monster");
@@ -107,7 +122,7 @@ export default function CombatSetupPanel({
             onClick={handleStart}
           >
             <span className="stage-next-caption">
-              {actions.isBusy ? "开始中…" : hasRound ? "开始新回合" : "开始!"}
+              {actions.isBusy ? "准备中…" : hasRound ? "开始新回合" : "开始!"}
             </span>
           </button>
         </section>

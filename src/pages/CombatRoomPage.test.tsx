@@ -41,7 +41,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(
       await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" }),
     ).toBeInTheDocument();
-    // 开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
+    // 进入战斗房间自动初始化；成功后开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByText(/抓牌以开启第一回合/)).not.toBeInTheDocument();
     // 参战者：队友不入队时只有玩家 + 两个怪物
@@ -49,7 +49,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByText("棺中殭尸")).toBeInTheDocument();
     expect(screen.getAllByText("怪物")).toHaveLength(2);
 
-    // 开始 = 初始化 + 抓牌：直接落到玩家回合（第一回合有了）
+    // 开始 = 抓牌：直接落到玩家回合（第一回合有了；初始化是自动跑的）
     fireEvent.click(screen.getByRole("button", { name: "开始!" }));
     expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
@@ -87,7 +87,7 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 开始（初始化 + 抓牌）开第一回合，让「战斗信息」有真正的回合数据
+    // 自动初始化后点开始抓牌，开第一回合，让「战斗信息」有真正的回合数据
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByText("剖棺");
 
@@ -111,14 +111,14 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // init 阶段（还没初始化、0 回合）：仍然能从菜单开战斗信息
+    // 还没开始（已自动初始化、0 回合）：仍然能从菜单开战斗信息
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
     const menu = await screen.findByRole("dialog", { name: "副本操作" });
     expect(within(menu).getByRole("button", { name: "战斗信息" })).toBeInTheDocument();
   });
 
-  it("开始失败：显示原因，再点「开始」可重试", async () => {
+  it("自动初始化失败：显示原因，点「开始」可重试", async () => {
     server.use(
       instantTasks(),
       http.post(api("/api/dungeon/combat/init/v1/"), () =>
@@ -127,8 +127,7 @@ describe("副本房间 · 战斗房间", () => {
     );
     renderCombatRoom();
 
-    // 点开始 → init 失败
-    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    // 自动初始化失败 → 直接显示错误行（不需要点任何东西）
     expect(await screen.findByText(/开始战斗失败/)).toBeInTheDocument();
     // 还没进回合（draw 不会在 init 失败后补发）
     expect(screen.queryByRole("button", { name: "过牌（结束回合）" })).not.toBeInTheDocument();
