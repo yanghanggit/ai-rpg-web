@@ -54,13 +54,13 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
-  it("开局准备：队伍卡的名字可点开角色信息（敌人卡不给入口）", async () => {
+  it("开局准备：队伍卡整卡可点开角色信息（敌人卡不给入口）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 队伍卡名字是按钮；敌人卡名字是静态文本（不是可操作对象）
-    const name = await screen.findByRole("button", { name: "无名" });
-    expect(screen.queryByRole("button", { name: "纸人" })).not.toBeInTheDocument();
+    // 队伍卡整卡可点（名字不再是独立按钮）；敌人卡整卡不可点
+    const name = await screen.findByRole("button", { name: "查看角色：无名" });
+    expect(screen.queryByRole("button", { name: "查看角色：纸人" })).not.toBeInTheDocument();
 
     fireEvent.click(name);
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
@@ -74,7 +74,7 @@ describe("副本房间 · 战斗房间", () => {
     renderCombatRoom();
 
     const scene = await screen.findByRole("region", { name: "场景描述" });
-    fireEvent.click(within(scene).getByRole("button", { name: "场景描述：查看场景信息" }));
+    fireEvent.click(within(scene).getByRole("button", { name: "查看场景：停柩房" }));
 
     const dialog = await screen.findByRole("dialog", { name: "场景信息" });
     expect(within(dialog).getByRole("heading", { name: "环境叙述" })).toBeInTheDocument();

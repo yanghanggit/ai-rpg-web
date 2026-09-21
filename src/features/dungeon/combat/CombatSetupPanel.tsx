@@ -27,7 +27,7 @@ import type { CombatActions } from "./useCombatActions";
  * 一次点击落到第一回合；开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
  *
  * 卡片只留**必要信息**：名字 + 身份 + 一行 `HP / 攻 / 防`。能量 / 格挡 / 牌堆在开局前全是 0，
- * 先不显示（它们属于回合行动那一屏）。**队伍卡的名字可点开角色信息浮窗**（`ActorInfoDialog`，
+ * 先不显示（它们属于回合行动那一屏）。**队伍卡整卡可点开角色信息浮窗**（`ActorInfoDialog`，
  * 副本内不提供穿 / 脱时装）；敌人卡不给入口——它不是可操作对象。
  */
 export default function CombatSetupPanel({
@@ -122,7 +122,12 @@ export default function CombatSetupPanel({
 
         <section className="stage-row" aria-label="场景描述">
           {/* 与开场房共用同一张场景卡：就绪态点整张卡看全文（场景信息浮窗） */}
-          <StageCard state="ready" body={sceneBody} onActivate={() => setIsStageOpen(true)} />
+          <StageCard
+            state="ready"
+            name={stageName}
+            body={sceneBody}
+            onActivate={() => setIsStageOpen(true)}
+          />
           <button
             type="button"
             className="stage-next stage-next--start"

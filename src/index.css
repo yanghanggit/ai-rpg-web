@@ -1099,8 +1099,29 @@ li.dungeon-room--current {
   margin: 0;
 }
 
-/* 队伍成员卡：卡头的角色名可点开角色信息；卡内按钮并排（覆盖 .card-actions 的整行按钮）。
+/* 队伍成员卡：**整卡可点**（开角色信息，与场景卡同一交互）。卡面铺一层透明按钮盖住内容，
+   卡底动作按钮再抬到它上面——点卡片任何地方开角色信息，点奖励按钮只干奖励的事。
    横排卡片就是「队伍站位」的 UX 雏形。 */
+.actor-card {
+  position: relative;
+}
+
+.actor-card-open {
+  position: absolute;
+  /* 铺满整卡（含内边距）：这条就是「整卡可点」的全部 */
+  inset: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  cursor: pointer;
+}
+
+/* 可点才有悬停反馈（与牌面 `.card-tile--open:hover` 同一套：描边变前景色） */
+.actor-card--open:hover {
+  border-color: var(--fg);
+}
+
+/* 卡内按钮并排（覆盖 .card-actions 的整行按钮） */
 .actor-card .card-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1110,6 +1131,9 @@ li.dungeon-room--current {
 .actor-card .card-actions button {
   width: auto;
   flex: 1 1 auto;
+  /* 抬到「整卡可点」那层之上：奖励按钮自己的点击自己收下 */
+  position: relative;
+  z-index: 1;
 }
 
 /* 卡牌：奖励（Spoils）候选与牌组共用（栅格参数与副本卡 / 角色卡一致，宽度自然对齐） */

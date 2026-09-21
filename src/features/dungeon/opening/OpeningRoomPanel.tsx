@@ -21,7 +21,7 @@ import type { OpeningActions } from "./useOpeningActions";
  * - 场景卡右边那张「回到地图」卡：本间的下一步（初始化完成后才出现）；
  * - **队伍**（**没有可见标题**：卡上写着名字，“队伍”是废话）：竖着的角色卡，一张挨一张横排
  *   （顺序即后端给的队伍顺序，玩家在前）——卡面是「名字 + 属性（`HP x/y · 攻 n · 防 m`）+ 卡组张数」，
- *   点卡上的名字开角色信息浮窗；卡底那颗按钮是
+ *   整卡可点开角色信息浮窗；卡底那颗按钮是
  *   本成员的奖励入口，**三态**：生成奖励 → 获取奖励 → 查看奖励（见下）。卡片的形状与牌组 /
  *   奖励里的**卡面同一套**（窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
  *   **卡上不再有「查看牌组」**：牌组已由标题行的「牌组」入口统一提供（`RoomScaffold`，同一份
@@ -125,6 +125,7 @@ export default function OpeningRoomPanel({
       <section className="stage-row" aria-label="场景描述">
         <StageCard
           state={stageState}
+          name={room.stage.name}
           body={stageBody}
           onActivate={
             stageState === "failed" ? () => actions.init.start() : () => setIsStageOpen(true)
@@ -171,7 +172,7 @@ export default function OpeningRoomPanel({
               badge={member.player ? "玩家" : undefined}
               stats={member.stats}
               extra={`卡组 ${member.deck.length}`}
-              // 点名字开角色信息（与家园页的角色 chip 同一交互）
+              // 整卡可点开角色信息（与场景卡同一交互）
               onOpenInfo={() => setInfoActor(member.name)}
             >
               {/* 卡上唯一一颗按钮 = 本成员的奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励。

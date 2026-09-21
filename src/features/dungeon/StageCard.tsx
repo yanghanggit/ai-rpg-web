@@ -1,13 +1,19 @@
+import { displayName } from "../../components/displayName";
+
 /**
  * 场景卡的三态。开场房的初始化状态**只在这一处表达**（标题行没有第二颗 ↻），所以卡片要能自己
  * 讲清运行中 / 失败 / 就绪。战斗侧只有「就绪」一态（战斗的初始化状态由「开始」卡表达）。
  */
 export type StageCardState = "running" | "failed" | "ready";
 
-const LABELS: Record<StageCardState, string> = {
-  running: "场景描述：初始化中",
-  failed: "场景描述：重试初始化开场",
-  ready: "场景描述：查看场景信息",
+/**
+ * 各态的动作词。无障碍名 = `<动作>：<场景名>`，与角色卡（`ActorCard`）的「查看角色：X」同一套
+ * 措辞——**动作在前、对象在后**，读屏器一眼读到"能干什么、对谁"。
+ */
+const ACTIONS: Record<StageCardState, string> = {
+  running: "初始化中",
+  failed: "重试初始化",
+  ready: "查看场景",
 };
 
 const TITLES: Record<StageCardState, string> = {
@@ -33,15 +39,18 @@ const TITLES: Record<StageCardState, string> = {
  * - `ready`：环境叙述，**点整张卡看全文**（开场房与战斗开局都如此——"点场景卡看全文"是 dungeon
  *   的通用交互）。
  *
- * 无障碍名统一以可见的「场景描述」开头（`场景描述：…`），既让读屏器有上下文，也让动作名唯一
- * （开场房不再有第二处同动作入口）。
+ * `name` 是场景原始名（`场景.义庄前院`）：只用来拼无障碍名（`查看场景：义庄前院`），卡面上不显示
+ * （可见标签始终是「场景描述」）。带名字是为了让"哪一张场景卡"在读屏器里也唯一。
  */
 export default function StageCard({
   state,
+  name,
   body,
   onActivate,
 }: {
   state: StageCardState;
+  /** 场景原始名（`room.stage.name`）：拼无障碍名用，显示名交给 `displayName`。 */
+  name: string;
   /** 卡面正文：进行中 / 失败原因 / 环境叙述（超出三行省略）。 */
   body: string;
   onActivate: () => void;
@@ -50,7 +59,7 @@ export default function StageCard({
     <button
       type="button"
       className={`stage-card stage-card--${state}`}
-      aria-label={LABELS[state]}
+      aria-label={`${ACTIONS[state]}：${displayName(name)}`}
       title={TITLES[state]}
       disabled={state === "running"}
       onClick={onActivate}

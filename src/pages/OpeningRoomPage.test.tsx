@@ -65,7 +65,10 @@ async function waitForInit() {
 
 /** 某个成员卡底那颗奖励按钮（三态：生成奖励 / 获取奖励 / 查看奖励）。 */
 function spoilsButton(memberName: string) {
-  const card = screen.getByRole("button", { name: displayName(memberName) }).closest("article");
+  // 整卡可点那层按钮带「查看角色：X」的名字，用它定位到卡片再找奖励按钮
+  const card = screen
+    .getByRole("button", { name: `查看角色：${displayName(memberName)}` })
+    .closest("article");
   if (!(card instanceof HTMLElement)) {
     throw new Error(`找不到 ${memberName} 的角色卡`);
   }
@@ -297,14 +300,14 @@ describe("副本房间 · 开场房间", () => {
 
     // 初始化失败写在场景卡里：卡片本身变成本间的主行动（点整张卡重试）
     const stage = await screen.findByRole("region", { name: "场景描述" });
-    const stageCard = within(stage).getByRole("button", { name: "场景描述：重试初始化开场" });
+    const stageCard = within(stage).getByRole("button", { name: "重试初始化：义庄前院" });
     expect(stageCard).toHaveTextContent("初始化失败");
 
     // 自动初始化只发一次；失败后不自动重试
     expect(initSpy).toHaveBeenCalledTimes(1);
 
-    // 标题行没有第二颗 ↻：初始化三态全在场景卡上（失败也没有兜底的那颗）
-    expect(screen.queryByRole("button", { name: "重试初始化开场" })).not.toBeInTheDocument();
+    // 标题行没有第二颗 ↻：初始化三态全在场景卡上（失败也没有兜底的那颗）——全屏只有这一处「重试初始化」
+    expect(screen.getAllByRole("button", { name: /重试初始化/ })).toHaveLength(1);
 
     // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
     expect(await screen.findByRole("button", { name: "生成奖励" })).toBeDisabled();
@@ -321,7 +324,7 @@ describe("副本房间 · 开场房间", () => {
       await screen.findByText("离开副本失败：开场房间尚未初始化，无法退出"),
     ).toBeInTheDocument();
     // 人还在本间（副本没被拆），场景卡仍是可点的重试入口
-    expect(screen.getByRole("button", { name: "场景描述：重试初始化开场" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "重试初始化：义庄前院" })).toBeInTheDocument();
 
     // 点场景卡重试（本间唯一的重试入口）
     fireEvent.click(stageCard);
@@ -340,7 +343,7 @@ describe("副本房间 · 开场房间", () => {
 
     // 初始化中之后：卡面换成环境叙述（超出三行在卡上省略，全文在浮窗里）
     const stage = screen.getByRole("region", { name: "场景描述" });
-    const card = within(stage).getByRole("button", { name: "场景描述：查看场景信息" });
+    const card = within(stage).getByRole("button", { name: "查看场景：义庄前院" });
     expect(card).toHaveTextContent(/义庄前院 的环境叙述/);
 
     // 点卡 → 场景信息浮窗：完整叙述 + 场景内角色；点角色即换成角色浮窗（同类切换不叠层）
@@ -447,12 +450,12 @@ describe("副本房间 · 开场房间", () => {
     expect(within(player).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
   });
 
-  it("角色卡片：点名字开角色信息（副本里不提供时装入口）", async () => {
+  it("角色卡片：整卡可点开角色信息（副本里不提供时装入口）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    fireEvent.click(await screen.findByRole("button", { name: "无名" }));
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：无名" }));
 
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     await within(dialog).findByText("属性");
