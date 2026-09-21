@@ -69,6 +69,17 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(dialog).queryByRole("heading", { name: "时装" })).not.toBeInTheDocument();
   });
 
+  it("开局准备：场景卡可点开「场景信息」全文（与开场房同一交互）", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+
+    const scene = await screen.findByRole("region", { name: "场景描述" });
+    fireEvent.click(within(scene).getByRole("button", { name: "场景描述：查看场景信息" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "场景信息" });
+    expect(within(dialog).getByRole("heading", { name: "环境叙述" })).toBeInTheDocument();
+  });
+
   it("共同框架在战斗房间同样给出三个平级入口（副本操作 / 地图 / 牌组）", async () => {
     server.use(instantTasks());
     renderCombatRoom();

@@ -1,16 +1,15 @@
 import { useState } from "react";
-import { describeApiError } from "../../../api/describeApiError";
 import type { Schemas } from "../../../api/types";
-import { displayName } from "../../../components/displayName";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import StageInfoDialog from "../../stage/StageInfoDialog";
+import { stageNarrativeBody } from "../../stage/stageNarrativeBody";
 import { useStageEntity } from "../../stage/useStageEntity";
-import { characterStatsText } from "../characterStatsText";
+import ActorCard from "../ActorCard";
+import StageCard, { type StageCardState } from "../StageCard";
 import type { DungeonParty, DungeonPartyMember } from "../useDungeonParty";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
-import StageCard, { type StageCardState } from "./StageCard";
 import type { OpeningActions } from "./useOpeningActions";
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
@@ -108,13 +107,7 @@ export default function OpeningRoomPanel({
       ? `初始化失败：${actions.init.error}`
       : stageState === "running"
         ? "进行中…"
-        : narrative !== null
-          ? narrative
-          : stage.isError
-            ? `无法获取环境叙述：${describeApiError(stage.error)}`
-            : stage.isPending
-              ? "加载中…"
-              : "（暂无环境描写）";
+        : stageNarrativeBody(narrative, stage);
 
   /** 某张角色卡上那颗按钮现在该写什么：生成奖励 → 获取奖励 → 查看奖励。 */
   function spoilsLabel(member: DungeonPartyMember): string {
@@ -172,62 +165,49 @@ export default function OpeningRoomPanel({
         {/* 竖着的角色卡一张挨一张横排：顺序沿用后端给的队伍顺序（玩家在前），就是「站位」的 UX 雏形 */}
         <div className="cards cards--party">
           {party.party.map((member) => (
-            <article key={member.name} className="card actor-card">
-              <div className="card-head">
-                {/* 点名字开角色信息（与家园页的角色 chip 同一交互） */}
-                <button
-                  type="button"
-                  className="chip chip-button mono"
-                  onClick={() => setInfoActor(member.name)}
-                >
-                  {displayName(member.name)}
-                </button>
-                {member.player ? <span className="badge">玩家</span> : null}
-              </div>
-
-              {/* 卡面数据：属性一行（与战斗房的角色卡同一份措辞，见 `characterStatsText`）
-                  + 卡组张数另起一行（横排会被卡宽挤断） */}
-              <p className="muted actor-card-stats">
-                <span>{characterStatsText(member.stats)}</span>
-                <span>卡组 {member.deck.length}</span>
-              </p>
-
+            <ActorCard
+              key={member.name}
+              name={member.name}
+              badge={member.player ? "玩家" : undefined}
+              stats={member.stats}
+              extra={`卡组 ${member.deck.length}`}
+              // 点名字开角色信息（与家园页的角色 chip 同一交互）
+              onOpenInfo={() => setInfoActor(member.name)}
+            >
               {/* 卡上唯一一颗按钮 = 本成员的奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励。
                   生成是**整队一次**的动作（点哪张卡上的都一样），所以给 button 加 title 说明。
                   「还有候选卡未领」不另外占一行页面提示：它就是第二态本身，
                   所以把提醒做到按钮上（提醒色 + 「!」），后果写进 title。 */}
-              <div className="card-actions">
-                {member.spoils === null ? (
-                  <button
-                    type="button"
-                    // 生成需要开场已初始化（服务端硬前置）：未初始化时按钮在，但不可点
-                    disabled={!room.initialized || actions.isBusy}
-                    title="一次为整队生成奖励（点任何一张卡上的它都一样）"
-                    onClick={() => actions.spoils.start()}
-                  >
-                    {spoilsLabel(member)}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    className={hasUnclaimedRewards(member) ? "button--pending" : undefined}
-                    title={
-                      hasUnclaimedRewards(member)
-                        ? "还有候选卡未领：结束本间后就无法再领取了。"
-                        : "本成员的奖励（已领取的也可以回看）"
-                    }
-                    onClick={() => setSpoilsMember(member.name)}
-                  >
-                    {spoilsLabel(member)}
-                    {hasUnclaimedRewards(member) ? (
-                      <span className="button-mark" aria-hidden="true">
-                        !
-                      </span>
-                    ) : null}
-                  </button>
-                )}
-              </div>
-            </article>
+              {member.spoils === null ? (
+                <button
+                  type="button"
+                  // 生成需要开场已初始化（服务端硬前置）：未初始化时按钮在，但不可点
+                  disabled={!room.initialized || actions.isBusy}
+                  title="一次为整队生成奖励（点任何一张卡上的它都一样）"
+                  onClick={() => actions.spoils.start()}
+                >
+                  {spoilsLabel(member)}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={hasUnclaimedRewards(member) ? "button--pending" : undefined}
+                  title={
+                    hasUnclaimedRewards(member)
+                      ? "还有候选卡未领：结束本间后就无法再领取了。"
+                      : "本成员的奖励（已领取的也可以回看）"
+                  }
+                  onClick={() => setSpoilsMember(member.name)}
+                >
+                  {spoilsLabel(member)}
+                  {hasUnclaimedRewards(member) ? (
+                    <span className="button-mark" aria-hidden="true">
+                      !
+                    </span>
+                  ) : null}
+                </button>
+              )}
+            </ActorCard>
           ))}
         </div>
       </section>

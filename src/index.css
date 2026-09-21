@@ -7,6 +7,10 @@
   --warn: #b45309;
   --border: #e5e7eb;
   --bg: #ffffff;
+  /* 卡片足迹（dungeon）：短边 = 角色卡的宽 = 场景卡的高，长边 = 角色卡的高 = 场景卡的宽。
+     角色卡 / 场景卡 / 牌面共用这一对，所以「横（场景）」就是「竖（角色）」转 90°。 */
+  --card-short: 13rem;
+  --card-tall: 17rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -964,15 +968,15 @@ li.dungeon-room--current {
   margin: 1.5rem 0 0;
 }
 
-/* 场景卡：**固定大小**（换房间、初始化前后都不跳——原来靠 min-height 占位，现在由卡片尺寸保证），
-   所以叙述超出就三行省略，全文在浮窗里。骨架始终一样，只有正文随状态变。 */
+/* 场景卡：**固定大小**（换房间、初始化前后都不跳）。尺寸 = 角色卡足迹**转 90°**：
+   宽 = `--card-tall`、高 = `--card-short`，所以横竖并排是一族。叙述超出就三行省略，全文在浮窗里。 */
 .stage-card {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  width: min(100%, 26rem);
+  width: min(100%, var(--card-tall));
   /* 高度跟宽度一起定死：卡片是这一屏的量尺，不能因为描述长短而变形 */
-  height: 9rem;
+  height: var(--card-short);
   padding: 1.1rem 1.25rem;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -1017,7 +1021,8 @@ li.dungeon-room--current {
   justify-content: center;
   gap: 0.35rem;
   width: 9.5rem;
-  min-height: 9rem;
+  /* 与场景卡同高（`.stage-row` 的 stretch 也会拉到一样高，这里写死是保险） */
+  min-height: var(--card-short);
   padding: 0.75rem;
   border-radius: 12px;
 }
@@ -1068,10 +1073,11 @@ li.dungeon-room--current {
   color: var(--fg);
 }
 
-/* 队伍的角色卡：**竖着的矩形卡牌**（与牌组 / 奖励里的卡面同一形状语言——窄而高，一行几张由
-   容器宽度决定）。`.cards` 本身是通排的宽卡（家园页的副本卡），所以用修饰类只改队伍这一处。 */
+/* 队伍 / 敌人那排角色卡：**竖着的矩形卡牌**（短 × 长，就是场景卡足迹转 90°；也是牌组 / 奖励卡面
+   的形状语言）。列宽固定为 `--card-short`，不再随容器撞大——尺寸与场景卡对得上。
+   `.cards` 本身是通排的宽卡（家园页的副本卡），所以用修饰类只改这一处。 */
 .cards--party {
-  grid-template-columns: repeat(auto-fill, minmax(min(12.5rem, 100%), 1fr));
+  grid-template-columns: repeat(auto-fill, var(--card-short));
   gap: 1rem;
 }
 
@@ -1081,7 +1087,7 @@ li.dungeon-room--current {
 }
 
 .cards--party .card {
-  min-height: 15rem;
+  min-height: var(--card-tall);
   padding: 1.1rem 1.25rem;
   border-radius: 12px;
 }
@@ -1184,20 +1190,20 @@ ul.card-tiles--deck {
 }
 
 ul.card-tiles--deck-1 {
-  grid-template-columns: 12.5rem;
+  grid-template-columns: var(--card-short);
 }
 
 ul.card-tiles--deck-2 {
-  grid-template-columns: repeat(2, 12.5rem);
+  grid-template-columns: repeat(2, var(--card-short));
 }
 
 ul.card-tiles--deck-3 {
-  grid-template-columns: repeat(3, 12.5rem);
+  grid-template-columns: repeat(3, var(--card-short));
 }
 
 /* 卡面给足高度，保持「牌」的比例 */
 ul.card-tiles--deck > .card-tile {
-  min-height: 15rem;
+  min-height: var(--card-tall);
 }
 
 /* 整张卡可点（打开卡牌详情）：内容包一层按钮，撑满卡面（点击区域 = 整张卡） */

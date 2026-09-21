@@ -3,8 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 import StageCard from "./StageCard";
 
 /**
- * `StageCard` 的单元测试：三态的**可点性与无障碍名**是这块的全部逻辑（外观在 CSS 里）。
- * 页面级的那套（初始化失败 → 点卡重试、就绪 → 点卡看全文）在 `OpeningRoomPage.test.tsx` 里。
+ * `StageCard` 的单元测试：三态的**可点性与无障碍名**是这块的全部逻辑（外观 / 尺寸在 CSS 里）。
+ * 页面级的那套（初始化失败 → 点卡重试、就绪 → 点卡看全文）在 `OpeningRoomPage.test.tsx` 与
+ * `CombatRoomPage.test.tsx` 里。
  */
 describe("StageCard", () => {
   it("初始化中：显示「进行中…」，不可点（此刻没什么可做的）", () => {

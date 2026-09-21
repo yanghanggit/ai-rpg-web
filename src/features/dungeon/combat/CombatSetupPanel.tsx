@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import type { Schemas } from "../../../api/types";
-import { displayName } from "../../../components/displayName";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
+import StageInfoDialog from "../../stage/StageInfoDialog";
+import { stageNarrativeBody } from "../../stage/stageNarrativeBody";
 import { useStageEntity } from "../../stage/useStageEntity";
-import { characterStatsText } from "../characterStatsText";
+import ActorCard from "../ActorCard";
+import StageCard from "../StageCard";
 import { COMBAT_STATE } from "./combatPhase";
 import { type Combatant, roleLabel } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
@@ -12,8 +14,9 @@ import type { CombatActions } from "./useCombatActions";
 /**
  * 战斗**开始之前**的那一屏（`init` / `round_start` 两个 phase 共用）。
  *
- * 布局对齐「横 = 场景 / 竖 = 人」：上面一排**敌人**卡、中间**场景卡 + 开始卡**、下面一排**队伍**卡，
- * 卡面风格延续开场房间（`opening/OpeningRoomPanel` 的场景卡与角色卡）。
+ * 布局对齐「横 = 场景 / 竖 = 人」：上面一排**敌人**卡、中间**场景卡 + 开始卡**、下面一排**队伍**卡。
+ * 卡面与开场房间**共用同一对组件**（`dungeon/StageCard`、`dungeon/ActorCard`），所以横竖同尺寸、
+ * 措辞同来源；场景卡与开场房一样可点开「场景信息」全文。
  *
  * **进入战斗房间自动初始化一次**（与开场房间同一套）：用 ref 记住已触发过的战斗，StrictMode 下
  * effect 跑两次、或轮询重渲染都不会重复发任务；失败不自动重试——「开始」那颗按钮就是重试入口。
@@ -24,8 +27,8 @@ import type { CombatActions } from "./useCombatActions";
  * 一次点击落到第一回合；开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
  *
  * 卡片只留**必要信息**：名字 + 身份 + 一行 `HP / 攻 / 防`。能量 / 格挡 / 牌堆在开局前全是 0，
- * 先不显示（它们属于回合行动那一屏）。**队伍卡的名字可点开角色信息浮窗**（与开场房的角色卡
- * 同一交互：`ActorInfoDialog`，副本内不提供穿 / 脱时装）；敌人卡不给入口——它不是可操作对象。
+ * 先不显示（它们属于回合行动那一屏）。**队伍卡的名字可点开角色信息浮窗**（`ActorInfoDialog`，
+ * 副本内不提供穿 / 脱时装）；敌人卡不给入口——它不是可操作对象。
  */
 export default function CombatSetupPanel({
   userName,
@@ -49,6 +52,8 @@ export default function CombatSetupPanel({
   const narrative =
     stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
 
+  // 正在看场景全文（非空即打开场景信息浮窗）
+  const [isStageOpen, setIsStageOpen] = useState(false);
   // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
 
@@ -94,7 +99,7 @@ export default function CombatSetupPanel({
   const party = combatants.filter((combatant) => combatant.faction !== "monster");
   const hasRound = combat.rounds.length > 0;
   const error = actions.init.error ?? actions.draw.error;
-  const sceneBody = stage.isPending ? "加载中…" : (narrative ?? "（暂无环境描写）");
+  const sceneBody = stageNarrativeBody(narrative, stage);
 
   return (
     <>
@@ -106,15 +111,18 @@ export default function CombatSetupPanel({
       <section className="combat-setup">
         <section className="cards cards--party" aria-label="敌人">
           {monsters.map((combatant) => (
-            <SetupCard key={combatant.name} combatant={combatant} />
+            <ActorCard
+              key={combatant.name}
+              name={combatant.name}
+              badge={roleLabel(combatant)}
+              stats={combatant.stats}
+            />
           ))}
         </section>
 
         <section className="stage-row" aria-label="场景描述">
-          <div className="stage-card">
-            <span className="stage-card-label">场景描述</span>
-            <span className="stage-card-body">{sceneBody}</span>
-          </div>
+          {/* 与开场房共用同一张场景卡：就绪态点整张卡看全文（场景信息浮窗） */}
+          <StageCard state="ready" body={sceneBody} onActivate={() => setIsStageOpen(true)} />
           <button
             type="button"
             className="stage-next stage-next--start"
@@ -129,14 +137,32 @@ export default function CombatSetupPanel({
 
         <section className="cards cards--party" aria-label="队伍">
           {party.map((combatant) => (
-            <SetupCard
+            <ActorCard
               key={combatant.name}
-              combatant={combatant}
-              onSelect={() => setInfoActor(combatant.name)}
+              name={combatant.name}
+              badge={roleLabel(combatant)}
+              stats={combatant.stats}
+              onOpenInfo={() => setInfoActor(combatant.name)}
             />
           ))}
         </section>
       </section>
+
+      {isStageOpen ? (
+        <StageInfoDialog
+          userName={userName}
+          gameName={gameName}
+          stageName={stageName}
+          // 战斗房里的「场景内角色」就是这一场的参战者
+          actorNames={combatants.map((combatant) => combatant.name)}
+          // 同类切换不叠层：点场景里的角色 → 关场景浮窗、换角色浮窗（与开场房同一套）
+          onSelectActor={(actorName) => {
+            setIsStageOpen(false);
+            setInfoActor(actorName);
+          }}
+          onClose={() => setIsStageOpen(false)}
+        />
+      ) : null}
 
       {infoActor === null ? null : (
         <ActorInfoDialog
@@ -149,25 +175,5 @@ export default function CombatSetupPanel({
         />
       )}
     </>
-  );
-}
-
-/** 开局前的参战者卡：名字 + 身份 + 一行属性（与开场房间的角色卡同一套骨架，省掉开局前无意义的数据）。 */
-function SetupCard({ combatant, onSelect }: { combatant: Combatant; onSelect?: () => void }) {
-  return (
-    <article className="card actor-card">
-      <div className="card-head">
-        {/* 给 `onSelect` 的角色（队伍）名字可点，开角色信息；没给（敌人）就是静态 chip */}
-        {onSelect === undefined ? (
-          <span className="chip mono">{displayName(combatant.name)}</span>
-        ) : (
-          <button type="button" className="chip chip-button mono" onClick={onSelect}>
-            {displayName(combatant.name)}
-          </button>
-        )}
-        <span className="badge">{roleLabel(combatant)}</span>
-      </div>
-      <p className="muted actor-card-stats">{characterStatsText(combatant.stats)}</p>
-    </article>
   );
 }

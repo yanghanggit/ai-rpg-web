@@ -31,7 +31,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   home/useSwitchStage.ts  home/findStageOfActor.ts  home/EntityBrowserDialog.tsx
   identity/ActorInfoDialog.tsx  identity/readActorInfo.ts  identity/useActorEntity.ts  identity/usePlayerActor.ts
   costume/StorageCostumeDialog.tsx  costume/useStorageCostumes.ts  costume/useCostumeAction.ts
-  stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/useStageEntity.ts
+  stage/StageInfoDialog.tsx  stage/readStageInfo.ts  stage/stageNarrativeBody.ts  stage/useStageEntity.ts
   dungeon/DungeonMapDialog.tsx  dungeon/DungeonRoomList.tsx  dungeon/readDungeonInfo.ts  dungeon/readNextRoom.ts
   dungeon/readRoomGuards.ts  dungeon/readRoomFinish.ts
   dungeon/RoomScaffold.tsx  dungeon/RoomActionsDialog.tsx  dungeon/DungeonRunGate.tsx  dungeon/DeckDialog.tsx  dungeon/DeckBrowserDialog.tsx
@@ -39,7 +39,8 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   dungeon/overview/DungeonPanel.tsx  overview/EnterDungeonDialog.tsx  overview/useDungeonList.ts  overview/useGenerateDungeon.ts
   dungeon/overview/useEnterDungeon.ts  overview/useEnterPreview.ts
   dungeon/map/DungeonMapPanel.tsx  map/useAdvanceStage.ts
-  dungeon/opening/OpeningRoomPanel.tsx  opening/StageCard.tsx  opening/SpoilsDialog.tsx  opening/hasUnclaimedRewards.ts
+  dungeon/ActorCard.tsx  dungeon/StageCard.tsx  dungeon/characterStatsText.ts
+  dungeon/opening/OpeningRoomPanel.tsx  opening/SpoilsDialog.tsx  opening/hasUnclaimedRewards.ts
   dungeon/opening/useOpeningActions.ts
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatSetupPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
