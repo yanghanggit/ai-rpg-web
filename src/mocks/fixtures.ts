@@ -736,6 +736,24 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
 
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
 
+/**
+ * 副本怪物的固定牌组（按怪物名）。
+ *
+ * 怪物和队伍成员一样持 `DeckComponent`（后端战斗双方都有牌库，`build_deck_text` 一次列双方），
+ * 所以「牌组一览」要能读到它们。只列 `dungeonFixture` 里出现的怪物；未列出的用默认牌组。
+ */
+export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
+  "怪物.纸人": [cardFixtures.paper, cardFixtures.spark, cardFixtures.ward],
+  "怪物.棺中殭尸": [
+    cardFixtures.cleave,
+    cardFixtures.breath,
+    cardFixtures.nail,
+    cardFixtures.shroud,
+  ],
+};
+
+export const defaultMonsterDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
+
 /** 奖励（Spoils）候选（后端 `SPOILS_CARD_COUNT = 3`，3 选 1）。 */
 export const spoilsFixture: Record<string, unknown>[] = [
   cardFixtures.spark,

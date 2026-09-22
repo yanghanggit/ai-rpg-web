@@ -422,6 +422,17 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
   opacity: 0.5;
 }
 
+/* 「牌组一览」：我方 / 敌方两段。段内行间不画线（.deck-list 抵消 .action-list 的 li+li），
+   线只画在两段之间（「敌方」段的顶边），代表"换阵营"而不是夹在同伴之间。 */
+.deck-list li + li {
+  border-top: 0;
+}
+
+.deck-section + .deck-section {
+  margin-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
 /* 小节标题行 */
 .section-head {
   display: flex;

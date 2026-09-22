@@ -221,13 +221,16 @@ describe("副本房间 · 共同框架", () => {
     // 入口与齿轮平级，同在标题行
     fireEvent.click(await screen.findByRole("button", { name: "牌组" }));
 
-    const list = await screen.findByRole("dialog", { name: "队伍牌组" });
+    const list = await screen.findByRole("dialog", { name: "牌组一览" });
     // 每一行是一颗按钮（名字 + 张数），玩家必须排第一
     const rows = within(list).getAllByRole("button", { name: /张$/ });
     expect(rows).toHaveLength(3);
     expect(rows[0]).toHaveTextContent("无名");
     expect(rows[0]).toHaveTextContent("玩家");
     expect(within(list).getByText("9 张")).toBeInTheDocument();
+    // 开场房 stage.actors 为空 → 只列我方，不出现「敌方」段
+    expect(within(list).getByRole("heading", { name: "我方" })).toBeInTheDocument();
+    expect(within(list).queryByRole("heading", { name: "敌方" })).not.toBeInTheDocument();
 
     fireEvent.click(within(list).getByRole("button", { name: /顾知秋/ }));
 
@@ -239,14 +242,14 @@ describe("副本房间 · 共同框架", () => {
     expect(within(deck).getByText("[破竹]")).toBeInTheDocument();
     expect(within(deck).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
     // 二级是叠在一级之上（名单没被关掉），不是同类切换
-    expect(screen.getByRole("dialog", { name: "队伍牌组" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "牌组一览" })).toBeInTheDocument();
 
     // 点卡 → 三级「卡牌」详情：词缀是完整原文，两层的下层都还在
     fireEvent.click(within(deck).getByRole("button", { name: "查看卡牌：撬棍横击" }));
     const detail = await screen.findByRole("dialog", { name: "卡牌" });
     expect(within(detail).getByText(/本段命中后更容易击穿格挡/)).toBeInTheDocument();
     expect(screen.getByRole("dialog", { name: "牌组" })).toBeInTheDocument();
-    expect(screen.getByRole("dialog", { name: "队伍牌组" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "牌组一览" })).toBeInTheDocument();
 
     // 关三级 → 回到牌组；再关牌组 → 回到名单
     fireEvent.click(within(detail).getByRole("button", { name: "关闭" }));
@@ -259,7 +262,7 @@ describe("副本房间 · 共同框架", () => {
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "牌组" })).not.toBeInTheDocument(),
     );
-    expect(screen.getByRole("dialog", { name: "队伍牌组" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "牌组一览" })).toBeInTheDocument();
   });
 
   it("离开副本：从菜单触发后入口变「退出中…」并禁用", async () => {

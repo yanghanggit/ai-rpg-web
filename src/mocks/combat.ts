@@ -20,7 +20,9 @@ import {
   blueprintFixture,
   deckFixtures,
   defaultDeckFixture,
+  defaultMonsterDeckFixture,
   dungeonFixture,
+  monsterDeckFixtures,
   roundFixture,
 } from "./fixtures";
 import { readMockPartyNames } from "./opening";
@@ -384,9 +386,10 @@ export function prepareMockPostCombat(): void {
 /**
  * 怪物基础实体（怪物不是家园 NPC，`./items` 查不到，所以在这里构造）。
  *
- * 组件与队伍成员同底：`IdentityComponent` / `AppearanceComponent` / `CharacterStatsComponent`，
- * 只把类型标记换成 `MonsterComponent`（真实后端 `dbg_game.py` 给所有 actor 都挂外观组件，
- * `appearance` 初始 = `base_body`；怪物不穿时装，所以两者相同）。
+ * 组件与队伍成员同底：`IdentityComponent` / `AppearanceComponent` / `CharacterStatsComponent`
+ * 与 `DeckComponent`（战斗双方都持牌库），只把类型标记换成 `MonsterComponent`（真实后端
+ * `dbg_game.py` 给所有 actor 都挂外观组件，`appearance` 初始 = `base_body`；怪物不穿时装，所以
+ * 两者相同）。
  */
 export function readMockCombatActorEntity(name: string): Entity | null {
   const actor = monsterActor(name);
@@ -408,6 +411,10 @@ export function readMockCombatActorEntity(name: string): Entity | null {
       {
         name: COMPONENT.CharacterStats,
         data: { name, stats: clone(actor.character_stats) },
+      },
+      {
+        name: COMPONENT.Deck,
+        data: { name, cards: clone(monsterDeckFixtures[name] ?? defaultMonsterDeckFixture) },
       },
     ],
   };

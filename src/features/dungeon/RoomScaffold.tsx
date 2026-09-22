@@ -25,7 +25,7 @@ import type { ExitDungeon } from "./useExitDungeon";
  *      → `CombatInfoDialog`）。**未读叙事信号上提到这个齿轮**（变绿 + 角标），否则会被菜单吃掉；
  *   2. 黑旗「地图」→ `DungeonMapDialog`（地图与当前进度：整体设定 / 房间 / 敌人）；
  *      它与「牌组」一样是**只读浏览**，所以与「副本操作」平级而不做它的子项；
- *   3. 黑桃「牌组」→ `DeckBrowserDialog`（一级名单 → 二级卡面 → 三级卡牌详情）。
+ *   3. 黑桃「牌组」→ `DeckBrowserDialog`（一级双方名单 → 二级卡面 → 三级卡牌详情）。
  * - 「离开副本」是**任务接口**，而「回家」发生在任务内部（队伍被传回家园场景、副本被拆掉），
  *   所以在回调里触发、等任务终态、然后 `replace` 跳家园页（副本此刻已不存在，返回键不该回到这一屏）。
  *   **客户端不预判能不能走**（"本间还没结束"这类前置由服务端在接口/任务里拦），被拒的原因原样显示
@@ -236,7 +236,12 @@ export default function RoomScaffold({
       ) : null}
 
       {pane === "decks" ? (
-        <DeckBrowserDialog userName={userName} gameName={gameName} onClose={() => setPane(null)} />
+        <DeckBrowserDialog
+          userName={userName}
+          gameName={gameName}
+          room={currentRoom ?? null}
+          onClose={() => setPane(null)}
+        />
       ) : null}
     </main>
   );

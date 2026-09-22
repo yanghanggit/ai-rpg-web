@@ -3,7 +3,8 @@
  * 与奖励（`SpoilsComponent`）。
  *
  * 属于**副本**而不是"开场房"：队伍在进副本那一刻固化，开场房用它（角色卡上的属性 / `卡组 N` /
- * 奖励），标题行的「牌组」入口（`DeckBrowserDialog`）在任何一屏都用它——所以它留在顶层。
+ * 奖励），标题行的「牌组」入口（`DeckBrowserDialog` 经 `useDungeonDecks`）在任何一屏都用它
+ * ——所以它留在顶层。
  * 奖励只有开场房有（`SpoilsComponent` 只在开场房挂上），其余时候解析出来是 `null`。
  *
  * 两步取数（与 `useEnterPreview` 同一手法，不需要新接口）：

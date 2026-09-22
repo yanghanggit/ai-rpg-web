@@ -97,9 +97,21 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByRole("button", { name: "地图" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "牌组" }));
-    const list = await screen.findByRole("dialog", { name: "队伍牌组" });
-    // 队友没入队时名单里只有玩家（牌组是点开才拉的，所以要等）
+    const list = await screen.findByRole("dialog", { name: "牌组一览" });
+    // 我方：队友没入队时名单里只有玩家（牌组是点开才拉的，所以要等）
+    expect(await within(list).findByRole("heading", { name: "我方" })).toBeInTheDocument();
     expect(await within(list).findByRole("button", { name: /无名/ })).toHaveTextContent("玩家");
+
+    // 敌方：本间（停柩房）的两个怪物与我方同列，且持有牌组
+    expect(await within(list).findByRole("heading", { name: "敌方" })).toBeInTheDocument();
+    const paper = await within(list).findByRole("button", { name: /纸人/ });
+    expect(paper).toHaveTextContent("怪物");
+    expect(within(list).getByRole("button", { name: /棺中殭尸/ })).toHaveTextContent("怪物");
+
+    // 怪物也能点进二级看牌组（怪物同样持 DeckComponent）
+    fireEvent.click(paper);
+    const deck = await screen.findByRole("dialog", { name: "牌组" });
+    expect(within(deck).getByText("纸人 · 共 3 张")).toBeInTheDocument();
   });
 
   it("战斗的宏观状态收在 ⚙「副本操作」里：一行「战斗信息」写着状态 / 回合 / 结果，点开看全部回合", async () => {
