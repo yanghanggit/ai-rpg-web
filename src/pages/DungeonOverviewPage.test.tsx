@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { HttpResponse, http } from "msw";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
+import { COMPONENT } from "../features/entities/componentNames";
 import { enterMockDungeon, generateMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { readMockActorEntity } from "../mocks/items";
@@ -260,7 +261,7 @@ describe("副本总览 · 进入副本（最终确认）", () => {
             return [];
           }
           if (name === "角色.顾知秋") {
-            entity.components.push({ name: "DeathComponent", data: { name } });
+            entity.components.push({ name: COMPONENT.Death, data: { name } });
           }
           return [entity];
         });

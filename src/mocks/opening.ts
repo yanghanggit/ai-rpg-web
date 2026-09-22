@@ -12,6 +12,7 @@
  * 两者由 handler 接线（真实后端也是 API 层把两边读出来拼成响应）。
  */
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import { deckFixtures, defaultDeckFixture, spoilsFixture } from "./fixtures";
 import { readMockActorEntity } from "./items";
 
@@ -87,15 +88,15 @@ export function withMockOpeningComponents(
     return entity;
   }
   const components = [...entity.components];
-  components.push({ name: "PartyMemberComponent", data: { name: entity.name } });
+  components.push({ name: COMPONENT.PartyMember, data: { name: entity.name } });
   components.push({
-    name: "DeckComponent",
+    name: COMPONENT.Deck,
     data: { name: entity.name, cards: clone(decks.get(entity.name) ?? []) },
   });
   const reward = spoils.get(entity.name);
   if (reward !== undefined) {
     components.push({
-      name: "SpoilsComponent",
+      name: COMPONENT.Spoils,
       data: {
         name: entity.name,
         candidate_cards: clone(reward.candidateCards),

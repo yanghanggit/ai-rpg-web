@@ -7,6 +7,7 @@
  * `none_of=PlayerComponent` 把它排除（group 端点支持三组条件）。
  */
 import { $api } from "../../api/query";
+import { COMPONENT } from "../entities/componentNames";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 
@@ -17,7 +18,7 @@ export function useRosterCandidates(userName: string, gameName: string) {
     {
       params: {
         path: { user_name: userName, game_name: gameName },
-        query: { all_of: ["NPCComponent"], none_of: ["PlayerComponent"] },
+        query: { all_of: [COMPONENT.NPC], none_of: [COMPONENT.Player] },
       },
     },
     { select: (data) => data.entities.map((entity) => entity.name) },

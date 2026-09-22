@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "../../api/types";
 import { blueprintFixture } from "../../mocks/fixtures";
+import { COMPONENT } from "../entities/componentNames";
 import { collectItemContainers } from "./collectItemContainers";
 
 type Component = Schemas["ComponentSerialization"];
@@ -19,7 +20,7 @@ function blueprintWithStorage(components: Component[]): Schemas["Blueprint"] {
 }
 
 const storageWithItems = (items: unknown[]): Component[] => [
-  { name: "StorageComponent", data: { name: "世界.储物箱", items } },
+  { name: COMPONENT.Storage, data: { name: "世界.储物箱", items } },
 ];
 
 describe("collectItemContainers", () => {
@@ -62,7 +63,7 @@ describe("collectItemContainers", () => {
               character_stats: { hp: 1, max_hp: 1, attack: 1, defense: 1 },
               components: [
                 {
-                  name: "InventoryComponent",
+                  name: COMPONENT.Inventory,
                   data: { items: [{ name: "b", type: "MaterialItem" }] },
                 },
               ],
@@ -87,18 +88,18 @@ describe("collectItemContainers", () => {
   it("没有对应组件时不出现", () => {
     expect(
       collectItemContainers(
-        blueprintWithStorage([{ name: "PlayerAuditComponent", data: { name: "世界.储物箱" } }]),
+        blueprintWithStorage([{ name: COMPONENT.PlayerAudit, data: { name: "世界.储物箱" } }]),
       ),
     ).toEqual([]);
   });
 
   it("data 里没有 items（或不是数组）时安全返回空，不抛错", () => {
     expect(
-      collectItemContainers(blueprintWithStorage([{ name: "StorageComponent", data: {} }])),
+      collectItemContainers(blueprintWithStorage([{ name: COMPONENT.Storage, data: {} }])),
     ).toEqual([]);
     expect(
       collectItemContainers(
-        blueprintWithStorage([{ name: "StorageComponent", data: { items: "不是数组" } }]),
+        blueprintWithStorage([{ name: COMPONENT.Storage, data: { items: "不是数组" } }]),
       ),
     ).toEqual([]);
   });

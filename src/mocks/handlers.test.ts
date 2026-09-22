@@ -2,6 +2,7 @@ import { HttpHandler } from "msw";
 import { describe, expect, it } from "vitest";
 import { API_BASE_URL, client, unwrap } from "../api/client";
 import { API_PATHS } from "../api/schemaPaths";
+import { COMPONENT } from "../features/entities/componentNames";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
 import { blueprintFixture } from "./fixtures";
 import { handlers } from "./handlers";
@@ -58,8 +59,8 @@ describe("战斗房间接口（mock handlers）", () => {
       }),
     );
     const components = details.entities[0]?.components ?? [];
-    expect(components.some((component) => component.name === "HandComponent")).toBe(true);
-    expect(components.some((component) => component.name === "RoundStatsComponent")).toBe(true);
+    expect(components.some((component) => component.name === COMPONENT.Hand)).toBe(true);
+    expect(components.some((component) => component.name === COMPONENT.RoundStats)).toBe(true);
 
     // 场景映射里能按玩家定位到战斗场景，且怪物在场
     const stages = unwrap(

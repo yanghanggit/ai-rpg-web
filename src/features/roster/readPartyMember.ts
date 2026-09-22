@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { COMPONENT } from "../entities/componentNames";
 import { hasComponent, readCharacterStats } from "../entities/ecs";
 
 type Entity = Schemas["EntitySerialization"];
@@ -14,8 +15,8 @@ type Entity = Schemas["EntitySerialization"];
 export function readPartyMember(entity: Entity) {
   return {
     name: entity.name,
-    player: hasComponent(entity, "PlayerComponent"),
-    dead: hasComponent(entity, "DeathComponent"),
+    player: hasComponent(entity, COMPONENT.Player),
+    dead: hasComponent(entity, COMPONENT.Death),
     stats: readCharacterStats(entity),
   };
 }

@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { COMPONENT } from "../entities/componentNames";
 import { isRecord } from "../entities/ecs";
 
 type Blueprint = Schemas["Blueprint"];
@@ -25,8 +26,8 @@ type Blueprint = Schemas["Blueprint"];
 
 /** 后端组件类名 → 界面标签。标签是固定的，不随持有者变化。 */
 const CONTAINER_COMPONENTS = [
-  { component: "InventoryComponent", label: "随身背包" },
-  { component: "StorageComponent", label: "储物箱" },
+  { component: COMPONENT.Inventory, label: "随身背包" },
+  { component: COMPONENT.Storage, label: "储物箱" },
 ] as const;
 
 interface ContainerItem {

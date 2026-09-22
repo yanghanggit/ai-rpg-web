@@ -9,6 +9,7 @@
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
 import type { ApiBody, Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import {
   advanceMockMonsterTurn,
   collectMockLoot,
@@ -96,25 +97,25 @@ export const handlers = [
     const searchParams = new URL(request.url).searchParams;
     const conditions = searchParams.getAll("all_of");
     const noneOf = searchParams.getAll("none_of");
-    if (conditions.includes("PlayerComponent")) {
+    if (conditions.includes(COMPONENT.Player)) {
       return HttpResponse.json({ entities: [readMockPlayerEntity()] });
     }
-    if (conditions.includes("WornCostumeComponent")) {
+    if (conditions.includes(COMPONENT.WornCostume)) {
       return HttpResponse.json({ entities: readMockWornEntities() });
     }
-    if (conditions.includes("StorageComponent")) {
+    if (conditions.includes(COMPONENT.Storage)) {
       return HttpResponse.json({ entities: [readMockStorageEntity()] });
     }
     // 队伍名单挂在玩家实体上（名单为空时该组件不存在，entities 为空）
-    if (conditions.includes("PartyRosterComponent")) {
+    if (conditions.includes(COMPONENT.PartyRoster)) {
       return HttpResponse.json({ entities: readMockRosterEntities() });
     }
     // 副本内的队伍（进副本时固化）：持 PartyMemberComponent 的成员，带牌组 / 奖励（Spoils）
-    if (conditions.includes("PartyMemberComponent")) {
+    if (conditions.includes(COMPONENT.PartyMember)) {
       return HttpResponse.json({ entities: readMockPartyEntities() });
     }
     // 副本队伍候选：持 NPCComponent 的实体；玩家可能也带 NPCComponent，靠 none_of 排除
-    if (conditions.includes("NPCComponent")) {
+    if (conditions.includes(COMPONENT.NPC)) {
       return HttpResponse.json({ entities: readMockNpcEntities(noneOf) });
     }
     return HttpResponse.json({ entities: [] });

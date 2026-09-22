@@ -6,6 +6,7 @@
  * 仅在二级浮窗打开时请求。
  */
 import { $api } from "../../api/query";
+import { COMPONENT } from "../entities/componentNames";
 import { readItems } from "../items/readItems";
 import type { Item } from "../items/types";
 
@@ -13,7 +14,7 @@ const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
 
 /** 储物箱是唯一同时带 WorldComponent 与 StorageComponent 的世界实体。 */
-const STORAGE_MATCH = ["WorldComponent", "StorageComponent"];
+const STORAGE_MATCH = [COMPONENT.World, COMPONENT.Storage];
 
 export function useStorageCostumes(userName: string, gameName: string, enabled: boolean) {
   const path = { user_name: userName, game_name: gameName };
@@ -36,7 +37,7 @@ export function useStorageCostumes(userName: string, gameName: string, enabled: 
   );
 
   const components = details.data?.entities.flatMap((entity) => entity.components) ?? [];
-  const costumes: Item[] = readItems(components, "StorageComponent").filter(
+  const costumes: Item[] = readItems(components, COMPONENT.Storage).filter(
     (item) => item.type === "CostumeItem",
   );
 

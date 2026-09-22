@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { COMPONENT } from "../entities/componentNames";
 import { readStageInfo } from "./readStageInfo";
 
 describe("readStageInfo", () => {
@@ -7,8 +8,8 @@ describe("readStageInfo", () => {
       readStageInfo({
         name: "场景.门厅",
         components: [
-          { name: "StageComponent", data: { name: "场景.门厅" } },
-          { name: "EnvironmentComponent", data: { name: "场景.门厅", narrative: "灯火幽微。" } },
+          { name: COMPONENT.Stage, data: { name: "场景.门厅" } },
+          { name: COMPONENT.Environment, data: { name: "场景.门厅", narrative: "灯火幽微。" } },
         ],
       }),
     ).toEqual({ name: "场景.门厅", narrative: "灯火幽微。" });
@@ -17,7 +18,7 @@ describe("readStageInfo", () => {
   it("没有 EnvironmentComponent 时 narrative 为 null（不猜）", () => {
     const info = readStageInfo({
       name: "场景.门厅",
-      components: [{ name: "StageComponent", data: { name: "场景.门厅" } }],
+      components: [{ name: COMPONENT.Stage, data: { name: "场景.门厅" } }],
     });
     expect(info.narrative).toBeNull();
   });
@@ -30,7 +31,7 @@ describe("readStageInfo", () => {
     expect(
       readStageInfo({
         name: "场景.二楼卧室",
-        components: [{ name: "StageComponent", data: { name: 5 } }],
+        components: [{ name: COMPONENT.Stage, data: { name: 5 } }],
       }),
     ).toEqual({ name: "场景.二楼卧室", narrative: null });
   });

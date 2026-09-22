@@ -14,6 +14,7 @@
 import type { Schemas } from "../../../api/types";
 import { readCards } from "../../cards/readCards";
 import type { Card } from "../../cards/types";
+import { COMPONENT, type ComponentName } from "../../entities/componentNames";
 import { getComponentData, hasComponent, readCharacterStats, readNumber } from "../../entities/ecs";
 
 type Entity = Schemas["EntitySerialization"];
@@ -47,10 +48,10 @@ export interface Combatant {
 
 /** 阵营判据与 TUI `classify_faction` 一致：玩家 / NPC → 我方，怪物 → 敌方。 */
 export function classifyFaction(entity: Entity): Faction {
-  if (hasComponent(entity, "PlayerComponent") || hasComponent(entity, "NPCComponent")) {
+  if (hasComponent(entity, COMPONENT.Player) || hasComponent(entity, COMPONENT.NPC)) {
     return "party";
   }
-  if (hasComponent(entity, "MonsterComponent")) {
+  if (hasComponent(entity, COMPONENT.Monster)) {
     return "monster";
   }
   return "unknown";
@@ -58,21 +59,21 @@ export function classifyFaction(entity: Entity): Faction {
 
 /** `DeathComponent` 只有有无之分（后端把死亡当标记）。 */
 export function isDead(entity: Entity): boolean {
-  return hasComponent(entity, "DeathComponent");
+  return hasComponent(entity, COMPONENT.Death);
 }
 
 export function isPlayer(entity: Entity): boolean {
-  return hasComponent(entity, "PlayerComponent");
+  return hasComponent(entity, COMPONENT.Player);
 }
 
 /** 本回合能量（`RoundStatsComponent.energy`）；没有该组件（未抓牌 / 非战斗单位）时为 0。 */
 export function readEnergy(entity: Entity): number {
-  return readNumber(getComponentData(entity, "RoundStatsComponent"), "energy") ?? 0;
+  return readNumber(getComponentData(entity, COMPONENT.RoundStats), "energy") ?? 0;
 }
 
 /** 手牌（`HandComponent.cards`）；未抓牌时为空数组。 */
 export function readHand(entity: Entity): Card[] {
-  return readCards(entity.components, "HandComponent");
+  return readCards(entity.components, COMPONENT.Hand);
 }
 
 /** 手牌提供的总格挡，与后端 `compute_hand_block` 一致。 */
@@ -80,7 +81,7 @@ export function computeHandBlock(cards: Card[]): number {
   return cards.reduce((sum, card) => sum + card.block, 0);
 }
 
-function countCards(entity: Entity, componentName: string): number {
+function countCards(entity: Entity, componentName: ComponentName): number {
   const data = getComponentData(entity, componentName);
   if (data === undefined || !Array.isArray(data.cards)) {
     return 0;
@@ -91,9 +92,9 @@ function countCards(entity: Entity, componentName: string): number {
 /** 三个牌堆的张数；未抓牌时都为 0。 */
 export function readPiles(entity: Entity): CombatPiles {
   return {
-    draw: countCards(entity, "DrawPileComponent"),
-    discard: countCards(entity, "DiscardPileComponent"),
-    exhaust: countCards(entity, "ExhaustPileComponent"),
+    draw: countCards(entity, COMPONENT.DrawPile),
+    discard: countCards(entity, COMPONENT.DiscardPile),
+    exhaust: countCards(entity, COMPONENT.ExhaustPile),
   };
 }
 

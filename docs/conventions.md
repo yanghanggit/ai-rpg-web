@@ -20,8 +20,8 @@
 
 ```text
 src/api/                 # 基础设施：传输层与契约适配，无业务功能
-  schema.d.ts            #   生成物，只读
-  client.ts  query.ts  types.ts  serverInfo.ts  sse.ts  useTask.ts  useJobAction.ts  describeApiError.ts
+  schema.d.ts  schemaPaths.ts  componentRegistry.ts  #   生成物，只读
+  client.ts  query.ts  types.ts  sse.ts  useTask.ts  useJobAction.ts  describeApiError.ts
 src/pages/               # 路由级组件：`*Route`（绑定 URL 的入口）/ `*Page`（具体屏幕）
   LaunchPage.tsx  LobbyPage.tsx  HomeOverviewPage.tsx  DungeonOverviewPage.tsx
   DungeonRoomRoute.tsx  OpeningRoomPage.tsx  CombatRoomPage.tsx  DevIndexPage.tsx
@@ -46,7 +46,7 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatSetupPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
   dungeon/combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/CombatInfoDialog.tsx  combat/combatPhase.ts
   dungeon/combat/readCombat.ts  combat/useCombatScene.ts  combat/useCombatActions.ts  combat/useCollectLoot.ts
-  entities/ecs.ts  entities/invalidateEntities.ts
+  entities/ecs.ts  entities/componentNames.ts  entities/invalidateEntities.ts
   cards/CardItem.tsx  cards/CardDetailDialog.tsx  cards/readCard.ts  cards/readCards.ts  cards/readAffixLabel.ts  cards/types.ts
   items/ItemManagerDialog.tsx  items/CraftConfirmDialog.tsx  items/useItemContainers.ts  items/useMoveItem.ts  items/useCraftItem.ts
   session/useSessionMessages.ts  session/NarrativeButton.tsx  session/NarrativeOverlay.tsx  session/useNarrative.ts
@@ -162,6 +162,7 @@ pages ──┬──▶ features ──┬──▶ components
 | 文件名 = 导出符号；`.tsx` 位置 | `scripts/checkFileConventions.mjs` | `pnpm lint` / `pnpm check:conventions` |
 | dev 端口字面量只出现在 `scripts/devPorts.mjs` | `scripts/checkDevPorts.mjs` | `pnpm lint` / `pnpm check:ports` |
 | API 类型来自生成物 | `pnpm gen:api` + `tsc` | `pnpm gen:api` |
+| 组件名与后端注册表一致 | `pnpm gen:api` + `tsc`（`COMPONENT` 的值经 `ApiComponentName` 校验） | `pnpm gen:api` |
 | 名字显示统一走 `displayName` | 靠 review（无工具可强制） | — |
 | 桌面排法（最小支持宽度 1024px） | 靠 review（CSS 无断言），可用 `pnpm screenshot` 拍图核对 | — |
 | 不滥用输入控件（游戏客户端） | 靠 review（无工具可强制） | — |

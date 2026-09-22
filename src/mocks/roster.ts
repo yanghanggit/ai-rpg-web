@@ -7,6 +7,7 @@
  * 这里照抄同一套语义，让 `pnpm dev:mock` 与真实后端行为一致。
  */
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import { npcEntityFixtures, playerEntityFixture } from "./fixtures";
 
 /** 队伍成员（不含玩家自身）。 */
@@ -22,7 +23,7 @@ export function readMockRosterEntities(): Schemas["EntitySerialization"][] {
       name: playerEntityFixture.name,
       components: [
         {
-          name: "PartyRosterComponent",
+          name: COMPONENT.PartyRoster,
           data: { name: playerEntityFixture.name, members: [...roster] },
         },
       ],
@@ -43,7 +44,7 @@ export function readMockNpcEntities(excludeComponents: string[]): Schemas["Entit
       name: playerEntityFixture.name,
       components: [
         ...playerEntityFixture.components,
-        { name: "NPCComponent", data: { name: playerEntityFixture.name } },
+        { name: COMPONENT.NPC, data: { name: playerEntityFixture.name } },
       ],
     },
     ...npcEntityFixtures,

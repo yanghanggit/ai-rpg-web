@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import {
   advanceMockMonsterTurn,
   collectMockLoot,
@@ -104,7 +105,7 @@ describe("回合行动", () => {
 
   it("出牌记日志 / 叙事并把卡从手牌移到弃牌堆", () => {
     startRound();
-    expect(componentData(actorEntity(PLAYER), "HandComponent")?.cards).toHaveLength(3);
+    expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(3);
 
     expect(playMockCards(PLAYER, "剖棺", [MONSTER_1])).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
@@ -112,8 +113,8 @@ describe("回合行动", () => {
     expect(round?.cards_narrative).toHaveLength(1);
 
     const after = actorEntity(PLAYER);
-    expect(componentData(after, "HandComponent")?.cards).toHaveLength(2);
-    expect(componentData(after, "DiscardPileComponent")?.cards).toHaveLength(1);
+    expect(componentData(after, COMPONENT.Hand)?.cards).toHaveLength(2);
+    expect(componentData(after, COMPONENT.DiscardPile)?.cards).toHaveLength(1);
   });
 
   it("手牌里没有的卡无法打出", () => {
@@ -155,8 +156,8 @@ describe("结算 / 战利品", () => {
     expect(readMockCombat().result).toBe(1);
     expect(readMockCombatLoot()).toHaveLength(1);
 
-    expect(monsterEntity(MONSTER_1).components.some((c) => c.name === "DeathComponent")).toBe(true);
-    expect(actorEntity(PLAYER).components.some((c) => c.name === "LootComponent")).toBe(true);
+    expect(monsterEntity(MONSTER_1).components.some((c) => c.name === COMPONENT.Death)).toBe(true);
+    expect(actorEntity(PLAYER).components.some((c) => c.name === COMPONENT.Loot)).toBe(true);
   });
 
   it("收取战利品：没有时拒绝，有则清空", () => {

@@ -19,6 +19,7 @@ import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";
 import { readCards } from "../cards/readCards";
 import type { Card } from "../cards/types";
+import { COMPONENT } from "../entities/componentNames";
 import { hasComponent, readCharacterStats } from "../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
@@ -44,7 +45,7 @@ export function useDungeonParty(userName: string, gameName: string) {
     {
       params: {
         path: { user_name: userName, game_name: gameName },
-        query: { all_of: ["PartyMemberComponent"] },
+        query: { all_of: [COMPONENT.PartyMember] },
       },
     },
     { select: (data) => data.entities.map((entity) => entity.name) },
@@ -73,14 +74,14 @@ export function useDungeonParty(userName: string, gameName: string) {
     return [
       {
         name,
-        player: hasComponent(entity, "PlayerComponent"),
+        player: hasComponent(entity, COMPONENT.Player),
         stats: readCharacterStats(entity),
-        deck: readCards(entity.components, "DeckComponent"),
+        deck: readCards(entity.components, COMPONENT.Deck),
         // `SpoilsComponent` 不存在 = 尚未生成奖励；存在则给出两个队列
-        spoils: hasComponent(entity, "SpoilsComponent")
+        spoils: hasComponent(entity, COMPONENT.Spoils)
           ? {
-              candidateCards: readCards(entity.components, "SpoilsComponent", "candidate_cards"),
-              claimedCards: readCards(entity.components, "SpoilsComponent", "claimed_cards"),
+              candidateCards: readCards(entity.components, COMPONENT.Spoils, "candidate_cards"),
+              claimedCards: readCards(entity.components, COMPONENT.Spoils, "claimed_cards"),
             }
           : null,
       },

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "../../../api/types";
 import { cardFixtures } from "../../../mocks/fixtures";
+import { COMPONENT } from "../../entities/componentNames";
 import {
   classifyFaction,
   computeHandBlock,
@@ -21,13 +22,13 @@ function entity(name: string, components: Components = []): Entity {
 
 describe("classifyFaction", () => {
   it("玩家 / NPC → party，怪物 → monster，其余 unknown", () => {
-    expect(classifyFaction(entity("角色.无名", [{ name: "PlayerComponent", data: {} }]))).toBe(
+    expect(classifyFaction(entity("角色.无名", [{ name: COMPONENT.Player, data: {} }]))).toBe(
       "party",
     );
-    expect(classifyFaction(entity("角色.顾知秋", [{ name: "NPCComponent", data: {} }]))).toBe(
+    expect(classifyFaction(entity("角色.顾知秋", [{ name: COMPONENT.NPC, data: {} }]))).toBe(
       "party",
     );
-    expect(classifyFaction(entity("怪物.纸人", [{ name: "MonsterComponent", data: {} }]))).toBe(
+    expect(classifyFaction(entity("怪物.纸人", [{ name: COMPONENT.Monster, data: {} }]))).toBe(
       "monster",
     );
     expect(classifyFaction(entity("场景.停柩房", []))).toBe("unknown");
@@ -36,24 +37,24 @@ describe("classifyFaction", () => {
 
 describe("isDead / isPlayer", () => {
   it("DeathComponent / PlayerComponent 只判存在性", () => {
-    expect(isDead(entity("角色.无名", [{ name: "DeathComponent", data: {} }]))).toBe(true);
+    expect(isDead(entity("角色.无名", [{ name: COMPONENT.Death, data: {} }]))).toBe(true);
     expect(isDead(entity("角色.无名", []))).toBe(false);
-    expect(isPlayer(entity("角色.无名", [{ name: "PlayerComponent", data: {} }]))).toBe(true);
-    expect(isPlayer(entity("角色.顾知秋", [{ name: "NPCComponent", data: {} }]))).toBe(false);
+    expect(isPlayer(entity("角色.无名", [{ name: COMPONENT.Player, data: {} }]))).toBe(true);
+    expect(isPlayer(entity("角色.顾知秋", [{ name: COMPONENT.NPC, data: {} }]))).toBe(false);
   });
 });
 
 describe("readEnergy", () => {
   it("读出 RoundStatsComponent.energy", () => {
     const e = entity("角色.无名", [
-      { name: "RoundStatsComponent", data: { name: "角色.无名", energy: 3 } },
+      { name: COMPONENT.RoundStats, data: { name: "角色.无名", energy: 3 } },
     ]);
     expect(readEnergy(e)).toBe(3);
   });
 
   it("缺组件或字段类型不对时为 0", () => {
     expect(readEnergy(entity("角色.无名", []))).toBe(0);
-    const broken = entity("角色.无名", [{ name: "RoundStatsComponent", data: { energy: "3" } }]);
+    const broken = entity("角色.无名", [{ name: COMPONENT.RoundStats, data: { energy: "3" } }]);
     expect(readEnergy(broken)).toBe(0);
   });
 });
@@ -62,7 +63,7 @@ describe("readHand / computeHandBlock", () => {
   it("读出合法手牌并过滤坏卡", () => {
     const e = entity("角色.无名", [
       {
-        name: "HandComponent",
+        name: COMPONENT.Hand,
         data: { name: "角色.无名", cards: [cardFixtures.cleave, { name: "坏卡" }] },
       },
     ]);
@@ -78,7 +79,7 @@ describe("readHand / computeHandBlock", () => {
     const hand = readHand(
       entity("角色.无名", [
         {
-          name: "HandComponent",
+          name: COMPONENT.Hand,
           data: {
             name: "角色.无名",
             cards: [cardFixtures.breath, cardFixtures.ward, cardFixtures.cleave],
@@ -94,9 +95,9 @@ describe("readHand / computeHandBlock", () => {
 describe("readPiles", () => {
   it("数出抽牌 / 弃牌 / 消耗堆张数", () => {
     const e = entity("角色.无名", [
-      { name: "DrawPileComponent", data: { cards: [cardFixtures.cleave, cardFixtures.breath] } },
-      { name: "DiscardPileComponent", data: { cards: [cardFixtures.ward] } },
-      { name: "ExhaustPileComponent", data: { cards: [] } },
+      { name: COMPONENT.DrawPile, data: { cards: [cardFixtures.cleave, cardFixtures.breath] } },
+      { name: COMPONENT.DiscardPile, data: { cards: [cardFixtures.ward] } },
+      { name: COMPONENT.ExhaustPile, data: { cards: [] } },
     ]);
     expect(readPiles(e)).toEqual({ draw: 2, discard: 1, exhaust: 0 });
   });
@@ -109,19 +110,19 @@ describe("readPiles", () => {
 describe("readCombatant", () => {
   it("一次读全参战角色的界面字段", () => {
     const e = entity("角色.无名", [
-      { name: "PlayerComponent", data: { player_name: "webdev" } },
+      { name: COMPONENT.Player, data: { player_name: "webdev" } },
       {
-        name: "CharacterStatsComponent",
+        name: COMPONENT.CharacterStats,
         data: { stats: { hp: 12, max_hp: 18, attack: 3, defense: 1 } },
       },
-      { name: "RoundStatsComponent", data: { energy: 3 } },
+      { name: COMPONENT.RoundStats, data: { energy: 3 } },
       {
-        name: "HandComponent",
+        name: COMPONENT.Hand,
         data: { cards: [cardFixtures.breath, cardFixtures.ward] },
       },
-      { name: "DrawPileComponent", data: { cards: [cardFixtures.cleave] } },
-      { name: "DiscardPileComponent", data: { cards: [] } },
-      { name: "ExhaustPileComponent", data: { cards: [cardFixtures.spark] } },
+      { name: COMPONENT.DrawPile, data: { cards: [cardFixtures.cleave] } },
+      { name: COMPONENT.DiscardPile, data: { cards: [] } },
+      { name: COMPONENT.ExhaustPile, data: { cards: [cardFixtures.spark] } },
     ]);
 
     expect(readCombatant(e)).toEqual({
@@ -142,9 +143,9 @@ describe("readCombatant", () => {
 
   it("怪物没有玩家 / 手牌组件时给出安全默认值", () => {
     const e = entity("怪物.纸人", [
-      { name: "MonsterComponent", data: {} },
+      { name: COMPONENT.Monster, data: {} },
       {
-        name: "CharacterStatsComponent",
+        name: COMPONENT.CharacterStats,
         data: { stats: { hp: 9, max_hp: 9, attack: 3, defense: 1 } },
       },
     ]);

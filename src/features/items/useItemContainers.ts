@@ -9,6 +9,7 @@
  * 仅在浮窗打开（`actorName` 非空）时才请求，避免家园页常驻拉取道具。
  */
 import { $api } from "../../api/query";
+import { COMPONENT } from "../entities/componentNames";
 import { readItems } from "./readItems";
 import { readWornCostumes } from "./readWornCostumes";
 import type { Item, WornCostume } from "./types";
@@ -17,7 +18,7 @@ const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
 
 /** 储物箱是唯一同时带 WorldComponent 与 StorageComponent 的世界实体。 */
-const STORAGE_MATCH = ["WorldComponent", "StorageComponent"];
+const STORAGE_MATCH = [COMPONENT.World, COMPONENT.Storage];
 
 export function useItemContainers(userName: string, gameName: string, actorName: string | null) {
   const path = { user_name: userName, game_name: gameName };
@@ -34,7 +35,7 @@ export function useItemContainers(userName: string, gameName: string, actorName:
   const wornGroup = $api.useQuery(
     "get",
     GROUP_PATH,
-    { params: { path, query: { all_of: ["WornCostumeComponent"] } } },
+    { params: { path, query: { all_of: [COMPONENT.WornCostume] } } },
     { enabled },
   );
 
@@ -48,8 +49,8 @@ export function useItemContainers(userName: string, gameName: string, actorName:
   );
 
   const components = details.data?.entities.flatMap((entity) => entity.components) ?? [];
-  const inventory: Item[] = readItems(components, "InventoryComponent");
-  const storage: Item[] = readItems(components, "StorageComponent");
+  const inventory: Item[] = readItems(components, COMPONENT.Inventory);
+  const storage: Item[] = readItems(components, COMPONENT.Storage);
   const worn: WornCostume[] = readWornCostumes(wornGroup.data?.entities ?? []);
 
   return {

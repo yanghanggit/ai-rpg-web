@@ -17,6 +17,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";
+import { COMPONENT } from "../entities/componentNames";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 
@@ -30,7 +31,7 @@ function playerActorInit(userName: string, gameName: string) {
   return {
     params: {
       path: { user_name: userName, game_name: gameName },
-      query: { all_of: ["PlayerComponent"] },
+      query: { all_of: [COMPONENT.Player] },
     },
   };
 }

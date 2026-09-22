@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Schemas } from "../../api/types";
+import { COMPONENT, type ComponentName } from "./componentNames";
 import {
   getComponent,
   getComponentData,
@@ -16,9 +17,9 @@ type Entity = Schemas["EntitySerialization"];
 const entity: Entity = {
   name: "角色.无名",
   components: [
-    { name: "PlayerComponent", data: { player_name: "webdev" } },
+    { name: COMPONENT.Player, data: { player_name: "webdev" } },
     {
-      name: "CharacterStatsComponent",
+      name: COMPONENT.CharacterStats,
       data: { name: "角色.无名", stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 } },
     },
   ],
@@ -36,18 +37,18 @@ describe("isRecord", () => {
 
 describe("getComponent / getComponentData / hasComponent", () => {
   it("按类名取组件与 data", () => {
-    expect(getComponent(entity, "PlayerComponent")).toEqual({
-      name: "PlayerComponent",
+    expect(getComponent(entity, COMPONENT.Player)).toEqual({
+      name: COMPONENT.Player,
       data: { player_name: "webdev" },
     });
-    expect(getComponentData(entity, "PlayerComponent")).toEqual({ player_name: "webdev" });
-    expect(getComponent(entity, "MissingComponent")).toBeUndefined();
-    expect(getComponentData(entity, "MissingComponent")).toBeUndefined();
+    expect(getComponentData(entity, COMPONENT.Player)).toEqual({ player_name: "webdev" });
+    expect(getComponent(entity, "MissingComponent" as ComponentName)).toBeUndefined();
+    expect(getComponentData(entity, "MissingComponent" as ComponentName)).toBeUndefined();
   });
 
   it("hasComponent 只判存在性", () => {
-    expect(hasComponent(entity, "PlayerComponent")).toBe(true);
-    expect(hasComponent(entity, "MonsterComponent")).toBe(false);
+    expect(hasComponent(entity, COMPONENT.Player)).toBe(true);
+    expect(hasComponent(entity, COMPONENT.Monster)).toBe(false);
   });
 });
 
@@ -80,9 +81,7 @@ describe("readCharacterStats", () => {
     expect(
       readCharacterStats({
         name: "角色.无名",
-        components: [
-          { name: "CharacterStatsComponent", data: { stats: { hp: 12, max_hp: "15" } } },
-        ],
+        components: [{ name: COMPONENT.CharacterStats, data: { stats: { hp: 12, max_hp: "15" } } }],
       }),
     ).toBeNull();
   });

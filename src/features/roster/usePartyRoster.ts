@@ -5,6 +5,7 @@
  * 有组件就返回玩家实体，没有就返回空列表——不需要先解析玩家角色名，天然自包含。
  */
 import { $api } from "../../api/query";
+import { COMPONENT } from "../entities/componentNames";
 import { readPartyRoster } from "./readPartyRoster";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
@@ -16,7 +17,7 @@ export function usePartyRoster(userName: string, gameName: string) {
     {
       params: {
         path: { user_name: userName, game_name: gameName },
-        query: { all_of: ["PartyRosterComponent"] },
+        query: { all_of: [COMPONENT.PartyRoster] },
       },
     },
     {

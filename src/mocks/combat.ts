@@ -15,6 +15,7 @@
  * `0 NONE / 1 INITIALIZATION / 2 ONGOING / 3 COMPLETE / 4 POST_COMBAT`。
  */
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import {
   blueprintFixture,
   deckFixtures,
@@ -395,17 +396,17 @@ export function readMockCombatActorEntity(name: string): Entity | null {
   return {
     name,
     components: [
-      { name: "MonsterComponent", data: { name } },
+      { name: COMPONENT.Monster, data: { name } },
       {
-        name: "IdentityComponent",
+        name: COMPONENT.Identity,
         data: { name, creation_order: 0, entity_id: `mock-${name}` },
       },
       {
-        name: "AppearanceComponent",
+        name: COMPONENT.Appearance,
         data: { name, base_body: actor.base_body, appearance: actor.base_body },
       },
       {
-        name: "CharacterStatsComponent",
+        name: COMPONENT.CharacterStats,
         data: { name, stats: clone(actor.character_stats) },
       },
     ],
@@ -429,20 +430,20 @@ export function withMockCombatComponents(entity: Entity): Entity {
   if (round?.draw_completed && actor !== undefined) {
     components.push(
       {
-        name: "RoundStatsComponent",
+        name: COMPONENT.RoundStats,
         data: { name: entity.name, energy: actor.energy },
       },
-      { name: "HandComponent", data: { name: entity.name, cards: clone(actor.hand) } },
-      { name: "DrawPileComponent", data: { name: entity.name, cards: clone(actor.draw) } },
-      { name: "DiscardPileComponent", data: { name: entity.name, cards: clone(actor.discard) } },
-      { name: "ExhaustPileComponent", data: { name: entity.name, cards: clone(actor.exhaust) } },
+      { name: COMPONENT.Hand, data: { name: entity.name, cards: clone(actor.hand) } },
+      { name: COMPONENT.DrawPile, data: { name: entity.name, cards: clone(actor.draw) } },
+      { name: COMPONENT.DiscardPile, data: { name: entity.name, cards: clone(actor.discard) } },
+      { name: COMPONENT.ExhaustPile, data: { name: entity.name, cards: clone(actor.exhaust) } },
     );
   }
   if (dead.has(entity.name)) {
-    components.push({ name: "DeathComponent", data: { name: entity.name } });
+    components.push({ name: COMPONENT.Death, data: { name: entity.name } });
   }
   if (entity.name === blueprintFixture.player_actor && loot.length > 0) {
-    components.push({ name: "LootComponent", data: { name: entity.name, items: clone(loot) } });
+    components.push({ name: COMPONENT.Loot, data: { name: entity.name, items: clone(loot) } });
   }
   return { name: entity.name, components };
 }

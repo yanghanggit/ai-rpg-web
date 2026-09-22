@@ -8,6 +8,7 @@
  * 后端契约一变，pnpm typecheck 就会在这里报错，而不是等到运行时。
  */
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 
 /** 后端根路由 `/` 的响应；字段由 ServerInfoResponse 契约保证，无需手写收窄。 */
 export const serverInfoFixture: Schemas["ServerInfoResponse"] = {
@@ -56,7 +57,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
         // 玩家角色的随身背包：字段形状照抄真实后端的 Item（含 uuid / count / 逐类型的额外字段）
         actor("角色.无名", "NPC", [
           {
-            name: "InventoryComponent",
+            name: COMPONENT.Inventory,
             data: {
               name: "角色.无名",
               items: [
@@ -114,7 +115,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       system_message: "（mock）",
       components: [
         {
-          name: "StorageComponent",
+          name: COMPONENT.Storage,
           data: {
             name: "世界.储物箱",
             items: [
@@ -156,9 +157,9 @@ export const stageEntityFixtures: Schemas["EntitySerialization"][] = blueprintFi
   (stage) => ({
     name: stage.name,
     components: [
-      { name: "StageComponent", data: { name: stage.name } },
+      { name: COMPONENT.Stage, data: { name: stage.name } },
       {
-        name: "EnvironmentComponent",
+        name: COMPONENT.Environment,
         data: {
           name: stage.name,
           narrative: `（mock）${stage.name} 的环境叙述：梁柱森然，灯火幽微。`,
@@ -181,9 +182,9 @@ export const stageEntityFixtures: Schemas["EntitySerialization"][] = blueprintFi
 export const playerEntityFixture: Schemas["EntitySerialization"] = {
   name: blueprintFixture.player_actor,
   components: [
-    { name: "PlayerComponent", data: { player_name: "webdev" } },
+    { name: COMPONENT.Player, data: { player_name: "webdev" } },
     {
-      name: "IdentityComponent",
+      name: COMPONENT.Identity,
       data: {
         name: blueprintFixture.player_actor,
         creation_order: 2,
@@ -191,7 +192,7 @@ export const playerEntityFixture: Schemas["EntitySerialization"] = {
       },
     },
     {
-      name: "AppearanceComponent",
+      name: COMPONENT.Appearance,
       data: {
         name: blueprintFixture.player_actor,
         base_body: "（mock）清瘦的青年，着一身洗得发白的青布长衫。",
@@ -199,7 +200,7 @@ export const playerEntityFixture: Schemas["EntitySerialization"] = {
       },
     },
     {
-      name: "CharacterStatsComponent",
+      name: COMPONENT.CharacterStats,
       data: {
         name: blueprintFixture.player_actor,
         stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
@@ -218,9 +219,9 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
   {
     name: "角色.顾知秋",
     components: [
-      { name: "NPCComponent", data: { name: "角色.顾知秋" } },
+      { name: COMPONENT.NPC, data: { name: "角色.顾知秋" } },
       {
-        name: "IdentityComponent",
+        name: COMPONENT.Identity,
         data: {
           name: "角色.顾知秋",
           creation_order: 1,
@@ -228,7 +229,7 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
         },
       },
       {
-        name: "AppearanceComponent",
+        name: COMPONENT.Appearance,
         data: {
           name: "角色.顾知秋",
           base_body: "（mock）身量高挑的女子。",
@@ -236,7 +237,7 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
         },
       },
       {
-        name: "CharacterStatsComponent",
+        name: COMPONENT.CharacterStats,
         data: { name: "角色.顾知秋", stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 } },
       },
     ],
@@ -244,9 +245,9 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
   {
     name: "角色.小厮",
     components: [
-      { name: "NPCComponent", data: { name: "角色.小厮" } },
+      { name: COMPONENT.NPC, data: { name: "角色.小厮" } },
       {
-        name: "IdentityComponent",
+        name: COMPONENT.Identity,
         data: {
           name: "角色.小厮",
           creation_order: 3,
@@ -254,7 +255,7 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
         },
       },
       {
-        name: "AppearanceComponent",
+        name: COMPONENT.Appearance,
         data: {
           name: "角色.小厮",
           base_body: "（mock）瘦小的少年。",
@@ -262,7 +263,7 @@ export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
         },
       },
       {
-        name: "CharacterStatsComponent",
+        name: COMPONENT.CharacterStats,
         data: { name: "角色.小厮", stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 } },
       },
     ],
@@ -752,9 +753,9 @@ export const dungeonStageEntityFixtures: Schemas["EntitySerialization"][] =
   dungeonFixture.rooms.map((room) => ({
     name: room.stage.name,
     components: [
-      { name: "StageComponent", data: { name: room.stage.name } },
+      { name: COMPONENT.Stage, data: { name: room.stage.name } },
       {
-        name: "EnvironmentComponent",
+        name: COMPONENT.Environment,
         data: {
           name: room.stage.name,
           narrative: `（mock）${room.stage.name} 的环境叙述：门轴涩住，风从棺缝里过。`,

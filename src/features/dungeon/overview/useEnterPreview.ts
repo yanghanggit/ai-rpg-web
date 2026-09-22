@@ -15,6 +15,7 @@
  * （单向依赖，items 不依赖 dungeon，不构成环）。见 docs/conventions.md 三。
  */
 import { $api } from "../../../api/query";
+import { COMPONENT } from "../../entities/componentNames";
 import { readItems } from "../../items/readItems";
 import { readPartyMember } from "../../roster/readPartyMember";
 import { usePartyRoster } from "../../roster/usePartyRoster";
@@ -46,7 +47,7 @@ export function useEnterPreview(userName: string, gameName: string, playerActor:
 
   return {
     party,
-    inventory: playerEntity ? readItems(playerEntity.components, "InventoryComponent") : [],
+    inventory: playerEntity ? readItems(playerEntity.components, COMPONENT.Inventory) : [],
     isPending: roster.isPending || details.isPending,
     isError: roster.isError || details.isError,
     error: roster.error ?? details.error ?? null,

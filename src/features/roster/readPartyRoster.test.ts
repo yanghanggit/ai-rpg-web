@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { COMPONENT } from "../entities/componentNames";
 import { readPartyRoster } from "./readPartyRoster";
 
 describe("readPartyRoster", () => {
@@ -8,7 +9,7 @@ describe("readPartyRoster", () => {
         name: "角色.无名",
         components: [
           {
-            name: "PartyRosterComponent",
+            name: COMPONENT.PartyRoster,
             data: { name: "角色.无名", members: ["角色.顾知秋", "角色.小厮"] },
           },
         ],
@@ -26,7 +27,7 @@ describe("readPartyRoster", () => {
         name: "角色.无名",
         components: [
           {
-            name: "PartyRosterComponent",
+            name: COMPONENT.PartyRoster,
             data: { name: "角色.无名", members: ["角色.顾知秋", 5, ""] },
           },
         ],
@@ -37,7 +38,7 @@ describe("readPartyRoster", () => {
       readPartyRoster({
         name: "角色.无名",
         components: [
-          { name: "PartyRosterComponent", data: { name: "角色.无名", members: "不是数组" } },
+          { name: COMPONENT.PartyRoster, data: { name: "角色.无名", members: "不是数组" } },
         ],
       }),
     ).toEqual([]);

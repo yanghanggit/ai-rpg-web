@@ -23,6 +23,7 @@
  * （`invalidateEntities` 被 dungeon / costume / items 共用），依赖方向天然无环。
  */
 import type { Schemas } from "../../api/types";
+import { COMPONENT, type ComponentName } from "./componentNames";
 
 type Entity = Schemas["EntitySerialization"];
 type Component = Schemas["ComponentSerialization"];
@@ -33,20 +34,20 @@ export function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /** 按类名取组件信封；不存在返回 `undefined`。 */
-export function getComponent(entity: Entity, componentName: string): Component | undefined {
+export function getComponent(entity: Entity, componentName: ComponentName): Component | undefined {
   return entity.components.find((component) => component.name === componentName);
 }
 
 /** 按类名取组件的 `data`（`Dict[str, Any]`）；组件不存在返回 `undefined`。 */
 export function getComponentData(
   entity: Entity,
-  componentName: string,
+  componentName: ComponentName,
 ): Record<string, unknown> | undefined {
   return getComponent(entity, componentName)?.data;
 }
 
 /** 实体是否挂了某个组件（标记类组件只判存在性）。 */
-export function hasComponent(entity: Entity, componentName: string): boolean {
+export function hasComponent(entity: Entity, componentName: ComponentName): boolean {
   return entity.components.some((component) => component.name === componentName);
 }
 
@@ -84,7 +85,7 @@ export function readBoolean(data: unknown, key: string): boolean | null {
  * 字段直接对齐生成的 `Schemas["CharacterStats"]`，不另手写一份形状。
  */
 export function readCharacterStats(entity: Entity): Schemas["CharacterStats"] | null {
-  const data = getComponentData(entity, "CharacterStatsComponent");
+  const data = getComponentData(entity, COMPONENT.CharacterStats);
   if (data === undefined || !isRecord(data.stats)) {
     return null;
   }

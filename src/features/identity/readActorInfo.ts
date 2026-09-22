@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { COMPONENT } from "../entities/componentNames";
 import {
   getComponentData,
   isRecord,
@@ -32,12 +33,12 @@ function readWornCostume(data: unknown) {
 
 export function readActorInfo(entity: Entity) {
   return {
-    player_name: readString(getComponentData(entity, "PlayerComponent"), "player_name"),
-    entity_id: readString(getComponentData(entity, "IdentityComponent"), "entity_id"),
-    creation_order: readNumber(getComponentData(entity, "IdentityComponent"), "creation_order"),
-    base_body: readString(getComponentData(entity, "AppearanceComponent"), "base_body"),
-    appearance: readString(getComponentData(entity, "AppearanceComponent"), "appearance"),
+    player_name: readString(getComponentData(entity, COMPONENT.Player), "player_name"),
+    entity_id: readString(getComponentData(entity, COMPONENT.Identity), "entity_id"),
+    creation_order: readNumber(getComponentData(entity, COMPONENT.Identity), "creation_order"),
+    base_body: readString(getComponentData(entity, COMPONENT.Appearance), "base_body"),
+    appearance: readString(getComponentData(entity, COMPONENT.Appearance), "appearance"),
     stats: readCharacterStats(entity),
-    worn_costume: readWornCostume(getComponentData(entity, "WornCostumeComponent")),
+    worn_costume: readWornCostume(getComponentData(entity, COMPONENT.WornCostume)),
   };
 }

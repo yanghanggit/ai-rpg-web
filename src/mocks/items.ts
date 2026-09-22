@@ -8,6 +8,7 @@
  * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物放回储物箱。
  */
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import {
   npcEntityFixtures,
   playerEntityFixture,
@@ -77,7 +78,7 @@ export function readMockPlayerEntity(): Schemas["EntitySerialization"] {
     components: [
       ...playerEntityFixture.components,
       {
-        name: "InventoryComponent",
+        name: COMPONENT.Inventory,
         data: { name: playerEntityFixture.name, items: clone(inventory) },
       },
     ],
@@ -89,7 +90,7 @@ export function readMockStorageEntity(): Schemas["EntitySerialization"] {
   return {
     name: STORAGE_ENTITY,
     components: [
-      { name: "StorageComponent", data: { name: STORAGE_ENTITY, items: clone(storage) } },
+      { name: COMPONENT.Storage, data: { name: STORAGE_ENTITY, items: clone(storage) } },
     ],
   };
 }
@@ -112,7 +113,7 @@ export function readMockActorEntity(name: string): Schemas["EntitySerialization"
     return entity;
   }
   entity.components.push({
-    name: "WornCostumeComponent",
+    name: COMPONENT.WornCostume,
     data: { name, item: clone(wornEntry.item) },
   });
   return entity;
@@ -122,7 +123,7 @@ export function readMockActorEntity(name: string): Schemas["EntitySerialization"
 export function readMockWornEntities(): Schemas["EntitySerialization"][] {
   return worn.map(({ wearer, item }) => ({
     name: wearer,
-    components: [{ name: "WornCostumeComponent", data: { name: wearer, item: clone(item) } }],
+    components: [{ name: COMPONENT.WornCostume, data: { name: wearer, item: clone(item) } }],
   }));
 }
 

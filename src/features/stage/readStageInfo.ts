@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { COMPONENT } from "../entities/componentNames";
 import { getComponentData, readString } from "../entities/ecs";
 
 type Entity = Schemas["EntitySerialization"];
@@ -10,8 +11,8 @@ type Entity = Schemas["EntitySerialization"];
  * 字段名写错 TypeScript 拦不住，只能运行时校验）；读不出来就返回 `null`（宁可少显示，也不猜）。
  */
 export function readStageInfo(entity: Entity) {
-  const stage = getComponentData(entity, "StageComponent");
-  const environment = getComponentData(entity, "EnvironmentComponent");
+  const stage = getComponentData(entity, COMPONENT.Stage);
+  const environment = getComponentData(entity, COMPONENT.Environment);
 
   return {
     // StageComponent 只有名字；缺失时退回实体名，保证有东西可显示

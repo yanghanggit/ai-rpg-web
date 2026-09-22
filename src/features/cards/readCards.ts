@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import type { ComponentName } from "../entities/componentNames";
 import { readCard } from "./readCard";
 import type { Card } from "./types";
 
@@ -13,7 +14,7 @@ import type { Card } from "./types";
  */
 export function readCards(
   components: Schemas["ComponentSerialization"][],
-  componentName: string,
+  componentName: ComponentName,
   field = "cards",
 ): Card[] {
   const data = components.find((component) => component.name === componentName)?.data;

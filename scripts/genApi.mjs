@@ -14,6 +14,8 @@ import { loadEnv } from "vite";
  *   4. 全部缺省时回退 http://localhost:8000
  *
  * 生成前会先校验 spec（见 assertStringDiscriminators），再交给 openapi-typescript。
+ * 另外还会拉取 `/api/components/v1/`（后端 `COMPONENT_TYPES` 注册表）生成组件名清单，
+ * 见文件末尾。
  *
  * 用法：pnpm gen:api（需后端已启动）
  */
@@ -131,3 +133,39 @@ writeFileSync(
   ].join("\n"),
 );
 console.log(`Done: ${schemaPathsFile}`);
+
+/**
+ * 额外生成一份「组件名清单」运行时产物。
+ *
+ * `ComponentSerialization.name` 在契约里是 `string`（后端支持 `create_component_type`
+ * 动态组件类，收窄不成枚举），前端读组件只能靠类名字符串，拼错只会静默读不到数据。
+ * 后端 `COMPONENT_TYPES` 是唯一事实源，这里把它的键落成 `as const` 数组，供
+ * `src/features/entities/componentNames.ts` 在编译期校验每个常量值。
+ *
+ * 注意：这是本脚本唯一不来自 `/openapi.json` 的产物；后端对应接口为
+ * `services/components_api.py`，后端新增/改名组件后需重启再 `pnpm gen:api`。
+ */
+const componentRegistryFile = "src/api/componentRegistry.ts";
+const registryUrl = `${baseUrl}/api/components/v1/`;
+const registryResponse = await fetch(registryUrl);
+if (!registryResponse.ok) {
+  throw new Error(
+    `拉取组件名清单失败：HTTP ${registryResponse.status} ${registryUrl}` +
+      "（后端是否已重启并注册 components_api_router？）",
+  );
+}
+const componentNames = (await registryResponse.json()).names.toSorted();
+writeFileSync(
+  componentRegistryFile,
+  [
+    "// 由 scripts/genApi.mjs 从后端 /api/components/v1/ 生成，请勿手改。",
+    "// 开发期不提交（见 .gitignore）；后端组件注册表变更后运行 `pnpm gen:api` 重新生成。",
+    "export const API_COMPONENT_NAMES = [",
+    ...componentNames.map((name) => `  ${JSON.stringify(name)},`),
+    "] as const;",
+    "",
+    "export type ApiComponentName = (typeof API_COMPONENT_NAMES)[number];",
+    "",
+  ].join("\n"),
+);
+console.log(`Done: ${componentRegistryFile}`);

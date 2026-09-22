@@ -13,6 +13,7 @@
  */
 import { $api } from "../../../api/query";
 import type { Schemas } from "../../../api/types";
+import { COMPONENT } from "../../entities/componentNames";
 import { hasComponent } from "../../entities/ecs";
 import { readItems } from "../../items/readItems";
 import type { Item } from "../../items/types";
@@ -28,7 +29,7 @@ export function useCombatScene(userName: string, gameName: string, room: Schemas
     {
       params: {
         path: { user_name: userName, game_name: gameName },
-        query: { all_of: ["PartyMemberComponent"] },
+        query: { all_of: [COMPONENT.PartyMember] },
       },
     },
     { select: (data) => data.entities.map((entity) => entity.name) },
@@ -61,10 +62,10 @@ export function useCombatScene(userName: string, gameName: string, room: Schemas
 
   // 结算页要看的玩家战利品（`LootComponent`）挂在玩家实体上，顺手从同一份 details 里读出来。
   const playerEntity = details.data?.entities.find((entity) =>
-    hasComponent(entity, "PlayerComponent"),
+    hasComponent(entity, COMPONENT.Player),
   );
   const loot: Item[] =
-    playerEntity === undefined ? [] : readItems(playerEntity.components, "LootComponent");
+    playerEntity === undefined ? [] : readItems(playerEntity.components, COMPONENT.Loot);
 
   return {
     combatants,

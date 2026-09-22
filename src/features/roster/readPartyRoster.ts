@@ -1,4 +1,5 @@
 import type { Schemas } from "../../api/types";
+import { COMPONENT } from "../entities/componentNames";
 import { getComponentData } from "../entities/ecs";
 
 /**
@@ -9,7 +10,7 @@ import { getComponentData } from "../entities/ecs";
  * 一律返回空数组——「没有队伍」与「读不出来」在这里是同一个可接受结果。
  */
 export function readPartyRoster(entity: Schemas["EntitySerialization"]): string[] {
-  const members = getComponentData(entity, "PartyRosterComponent")?.members;
+  const members = getComponentData(entity, COMPONENT.PartyRoster)?.members;
   if (!Array.isArray(members)) {
     return [];
   }
