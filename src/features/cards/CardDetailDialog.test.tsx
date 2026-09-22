@@ -50,6 +50,8 @@ describe("CardDetailDialog", () => {
     // 左栏 = 那张卡：词缀只写 `[名称]`，说明全文不在这里
     expect(within(face()).getByText("[破竹]")).toBeInTheDocument();
     expect(within(face()).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
+    // 叙述也不在卡面上（卡面只剩名字 / 数值 / 标记），全文只在右栏
+    expect(within(face()).queryByText(/这句话在卡面上是放不下的/)).not.toBeInTheDocument();
 
     // 右栏 = 完整信息：说明全文
     expect(section("说明")).toHaveTextContent(/这句话在卡面上是放不下的/);

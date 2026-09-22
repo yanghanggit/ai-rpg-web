@@ -148,6 +148,14 @@ export default function CombatTurnPanel({
   // 名单里该压下去的那些卡（选中态）：自身牌 = 自己；`all` / `spread` = 锚点所在阵营全体
   const targets =
     selected === null ? [] : readTargetNames(selected, targetName, actor.name, combatants);
+  // 打不出去的两类情形，都只把那颗主行动按钮**灰掉**（不发请求、也不弹提示；服务端同样会拦）：
+  // - 牌自己写着不可出牌（`playable === false`，卡面上就挂着那枚灰标记）——卡的**静态**属性，
+  //   所以悬停给一句说明；
+  // - 本回合能量不够（`cost > 能量`）——每回合在变，卡面不会跟着变，看卡上的「费用」
+  //   与左列那颗能量星就明白了，不再另给提示。
+  // 两者合用一个 `blocked`：按钮位子与形状不变，只换灰调 + 禁行图标。
+  const unplayable = selected !== null && !selected.playable;
+  const blocked = unplayable || (selected !== null && selected.cost > actor.energy);
   // 正开着「手牌」浮窗的那个角色（原始名匹配）
   const handOwner = combatants.find((combatant) => combatant.name === handActor) ?? null;
 
@@ -243,13 +251,14 @@ export default function CombatTurnPanel({
                   {targets.length === 0 ? null : (
                     <button
                       type="button"
-                      className="combat-hand-btn combat-hand-btn--play"
-                      disabled={actions.isBusy}
+                      className={`combat-hand-btn combat-hand-btn--play${blocked ? " combat-hand-btn--off" : ""}`}
+                      disabled={actions.isBusy || blocked}
+                      title={unplayable ? "这张牌写着不可出牌（卡面那枚灰标记）" : undefined}
                       // 只发锚点：`all` / `spread` 的阵营由服务端按锚点展开（见 readTargetNames）
                       onClick={() => play(selected, targetName)}
                     >
                       <span className="combat-hand-btn-glyph" aria-hidden="true">
-                        ▶
+                        {blocked ? "⊘" : "▶"}
                       </span>
                       <span className="combat-hand-btn-caption">出牌</span>
                     </button>

@@ -34,6 +34,11 @@
      `ul.card-tiles--deck`），而不是把卡面压矮去迁就屏幕：卡片的形状是设计语言，`--card-short`
      是卡牌的**宽**，拿它当卡面的高就变成正方形了。 */
   --card-list-h: calc(var(--card-rows) * var(--card-tall) + var(--card-list-gaps-h));
+  /* 卡面上的**文字级**：角色卡与牌面共用同一套——同一张卡片上"名字 / 数值 / 标记"三块的层级与
+     字号不该因为它是角色卡还是牌而变，两张卡并排时字号不一致最扎眼。 */
+  --card-font-name: 1.05rem;
+  --card-font-stats: 0.85rem;
+  --card-font-mark: 0.75rem;
   /* 浮窗内边距（`Modal` 的标题行与内容区）。固定宽度的浮窗要把它算进去 */
   --overlay-pad-x: 1.25rem;
   /* 选中位移：手牌**上移**与目标卡**下移**共用这一个值（上下对称）。
@@ -1174,11 +1179,20 @@ li.dungeon-room--current {
   border-radius: 12px;
 }
 
-/* 卡面属性：一行一项（横排会被卡宽挤断，"DEF" 与数字拆两行更难看） */
+/* 卡面属性：一行一项（横排会被卡宽挤断，"DEF" 与数字拆两行更难看）。
+   字号与牌面的数值行同级（见 `--card-font-*`）。 */
 .actor-card-stats {
   display: grid;
   gap: 0.15rem;
   margin: 0;
+  font-size: var(--card-font-stats);
+}
+
+/* 角色卡的名字与牌面的卡名同级（见 `--card-font-*`）：两张卡并排时"名字"不该一个大一个小。
+  名字仍走 pill（`.chip`），只是字号抬到卡名那一级。 */
+.actor-card .card-head .chip,
+.combatant-card .card-head .chip {
+  font-size: var(--card-font-name);
 }
 
 /* 队伍成员卡：**整卡可点**（开角色信息，与场景卡同一交互）。卡面铺一层透明按钮盖住内容，
@@ -1265,19 +1279,13 @@ ul.card-tiles--stack {
 }
 
 .card-tile-name {
-  font-size: 1.05rem;
+  font-size: var(--card-font-name);
   font-weight: 600;
-}
-
-.card-tile-desc {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
 }
 
 .card-tile-stats {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--card-font-stats);
   line-height: 1.6;
 }
 
@@ -1298,7 +1306,7 @@ ul.card-tiles--stack {
   padding: 0.05rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 999px;
-  font-size: 0.75rem;
+  font-size: var(--card-font-mark);
   line-height: 1.5;
   white-space: nowrap;
   background: transparent;
@@ -1687,7 +1695,7 @@ ul.combat-action-roster {
   border: 0;
   background: none;
   color: inherit;
-  font-size: 0.75rem;
+  font-size: var(--card-font-mark);
   text-align: left;
   cursor: pointer;
 }
@@ -1697,7 +1705,7 @@ ul.combat-action-roster {
   padding: 0;
   border: 0;
   background: none;
-  font-size: 0.75rem;
+  font-size: var(--card-font-mark);
 }
 
 .combatant-card-hand-chevron {
@@ -1721,7 +1729,7 @@ ul.combat-action-roster {
 
 /* 「手牌 N」：标签而非词缀，不给 chip 外框 */
 .combatant-card-hand-label {
-  font-size: 0.75rem;
+  font-size: var(--card-font-mark);
   color: var(--muted);
 }
 
@@ -1989,6 +1997,16 @@ ul.combat-hand-list .card-tile--selected {
 .combat-hand-btn--play:hover:not(:disabled) {
   border-color: var(--ok);
   background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+/* 「不可出牌」：按钮**原位不动、形状与文案不变**（“这里本来能出牌，只是这张牌不行”），
+   只换成灰调 + 禁行图标。它与"正在忙"不是一回事：后者是暂时的，靠全局
+   `button:disabled` 那 45% 淡出就够；这一颗得读得清，所以反而把透明度收回来，
+   用与卡面那枚「不可出牌」chip 同一个色说话。写在 `button:disabled` 之后，避免倒序。 */
+button.combat-hand-btn--off {
+  border-color: var(--border);
+  color: var(--unplayable);
+  opacity: 1;
 }
 
 .combat-hand-btn--view,

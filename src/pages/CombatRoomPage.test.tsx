@@ -325,6 +325,36 @@ describe("副本房间 · 战斗房间", () => {
     await waitFor(() => expect(within(hand).queryByText("屏息")).not.toBeInTheDocument());
   });
 
+  it("能量不够的卡：「出牌」同样灰掉（扣能量后剩余不够，与不可出牌同一副待遇）", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+
+    // 照妖镜费用 2（本回合能量 3）→ 打掉它，能量就只剩 1
+    fireEvent.click(within(cardTileOf("照妖镜")).getByRole("button", { name: "选中手牌：照妖镜" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    fireEvent.click(screen.getByRole("button", { name: "出牌" }));
+
+    // 等快照刷新：照妖镜离手（同一份快照里的能量也变成 1 了）
+    const hand = screen.getByRole("list", { name: "手牌" });
+    await waitFor(() => expect(within(hand).queryByText("照妖镜")).not.toBeInTheDocument());
+    expect(
+      within(screen.getByRole("list", { name: "行动者资源" })).getByText("能量"),
+    ).toBeInTheDocument();
+    expect(document.querySelector(".res--energy .res-gem")).toHaveTextContent("1");
+
+    // 摇铃费用 2 > 剩余 1：两次选择照旧能选，但「出牌」按不下去、图标换禁行
+    fireEvent.click(within(cardTileOf("摇铃")).getByRole("button", { name: "选中手牌：摇铃" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    const play = screen.getByRole("button", { name: "出牌" });
+    expect(play).toBeDisabled();
+    expect(play).toHaveClass("combat-hand-btn--off");
+    expect(within(play).getByText("⊘")).toBeInTheDocument();
+    // 「灰掉」就够，不再另给一句提示（理由在卡上的「费用」与左列的能量星里）
+    expect(play).not.toHaveAttribute("title");
+  });
+
   it("出牌条：提示折行收在一块矩形里，几颗卡状按钮与「回到地图」同族", async () => {
     server.use(instantTasks());
     renderCombatRoom();
@@ -353,6 +383,32 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(play).getByText("出牌")).toHaveClass("combat-hand-btn-caption");
     // 「已选 / 目标」那段话折行收在同一个矩形块里
     expect(screen.getByText(/目标：纸人/)).toHaveClass("combat-hand-hint");
+  });
+
+  it("不可出牌的卡：两次选择照旧，但「出牌」灰掉 + 换禁行图标（取消 / 查看还在）", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+
+    // 常驻厌胜在 mock 里就是 `playable: false`（卡面挂着灰标记「不可出牌」）
+    fireEvent.click(
+      within(cardTileOf("常驻厌胜")).getByRole("button", { name: "选中手牌：常驻厌胜" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+
+    // 「出牌」还在原位、形状与文案不变，只是按不下去、图标换成禁行
+    const play = screen.getByRole("button", { name: "出牌" });
+    expect(play).toBeDisabled();
+    expect(play).toHaveClass("combat-hand-btn", "combat-hand-btn--play", "combat-hand-btn--off");
+    expect(within(play).getByText("⊘")).toHaveClass("combat-hand-btn-glyph");
+    expect(play).toHaveAttribute("title", "这张牌写着不可出牌（卡面那枚灰标记）");
+
+    // 只灰主行动：取消与查看照旧可用（所以还退得出去、也看得清为什么不能打）
+    expect(screen.getByRole("button", { name: "取消" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "查看" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "查看" }));
+    expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
   });
 
   it("手牌：点词缀只弹说明浮层；整卡点击是「选中」，看详情要走中间那颗「查看」", async () => {

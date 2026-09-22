@@ -50,7 +50,8 @@ const USAGE = `用真实浏览器给页面截图：导航 → 等待 → （可�
                      都不给则拍 ${localBaseUrl(DEV_PORT)}（pnpm dev）
   --out <file>       输出文件，默认 screenshots/<路径末段>-<宽>x<高>.png
   --size <宽x高>     视口尺寸，默认 ${DEFAULT_SIZE}；本项目只保证桌面（最小宽度 1024）
-  --click <文本>     截图前点一下这个按钮（按 aria-label 或按钮文字匹配）
+  --click <文本>     截图前点一下这个按钮（按 aria-label 或按钮文字匹配；文字已去掉图标
+                     那类 aria-hidden 装饰，所以卡状按钮写「出牌」而不是「▶出牌」）
                      用 | 分隔可连点多下，如：--click "加入|进入副本：荒村义庄"
                      重名时点**最后一个**（浮层后渲染，也就是看得见的那一层）
   --wait <ms>        导航后等待，默认 ${DEFAULT_WAIT_MS}（等 React 挂载与接口返回）
@@ -209,20 +210,37 @@ async function connectDevTools(webSocketUrl) {
   };
 }
 
-/** 点击脚本：找不到就回报名单，省得为了一个文案来回猜。 */
+/**
+ * 点击脚本：找不到就回报名单，省得为了一个文案来回猜。
+ *
+ * 文字匹配的口径是「**去掉 `aria-hidden` 之后的文字**」：卡状按钮都是"图标 + 词"两块
+ * （`<span aria-hidden>▶</span><span>出牌</span>`），图标对无障碍是装饰，所以 `textContent`
+ * 会拼成 `▶出牌`——照屏幕上看得见的词写「出牌」才是人的直觉。`aria-label` 与原始
+ * `textContent` 也都仍然收（老的写法不会因此失效）。
+ */
 function clickExpression(label) {
   return `(() => {
     const wanted = ${JSON.stringify(label)};
+    const visibleText = (button) => {
+      const clone = button.cloneNode(true);
+      for (const decoration of clone.querySelectorAll('[aria-hidden="true"]')) {
+        decoration.remove();
+      }
+      return clone.textContent.trim();
+    };
     const buttons = [...document.querySelectorAll("button")];
     const hit = buttons.findLast(
-      (button) => button.getAttribute("aria-label") === wanted || button.textContent.trim() === wanted,
+      (button) =>
+        button.getAttribute("aria-label") === wanted ||
+        visibleText(button) === wanted ||
+        button.textContent.trim() === wanted,
     );
     if (hit !== undefined) {
       hit.click();
       return "ok";
     }
     return buttons
-      .map((button) => button.getAttribute("aria-label") ?? button.textContent.trim())
+      .map((button) => button.getAttribute("aria-label") ?? visibleText(button))
       .join(" | ");
   })()`;
 }

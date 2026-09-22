@@ -239,7 +239,18 @@ function advanceTurn(round: Schemas["Round"]): string | null {
   return next;
 }
 
-/** 出牌：从手牌移出并记日志 / 叙事（不推进行动权），对应后端 `play_cards`（我方）。 */
+/** 卡牌费用；mock 手里的原始载荷是 `Record<string, unknown>`，缺失按 0（与 `readCard` 同一兜底）。 */
+function readCardCost(card: RawCard): number {
+  return typeof card.cost === "number" ? card.cost : 0;
+}
+
+/**
+ * 出牌：扣能量、从手牌移出并记日志 / 叙事（不推进行动权），对应后端 `play_cards`（我方）。
+ *
+ * **能量是要扣的**：后端 `play_cards_action_system` 每张牌 `consume_energy(card.cost)`，且能量不够
+ * 时是硬错误（怪物 AI 也拿 `card.cost <= energy` 筛过一遍）。mock 不扣的话，
+ * 「费用 > 剩余能量」这个状态就永远走不到——现在它既拦（与后端同一口径），也会真扣。
+ */
 export function playMockCards(
   actorName: string,
   cardName: string,
@@ -255,8 +266,18 @@ export function playMockCards(
     return { ok: false, message: `手牌中找不到『${cardName}』` };
   }
 
+  const chosen = actor.hand[index];
+  const cost = chosen === undefined ? 0 : readCardCost(chosen);
+  if (cost > actor.energy) {
+    return {
+      ok: false,
+      message: `能量不足：『${cardName}』需 ${cost} 点，现有 ${actor.energy} 点`,
+    };
+  }
+
   const [card] = actor.hand.splice(index, 1);
   if (card !== undefined) {
+    actor.energy -= cost;
     if (card.exhaust === true) {
       actor.exhaust.push(card);
     } else {

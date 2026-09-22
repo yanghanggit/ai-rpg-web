@@ -8,7 +8,9 @@ import type { Card, CardTargetType } from "./types";
  * 卡牌 · 客户端设计语言（唯一实现）
  *
  * 后端 `models/card.py::Card` 的字段分三类，卡面据此分三块，**同类用同一种视觉**：
- * - **身份**：`name`（卡名）/ `description`（叙述）/ `uuid`；`source` 单独一行。
+ * - **身份**：`name`（卡名）/ `uuid`；`source` 单独一行。
+ *   **叙述 `description` 不进卡面**：卡面上留给数值与标记，全文在卡牌详情（`CardDetailDialog`）
+ *   的「说明」一节里读——牌面上那句话只够塞下两行，读起来又占掉半张卡。
  * - **数值**：`cost` / `damage` / `hit_count` / `block` / `target_type` / `self_target` → 一行 `statsText`。
  * - **标记（词缀）** → 一律是 chip（`.affix-chip`），排在同一行 `.card-tile-marks`：
  *   三种时机的自由文本词缀（绿 / 红 / 黄）与五个布尔属性（橙 / 蓝 / 紫 / 灰 / 青）。
@@ -110,8 +112,6 @@ export default function CardItem({
         <span className="card-tile-name">{card.name}</span>
         {claimed ? <span className="badge badge--claimed">已领取</span> : null}
       </div>
-
-      {card.description === "" ? null : <p className="card-tile-desc">{card.description}</p>}
 
       <p className="muted card-tile-stats">{statsText(card)}</p>
 

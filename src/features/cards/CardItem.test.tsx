@@ -62,6 +62,20 @@ describe("CardItem", () => {
     expect(screen.queryByText("[塞牌]")).not.toBeInTheDocument();
   });
 
+  it("卡面不写叙述：说明那句留给卡牌详情的「说明」一节", () => {
+    render(
+      <ul>
+        <CardItem card={CARD} />
+      </ul>,
+    );
+
+    expect(screen.queryByText(/楔进棺盖的缝/)).not.toBeInTheDocument();
+    // 名字 / 数值行 / 标记行照旧在卡面上（省下来的位置就是那句叙述）
+    expect(screen.getByText("钉棺")).toBeInTheDocument();
+    expect(screen.getByText(/费用 1/)).toBeInTheDocument();
+    expect(screen.getByText("保留")).toBeInTheDocument();
+  });
+
   it("来源只在「不是自己的牌」时显示，并标 foreign", () => {
     const { rerender } = render(
       <ul>

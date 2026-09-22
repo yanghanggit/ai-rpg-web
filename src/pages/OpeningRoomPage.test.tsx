@@ -495,8 +495,9 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒村义庄");
     renderOpening();
 
-    // 属性与战斗房的角色卡同一份措辞（HP · 攻 · 防），卡组张数另起一行
-    expect(await screen.findByText("HP 12/15 · 攻 3 · 防 1")).toBeInTheDocument();
+    // 属性行只有 HP（攻 / 防 在角色信息浮窗里看）；卡组张数另起一行
+    expect(await screen.findByText("HP 12/15")).toBeInTheDocument();
+    expect(screen.queryByText(/攻 3/)).not.toBeInTheDocument();
     // 卡上只留「卡组 N」这行状态，卡底那颗按钮就是奖励入口
     expect(await screen.findByText("卡组 9")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "查看牌组" })).not.toBeInTheDocument();
