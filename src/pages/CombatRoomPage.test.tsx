@@ -42,7 +42,7 @@ function currentCombatant(): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
-  it("开局准备的角色卡连攻 / 防一起给（这时对方的硬属性影响决策）；开打后只留 HP", async () => {
+  it("角色卡两屏一致：第一行都是 HP · 攻 · 防；turn 多一行 能量 / 手牌 / 总格挡", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
@@ -50,12 +50,21 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByText("HP 9/9 · 攻 3 · 防 1")).toBeInTheDocument();
     expect(screen.getByText("HP 12/15 · 攻 3 · 防 1")).toBeInTheDocument();
 
-    // 开打之后（turn）卡面省掉攻 / 防
+    // 开打后：第一行还是那一份，第二行换成 能量 / 手牌 / 总格挡
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
     const roster = screen.getByRole("list", { name: "参战者" });
-    expect(within(roster).queryByText(/攻 3/)).not.toBeInTheDocument();
-    expect(within(roster).getByText("HP 9/9")).toBeInTheDocument();
+    const youCard = within(roster).getByText("无名").closest("li");
+    if (!(youCard instanceof HTMLElement)) {
+      throw new Error("名单里没有玩家那张卡");
+    }
+    expect(youCard).toHaveTextContent("HP 12/15 · 攻 3 · 防 1");
+    expect(youCard).toHaveTextContent("能量 3 · 手牌 5 · 总格挡 6");
+
+    // 手牌数上了第二行，卡底那颗按钮就只剩词缀槽——它们就是按钮的"图标"
+    const handButton = within(youCard).getByRole("button", { name: "查看手牌：无名" });
+    expect(handButton).toHaveTextContent("[被动] 0");
+    expect(handButton).not.toHaveTextContent("手牌 5");
   });
 
   it("开局准备：三排卡片（敌人 / 场景 + 开始 / 队伍），上下的排法与战斗房名单同一套", async () => {

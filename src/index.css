@@ -1741,12 +1741,6 @@ ul.combat-action-roster {
   color: var(--fg);
 }
 
-/* 「手牌 N」：标签而非词缀，不给 chip 外框 */
-.combatant-card-hand-label {
-  font-size: var(--card-font-mark);
-  color: var(--muted);
-}
-
 .badge--dead {
   border-color: var(--err);
   color: var(--err);
