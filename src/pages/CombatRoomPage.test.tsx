@@ -212,11 +212,12 @@ describe("副本房间 · 战斗房间", () => {
     await within(info).findByText("属性");
     fireEvent.click(within(info).getByRole("button", { name: "关闭" }));
 
-    // 卡底按钮 → 该角色手牌：来自我方阵营的牌标「[塞牌]」，再点卡进三级卡牌详情
+    // 卡底按钮 → 该角色手牌：不再在卡面上标「塞牌」（那是持有关系），卡面只标「可传递」属性；再点卡进三级详情
     fireEvent.click(corpseHand);
     const handDialog = await screen.findByRole("dialog", { name: "手牌" });
     expect(within(handDialog).getByText("棺中殭尸 · 共 5 张")).toBeInTheDocument();
-    expect(within(handDialog).getAllByText("[塞牌]")).toHaveLength(2);
+    expect(within(handDialog).queryByText("[塞牌]")).not.toBeInTheDocument();
+    expect(within(handDialog).getAllByText("可传递")).toHaveLength(2);
     // 手牌只显示"不是自己的"来源（剖棺 / 钉棺 来自我方），自己的 / 空来源不显示
     expect(within(handDialog).getAllByText("来源：角色.无名")).toHaveLength(2);
     // 卡面词缀是一枚标记（`[入木]`），点开才看全文

@@ -2,6 +2,22 @@ import type { ReactNode } from "react";
 import { readAffixLabel } from "./readAffixLabel";
 import type { Card, CardTargetType } from "./types";
 
+/**
+ * 卡牌 · 客户端设计语言（唯一实现）
+ *
+ * 后端 `models/card.py::Card` 的字段分三类，卡面据此分三块，**同类用同一种视觉**：
+ * - **身份**：`name`（卡名）/ `description`（叙述）/ `uuid`；`source` 单独一行。
+ * - **数值**：`cost` / `damage` / `hit_count` / `block` / `target_type` / `self_target` → 一行 `statsText`。
+ * - **标记（当作\"词缀\"看的那一类）** → 一律是 chip（`.affix-chip`），排在同一行 `.card-tile-marks`：
+ *   - 三种时机的自由文本词缀 `on_play_affixes` / `on_hit_affixes` / `on_turn_end_affixes`
+ *     （绿 / 红 / 黄；卡面只写 `[名称]`，点开看全文）；
+ *   - 布尔属性 `exhaust`（消耗牌）/ `retain`（保留）/ `ethereal`（虚无）/ `playable`（不可出牌）/
+ *     `transferable`（可传递，独立色 `--transfer`）。
+ *
+ * **`transferable` 是"牌属性"，`【塞牌】` 是"牌与持有者的关系"**：后者不进卡面（此时主体就是这张卡），
+ * 只挂在 ActorCard 一侧。`source` 只在"不是持有者的牌"时才显示，且用 `--transfer` 色强调。
+ */
+
 /** 目标类型 → 界面说法；`self_target` 的卡不看这个（统一显示「自身」）。 */
 const TARGET_LABELS: Record<CardTargetType, string> = {
   single: "单体",
@@ -12,10 +28,7 @@ const TARGET_LABELS: Record<CardTargetType, string> = {
 /** 三种触发时机的词缀。 */
 type AffixKey = "on_play_affixes" | "on_hit_affixes" | "on_turn_end_affixes";
 
-/**
- * 三种触发时机 → 中文标签 + 色调。卡面（`affixes="names"`）只给**标记**，靠颜色区分三种时机：
- * 打出时（绿）/ 被命中时（红）/ 回合结束时（黄）。完整原文只在卡牌详情（`affixes="full"`）里出现。
- */
+/** 三种触发时机 → 中文标签 + 色调（绿 / 红 / 黄）。 */
 const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
   { key: "on_play_affixes", label: "打出时", tone: "play" },
   { key: "on_hit_affixes", label: "被命中时", tone: "hit" },
@@ -23,10 +36,10 @@ const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
 ];
 
 /**
- * 卡面标记。
+ * 卡面的布尔标记（当作词缀看的那一类）。
  *
  * 极性是**逐项写死**的，不是因为啰嗦：`playable` 是「false 才标」，其余是「true 才标」，
- * 用一个「布尔 → 标签」的表会把这个差异藏起来。`transferable` 带色调（见 `.badge--transfer`）。
+ * 用一个「布尔 → 标签」的表会把这个差异藏起来。
  */
 function flagLabels(card: Card): { label: string; tone?: string }[] {
   return [
@@ -59,16 +72,13 @@ function statsText(card: Card): string {
  * 牌名直接显示：**卡牌名不带 `类型.` 前缀**（后端 `Card.name` 就是叙事化的牌名，
  * 原型见 `demo/card_prototypes.py`），所以不走 `displayName`（那会把名字里的 `.` 当分隔符切掉）。
  *
- * **词缀两种颗粒度**：卡面（`names`）把每个词缀渲染成一枚**按钮/标记**，只写 `[名称]`（表达"有"），
- * 三种时机用颜色区分；点它（`onAffixClick`，或回退到 `onSelect`）叠出**卡牌详情**看完整原文——
- * 详情（`full`）才把每个词缀的全文各写一遍。这样长词缀不会把卡面撑坏，也不用两套卡面。
+ * **词缀两种颗粒度**：卡面（`names`）把词缀渲染成一枚**按钮/标记**，只写 `[名称]`，三种时机用颜色区分；
+ * 点它（`onAffixClick`，或回退到 `onSelect`）叠出**卡牌详情**看完整原文——详情（`full`）才把全文写一遍。
  *
- * `onSelect` 给了就**整张卡可点**（铺一层透明按钮，见 `.card-tile-open`）；词缀按钮抬在它之上，
- * 自己收下自己的点击。不给就整卡不可点。
+ * `onSelect` 给了就**整张卡可点**（铺一层透明按钮，见 `.card-tile-open`）；标记按钮抬在它之上。
  *
- * **来源显示口径**（`source` 是卡牌的生成/注入者）：
- * - `hideSource`：牌组里一律不显示（牌必属持有者）；
- * - 给了 `owner`：只在 `source !== owner`（不是自己的牌，如【塞牌】）时才显示，否则是多余的。
+ * **来源显示口径**：`hideSource` 一律不显示（牌组）；`owner` 只在 `source !== owner` 时才显示，
+ * 并用 `--transfer` 色强调"不是自己的牌"。
  */
 export default function CardItem({
   card,
@@ -79,7 +89,6 @@ export default function CardItem({
   onAffixClick,
   selected = false,
   selectAriaLabel,
-  badge,
   hideSource = false,
   owner,
 }: {
@@ -97,14 +106,13 @@ export default function CardItem({
   selected?: boolean;
   /** 无障碍名字；不给就用「查看卡牌：xxx」（`onSelect` 的默认语义）。 */
   selectAriaLabel?: string;
-  /** 调用方额外要挂在卡头的一枚标记（如敌方手牌里来自我方的【塞牌】）。 */
-  badge?: ReactNode;
   /** 一律不显示来源（牌组）。 */
   hideSource?: boolean;
   /** 持有者原始名：`source` 与它相同就不显示来源。 */
   owner?: string;
 }) {
   const openDetail = onAffixClick ?? onSelect;
+  const isForeignSource = card.source !== "" && owner !== undefined && card.source !== owner;
   const showSource =
     !hideSource && card.source !== "" && (owner === undefined || card.source !== owner);
 
@@ -113,35 +121,36 @@ export default function CardItem({
       <div className="card-tile-head">
         <span className="card-tile-name">{card.name}</span>
         {claimed ? <span className="badge badge--claimed">已领取</span> : null}
-        {badge}
-        {flagLabels(card).map(({ label, tone }) => (
-          <span key={label} className={tone === undefined ? "badge" : `badge badge--${tone}`}>
-            {label}
-          </span>
-        ))}
       </div>
 
       {card.description === "" ? null : <p className="card-tile-desc">{card.description}</p>}
 
       <p className="muted card-tile-stats">{statsText(card)}</p>
 
-      {AFFIX_TYPES.map(({ key: affixKey, label, tone }) =>
-        card[affixKey].length === 0 ? null : (
-          <p key={affixKey} className="card-tile-affixes">
-            {affixes === "full" ? (
-              <>
-                <span className={`affix-mark affix-mark--${tone}`}>{label}</span>{" "}
-                {card[affixKey].join("、")}
-              </>
-            ) : (
-              card[affixKey].map((affix) =>
+      {/* 标记行：布尔属性 + 三种时机的词缀，统一 chip；`names` 时都在这里，`full` 的词缀另起段 */}
+      <div className="card-tile-marks">
+        {flagLabels(card).map(({ label, tone }) => (
+          <span
+            key={label}
+            className={tone === undefined ? "affix-chip" : `affix-chip affix-chip--${tone}`}
+          >
+            {label}
+          </span>
+        ))}
+        {affixes === "names"
+          ? AFFIX_TYPES.flatMap(({ key, label, tone }) =>
+              card[key].map((affix) =>
                 openDetail === undefined ? (
-                  <span key={affix} className={`affix-chip affix-chip--${tone}`} title={label}>
+                  <span
+                    key={`${key}-${affix}`}
+                    className={`affix-chip affix-chip--${tone}`}
+                    title={label}
+                  >
                     {readAffixLabel(affix)}
                   </span>
                 ) : (
                   <button
-                    key={affix}
+                    key={`${key}-${affix}`}
                     type="button"
                     className={`affix-chip affix-chip--${tone}`}
                     title={`${label}（点开看完整词缀）`}
@@ -150,13 +159,33 @@ export default function CardItem({
                     {readAffixLabel(affix)}
                   </button>
                 ),
-              )
-            )}
-          </p>
-        ),
-      )}
+              ),
+            )
+          : null}
+      </div>
 
-      {showSource ? <p className="muted card-tile-source">来源：{card.source}</p> : null}
+      {affixes === "full"
+        ? AFFIX_TYPES.map(({ key, label, tone }) =>
+            card[key].length === 0 ? null : (
+              <p key={key} className="card-tile-affixes">
+                <span className={`affix-mark affix-mark--${tone}`}>{label}</span>{" "}
+                {card[key].join("、")}
+              </p>
+            ),
+          )
+        : null}
+
+      {showSource ? (
+        <p
+          className={
+            isForeignSource
+              ? "card-tile-source card-tile-source--foreign"
+              : "muted card-tile-source"
+          }
+        >
+          来源：{card.source}
+        </p>
+      ) : null}
 
       {action ? <div className="card-actions">{action}</div> : null}
     </>

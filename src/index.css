@@ -1217,15 +1217,22 @@ ul.card-tiles--stack {
   line-height: 1.6;
 }
 
-/* 词缀行：卡面（`names`）是一排可点的标记，详情（`full`）是「时机标签 + 全文」 */
+/* 标记行：布尔属性 + 三种时机的词缀，统一 chip；抬到「整卡可点」那层之上 */
+.card-tile-marks {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* 详情（`full`）的词缀行：时机标签 + 全文 */
 .card-tile-affixes {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
-  /* 抬到「整卡可点」那层之上：词缀标记自己收下点击 */
-  position: relative;
-  z-index: 1;
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.6;
@@ -1247,7 +1254,7 @@ ul.card-tiles--stack {
   color: var(--muted);
 }
 
-.card-tile-affixes .affix-chip:hover:not(:disabled) {
+.card-tile-marks button.affix-chip:hover:not(:disabled) {
   border-color: currentColor;
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
@@ -1280,6 +1287,13 @@ ul.card-tiles--stack {
 .card-tile-source {
   margin: 0;
   font-size: 0.8rem;
+}
+
+/* 不是自己的牌（`source !== 持有者`）：用传递色强调一下 */
+.card-tile-source--foreign {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--transfer);
 }
 
 /* 牌组浮窗：一行最多三张，**所有行严格等高**（`1fr` 行高由最高的那张决定，不再参差）；
@@ -1420,29 +1434,26 @@ ul.combat-action-roster {
   border-color: var(--warn);
 }
 
-/* 卡底的【被动】/【塞牌】标记行：**不画按钮外框**，排布与普通 Card 的词缀行一致（一排标记），
-   整行仍然可点（看该角色手牌）；抬到「整卡可点」那层之上 */
+/* 卡底动作：**独立按钮**（与副本流程里的「领取奖励」同一设计语言），里面放【被动】/【塞牌】标记；
+   抬到「整卡可点」那层之上 */
 .combatant-card-hand {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 0.4rem;
   width: 100%;
   margin-top: auto;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: none;
-  color: inherit;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
   text-align: left;
-  cursor: pointer;
 }
 
-/* 悬停把标记点亮一下，提示这排标记可点（不再靠外框提示） */
-.combatant-card-hand:hover .affix-chip {
-  border-color: currentColor;
-  background: color-mix(in srgb, currentColor 12%, transparent);
+.combatant-card-hand-chevron {
+  color: var(--muted);
+  line-height: 1;
 }
 
 .combatant-card-hand-text {
@@ -1456,13 +1467,6 @@ ul.combat-action-roster {
 .badge--dead {
   border-color: var(--err);
   color: var(--err);
-}
-
-/* 「传递」：敌方手牌里来自我方阵营的牌（我方塞过去的）——与三种词缀颜色都不同 */
-.badge--transfer {
-  border-color: var(--transfer);
-  color: var(--transfer);
-  font-weight: 600;
 }
 
 /* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆 */

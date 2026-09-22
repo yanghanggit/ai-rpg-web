@@ -6,7 +6,7 @@ import CardListDialog from "../../cards/CardListDialog";
 import type { Card } from "../../cards/types";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import CombatActionRoster from "./CombatActionRoster";
-import { type Combatant, isTransferredCard } from "./readCombat";
+import type { Combatant } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
 /**
@@ -263,14 +263,6 @@ export default function CombatTurnPanel({
           cards={handOwner?.hand ?? []}
           emptyText="（手牌为空）"
           owner={handActor}
-          // 敌方手里来自我方阵营的牌 → 标「[塞牌]」（即"我方塞过去的"）
-          cardBadge={(card) =>
-            handOwner !== null && isTransferredCard(card, handOwner, combatants) ? (
-              <span className="badge badge--transfer" title="这张牌来自我方阵营（我方塞过去的）">
-                [塞牌]
-              </span>
-            ) : undefined
-          }
           onClose={() => setHandActor(null)}
         />
       )}

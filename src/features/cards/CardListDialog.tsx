@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { useState } from "react";
 import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
@@ -27,7 +26,6 @@ export default function CardListDialog({
   actorName,
   cards,
   emptyText,
-  cardBadge,
   hideSource = false,
   owner,
   onClose,
@@ -39,8 +37,6 @@ export default function CardListDialog({
   cards: Card[];
   /** 空态文案（「（牌组为空）」/「（手牌为空）」）。 */
   emptyText: string;
-  /** 给单张卡额外挂一枚标记（如手牌里的【塞牌】）；不给就不挂。 */
-  cardBadge?: (card: Card) => ReactNode;
   /** 一律不显示来源（牌组）。 */
   hideSource?: boolean;
   /** 持有者原始名：只在 `source !== owner` 时显示来源（手牌）。 */
@@ -74,7 +70,6 @@ export default function CardListDialog({
                 key={card.uuid}
                 card={card}
                 affixes="names"
-                badge={cardBadge?.(card)}
                 hideSource={hideSource}
                 owner={owner}
                 onSelect={setOpenedCard}

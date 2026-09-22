@@ -120,6 +120,9 @@ export default function CombatActionRoster({
                   <span className="affix-chip affix-chip--transfer">[塞牌] {transferredCount}</span>
                 ) : null}
               </span>
+              <span className="combatant-card-hand-chevron" aria-hidden="true">
+                ›
+              </span>
             </button>
             {/* 整卡可点：选目标态 → 指定目标；否则 → 看角色信息 */}
             {isPickable ? (
