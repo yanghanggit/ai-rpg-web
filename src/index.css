@@ -1382,6 +1382,97 @@ ul.card-tiles--deck > .card-tile {
   border-color: var(--fg);
 }
 
+/* ── 卡牌详情（三级）：左「这张卡原样」/ 右「完整信息」两栏 ─────
+   左栏固定成一张竖牌的宽（`--card-short`），右栏吃剩下的宽度；两栏**顶部对齐**——
+   右栏比卡长时只往下长，卡不跟着被拉高。 */
+.card-detail {
+  display: grid;
+  grid-template-columns: var(--card-short) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* 左栏就是一张卡：沿用牌组的列宽与最小高，尺寸与别处的卡面一致（同一个 `CardItem`） */
+ul.card-detail-card {
+  margin: 0;
+  grid-template-columns: var(--card-short);
+}
+
+ul.card-detail-card > .card-tile {
+  min-height: var(--card-tall);
+}
+
+/* 右栏：一节一段（说明 / 词缀），纵向排 */
+.card-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.card-detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* 节标题：字号与浮窗里别的 h3 一致，但两栏靠 `gap` 排行距，不再要额外的上边距 */
+.card-detail-section > .card-detail-heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.card-detail-desc {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+/* 词缀逐条：一条 = 时机 chip + `[名称]` chip + 说明全文 */
+ul.card-detail-affixes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card-detail-affix {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  /* 左侧留一条竖线的位：选中时只换颜色，不因为多出一条边而抖一下 */
+  border-left: 2px solid transparent;
+  border-radius: 6px;
+}
+
+/* 每条挂上自己那种时机的色调（三色与卡面同一套），选中时用它上色 */
+.card-detail-affix--play {
+  --affix-tone: var(--ok);
+}
+
+.card-detail-affix--hit {
+  --affix-tone: var(--err);
+}
+
+.card-detail-affix--turn-end {
+  --affix-tone: var(--warn);
+}
+
+/* 被（左栏点选的那枚词缀）选中：左边一条竖线 + 淡底，颜色就是它自己那种时机的色——
+   两栏用的是同一套颜色词汇，所以“选中的是哪一条”不需要另加说明 */
+.card-detail-affix--active {
+  border-left-color: var(--affix-tone, var(--fg));
+  background: color-mix(in srgb, var(--affix-tone, var(--fg)) 12%, transparent);
+}
+
+.card-detail-affix-text {
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
 /* ── 战斗房间 · 参战者一览（只读名单；结算页在用） ─────────── */
 
 /* 一格里放身份、血量、能量/牌堆两行文字，比队伍卡紧凑 */

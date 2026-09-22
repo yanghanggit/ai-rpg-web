@@ -630,7 +630,14 @@ function mockCard(name: string, overrides: Record<string, unknown> = {}): Record
 
 /** 几张示例卡，覆盖卡面上的各种部件（数值 / 多段 / 自身目标 / 阵营散射 / 消耗 / 不可出牌 / 词缀）。 */
 export const cardFixtures = {
-  cleave: mockCard("剖棺", { cost: 1, damage: 3, source: "角色.无名", transferable: true }),
+  cleave: mockCard("剖棺", {
+    cost: 1,
+    damage: 3,
+    // 前 5 张手牌里给一张带**时机词缀**的：回合界面上点它就能试「点词缀 → 详情右栏高亮」那条链路
+    on_play_affixes: ["[开棺]:命中后可以再摸一张"],
+    source: "角色.无名",
+    transferable: true,
+  }),
   sweep: mockCard("撬棍横击", {
     cost: 2,
     damage: 2,

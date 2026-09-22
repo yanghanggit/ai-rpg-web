@@ -29,8 +29,13 @@ const TARGET_LABELS: Record<CardTargetType, string> = {
 /** 三种触发时机的词缀。 */
 type AffixKey = "on_play_affixes" | "on_hit_affixes" | "on_turn_end_affixes";
 
-/** 三种触发时机 → 中文标签 + 色调（绿 / 红 / 黄）。 */
-const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
+/**
+ * 三种触发时机 → 中文标签 + 色调（绿 / 红 / 黄）。
+ *
+ * 导出是因为**卡牌详情右侧的「词缀」栏按同一分组列全文**（`CardDetailDialog`）：
+ * 分组与配色只有一个来源，卡面与详情不会各排一套。
+ */
+export const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
   { key: "on_play_affixes", label: "打出时", tone: "play" },
   { key: "on_hit_affixes", label: "被命中时", tone: "hit" },
   { key: "on_turn_end_affixes", label: "回合结束时", tone: "turn-end" },
@@ -79,6 +84,9 @@ function statsText(card: Card): string {
  *
  * `onSelect` 给了就**整张卡可点**（铺一层透明按钮，见 `.card-tile-open`）；标记按钮抬在它之上。
  *
+ * **点哪一枚词缀要能区分**：`onAffixClick` 拿得到点击的那条词缀原文，所以「卡牌详情」能
+ * 把右侧对应的那一条高亮（`CardDetailDialog` 的两栏布局就是这么对接的）。
+ *
  * **来源显示口径**：`hideSource` 一律不显示（牌组）；`owner` 只在 `source !== owner` 时才显示，
  * 并用 `--transfer` 色强调"不是自己的牌"。
  */
@@ -102,8 +110,9 @@ export default function CardItem({
   affixes?: "full" | "names";
   /** 给了就整张卡可点（回调拿卡本身，调用方决定开哪层浮窗）。 */
   onSelect?: (card: Card) => void;
-  /** 点某个词缀 → 开卡牌详情；不给就回退到 `onSelect`，都没有就只是静态标记。 */
-  onAffixClick?: (card: Card) => void;
+  /** 点某个词缀 → 开卡牌详情；回调**带上被点的那条词缀原文**（详情据此高亮对应条目）。
+   *  不给就回退到 `onSelect`，都没有就只是静态标记。 */
+  onAffixClick?: (card: Card, affix: string) => void;
   /** 该卡处于选中态（如战斗手牌被点选待出）：加绿框。 */
   selected?: boolean;
   /** 无障碍名字；不给就用「查看卡牌：xxx」（`onSelect` 的默认语义）。 */
@@ -113,7 +122,9 @@ export default function CardItem({
   /** 持有者原始名：`source` 与它相同就不显示来源。 */
   owner?: string;
 }) {
-  const openDetail = onAffixClick ?? onSelect;
+  // 词缀点击一律转成同一种签名：没给 `onAffixClick` 时回退到「整卡可点」（丢掉词缀参数）
+  const openDetail: ((card: Card, affix: string) => void) | undefined =
+    onAffixClick ?? (onSelect === undefined ? undefined : (card: Card) => onSelect(card));
   const isForeignSource = card.source !== "" && owner !== undefined && card.source !== owner;
   const showSource =
     !hideSource && card.source !== "" && (owner === undefined || card.source !== owner);
@@ -153,7 +164,7 @@ export default function CardItem({
                     type="button"
                     className={`affix-chip affix-chip--${tone}`}
                     title={`${label}（点开看完整词缀）`}
-                    onClick={() => openDetail(card)}
+                    onClick={() => openDetail(card, affix)}
                   >
                     {readAffixLabel(affix)}
                   </button>

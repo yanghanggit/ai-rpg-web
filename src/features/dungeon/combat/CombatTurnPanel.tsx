@@ -70,7 +70,8 @@ export default function CombatTurnPanel({
   const [infoActor, setInfoActor] = useState<string | null>(null);
   const [handActor, setHandActor] = useState<string | null>(null);
   // 手牌上点词缀 → 叠一层卡牌详情
-  const [detailCard, setDetailCard] = useState<Card | null>(null);
+  // 手牌上点词缀 → 叠一层卡牌详情（带上是哪枚词缀，右栏一打开就高亮它）
+  const [detailCard, setDetailCard] = useState<{ card: Card; affix: string } | null>(null);
   // 换行动角色就把两次选择都清掉（React 的「props 变了就重置 state」写法，不用 effect）：
   // 同一回合里 party → monster 组件不卸载，必须显式重置，否则残留的选中会指到新角色的手牌上。
   const [lastActor, setLastActor] = useState(currentActor);
@@ -228,7 +229,7 @@ export default function CombatTurnPanel({
                     affixes="names"
                     selected={card.uuid === selectedUuid}
                     owner={current.name}
-                    onAffixClick={setDetailCard}
+                    onAffixClick={(card, affix) => setDetailCard({ card, affix })}
                     selectAriaLabel={
                       isMonster
                         ? `查看手牌：${card.name}`
@@ -318,7 +319,12 @@ export default function CombatTurnPanel({
 
       {/* 手牌上点词缀标记叠出的卡牌详情（词缀全文） */}
       {detailCard === null ? null : (
-        <CardDetailDialog card={detailCard} onClose={() => setDetailCard(null)} />
+        <CardDetailDialog
+          card={detailCard.card}
+          initialAffix={detailCard.affix}
+          owner={current.name}
+          onClose={() => setDetailCard(null)}
+        />
       )}
     </>
   );

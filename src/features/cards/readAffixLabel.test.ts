@@ -1,5 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { readAffixLabel } from "./readAffixLabel";
+import { readAffixLabel, readAffixParts } from "./readAffixLabel";
+
+describe("readAffixParts", () => {
+  it("拆出 `[名称]` 与说明两段（全角冒号 / 多余空白也认）", () => {
+    expect(readAffixParts("[破竹]:本段命中后更容易击穿格挡")).toEqual({
+      name: "破竹",
+      detail: "本段命中后更容易击穿格挡",
+    });
+    expect(readAffixParts("  [余音]  ：  余音未散  ")).toEqual({
+      name: "余音",
+      detail: "余音未散",
+    });
+  });
+
+  it("解析不出名称时不猜：name 为 null、detail 是原文（不改写、不截断）", () => {
+    expect(readAffixParts("[破竹]命中后更容易击穿格挡")).toEqual({
+      name: null,
+      detail: "[破竹]命中后更容易击穿格挡",
+    });
+    expect(readAffixParts("  []:命中后更容易击穿格挡  ")).toEqual({
+      name: null,
+      detail: "  []:命中后更容易击穿格挡  ",
+    });
+  });
+});
 
 describe("readAffixLabel", () => {
   it("`[名称]:描述` 只留名称（带方括号）", () => {

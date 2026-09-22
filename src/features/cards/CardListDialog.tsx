@@ -15,6 +15,9 @@ import type { Card } from "./types";
  * （点标记或整张卡都叠出**三级** `CardDetailDialog` 看完整信息）。三级开着时本层的关闭
  * （含 ESC）不响应，避免一次 ESC 连关两层。
  *
+ * **点词缀 vs 点整卡**：两者都开三级，但点词缀会把**那一条词缀**一并带过去——详情右栏一打开就
+ * 高亮它（见 `CardDetailDialog` 的两栏联动）。
+ *
  * **来源显示**：牌组（`hideSource`）一律不显示（牌必属持有者）；手牌（`owner`）只在不是自己的牌
  * （【塞牌】）时才显示来源。
  *
@@ -43,8 +46,8 @@ export default function CardListDialog({
   owner?: string;
   onClose: () => void;
 }) {
-  /** 三级浮窗正开着的卡；`null` 表示只在这层。 */
-  const [openedCard, setOpenedCard] = useState<Card | null>(null);
+  /** 三级浮窗正开着的卡；`null` 表示只在这层。`affix` 是从哪枚词缀点进来的（没有就是整卡点开）。 */
+  const [openedCard, setOpenedCard] = useState<{ card: Card; affix: string | null } | null>(null);
 
   return (
     <>
@@ -72,16 +75,23 @@ export default function CardListDialog({
                 affixes="names"
                 hideSource={hideSource}
                 owner={owner}
-                onSelect={setOpenedCard}
+                onSelect={(card) => setOpenedCard({ card, affix: null })}
+                onAffixClick={(card, affix) => setOpenedCard({ card, affix })}
               />
             ))}
           </ul>
         )}
       </Modal>
 
-      {openedCard !== null ? (
-        <CardDetailDialog card={openedCard} onClose={() => setOpenedCard(null)} />
-      ) : null}
+      {openedCard === null ? null : (
+        <CardDetailDialog
+          card={openedCard.card}
+          initialAffix={openedCard.affix}
+          hideSource={hideSource}
+          owner={owner}
+          onClose={() => setOpenedCard(null)}
+        />
+      )}
     </>
   );
 }
