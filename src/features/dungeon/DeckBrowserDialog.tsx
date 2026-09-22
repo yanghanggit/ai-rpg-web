@@ -67,7 +67,7 @@ export default function DeckBrowserDialog({
 
         {!decks.isPending && !decks.isError ? (
           <>
-            <section className="deck-section">
+            <section className="camp-section">
               <h3>我方</h3>
               {party.length === 0 ? (
                 <p className="muted">（队伍里没有角色）</p>
@@ -97,7 +97,7 @@ export default function DeckBrowserDialog({
 
             {/* 开场房 / 没有怪物的房间不出现「敌方」这一段，行为与只有我方时一致 */}
             {decks.monsters.length === 0 ? null : (
-              <section className="deck-section">
+              <section className="camp-section">
                 <h3>敌方</h3>
                 <ul className="action-list deck-list">
                   {decks.monsters.map((monster) => (

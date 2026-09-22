@@ -141,12 +141,44 @@ describe("副本房间 · 战斗房间", () => {
 
     fireEvent.click(entry);
     const combatInfo = await screen.findByRole("dialog", { name: "战斗信息" });
+    // 宏观三块：状态事实 / 双方参战者 / 全部回合。快照要等 details，所以名单用 find
+    expect(within(combatInfo).getByText("状态").nextElementSibling).toHaveTextContent("进行中");
+    expect(await within(combatInfo).findByRole("heading", { name: "我方" })).toBeInTheDocument();
+    expect(within(combatInfo).getByRole("heading", { name: "敌方" })).toBeInTheDocument();
+    // 宏观名单只要名字 + 生死：不铺血量 / 能量 / 牌堆那套（那是行动面板的事）
+    expect(within(combatInfo).getByText("棺中殭尸")).toBeInTheDocument();
+    expect(within(combatInfo).queryByText(/HP /)).not.toBeInTheDocument();
+    // 还没打：一个「已战死」都没有
+    expect(within(combatInfo).queryByText("已战死")).not.toBeInTheDocument();
+    // 当前谁在行动不在名单上标——下面「全部回合」里那条 `当前行动` 就是唯一一处（一样的信息不说两遍）
+    const party = within(combatInfo).getByRole("heading", { name: "我方" });
+    expect(party.parentElement?.querySelector(".badge--current")).toBeNull();
+    expect(within(combatInfo).getAllByText("当前行动")).toHaveLength(1);
     // 全部回合的 Round 明细（第 N 回合 + 行动顺序等）
     expect(within(combatInfo).getByText(/第 1 回合/)).toBeInTheDocument();
     expect(within(combatInfo).getByText("行动顺序")).toBeInTheDocument();
 
     // 同类切换不叠层：菜单已关，只剩战斗信息
     expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
+  });
+
+  it("战斗信息：结算后名单还在，战死的怪物挂「已战死」（宏观看的是「谁还活着」，不筛掉死者）", async () => {
+    enterMockDungeon("副本.荒村义庄");
+    advanceMockDungeon();
+    prepareMockPostCombat();
+    renderCombat();
+
+    await screen.findByText("🏆 战斗胜利！");
+    fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
+    const menu = await screen.findByRole("dialog", { name: "副本操作" });
+    fireEvent.click(within(menu).getByRole("button", { name: "战斗信息" }));
+    const info = await screen.findByRole("dialog", { name: "战斗信息" });
+
+    // 我方一个没死、敌方四只全死——一眼读出战果
+    const party = await within(info).findByRole("heading", { name: "我方" });
+    expect(party.parentElement).not.toHaveTextContent("已战死");
+    const monsters = within(info).getByRole("heading", { name: "敌方" });
+    expect(monsters.parentElement?.querySelectorAll(".badge--dead")).toHaveLength(4);
   });
 
   it("「战斗信息」不挑 phase：还没开始（第 0 回合）时 ⚙ 菜单里就有这一行", async () => {

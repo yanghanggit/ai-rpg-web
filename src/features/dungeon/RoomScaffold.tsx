@@ -227,8 +227,13 @@ export default function RoomScaffold({
         <DungeonMapDialog dungeon={run.data.dungeon} onClose={() => setPane(null)} />
       ) : null}
 
-      {pane === "combat" && combat !== null ? (
-        <CombatInfoDialog combat={combat} onClose={() => setPane(null)} />
+      {pane === "combat" && currentRoom?.type === "combat" ? (
+        <CombatInfoDialog
+          userName={userName}
+          gameName={gameName}
+          room={currentRoom}
+          onClose={() => setPane(null)}
+        />
       ) : null}
 
       {pane === "narrative" ? (

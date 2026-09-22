@@ -461,15 +461,39 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
   opacity: 0.5;
 }
 
-/* 「牌组一览」：我方 / 敌方两段。段内行间不画线（.deck-list 抵消 .action-list 的 li+li），
-   线只画在两段之间（「敌方」段的顶边），代表"换阵营"而不是夹在同伴之间。 */
+/* 「牌组一览」：我方 / 敌方两段。段内行间不画线（`.deck-list` 抵消 `.action-list` 的
+   li+li），线只画在两段之间（「敌方」段的顶边），代表"换阵营"而不是夹在同伴之间。 */
 .deck-list li + li {
   border-top: 0;
 }
 
-.deck-section + .deck-section {
+/* 阵营分段（牌组一览 / 战斗信息共用）：`我方` / `敌方` 两段，线只画在两段之间 */
+.camp-section + .camp-section {
   margin-top: 1rem;
   border-top: 1px solid var(--border);
+}
+
+/* 「战斗信息」的参战者名单：**横着排**、自动换行，一行里放得下多少放多少。
+   这里只有名字 + 生死，没必要一人占一行——竖排会把七个人的名单拉成十几行，
+   而这一节的用途恰好是"一眼扫完谁在场、谁还活着"。 */
+ul.camp-names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+ul.camp-names li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* 战死的参战者：名字置灰，名字后面一颗红徽标（「已战死」的说法与角色卡一致） */
+.camp-names .camp-name--dead {
+  color: var(--muted);
 }
 
 /* 小节标题行 */
