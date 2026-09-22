@@ -69,9 +69,8 @@ export default function CombatTurnPanel({
   // 名单卡上的两个只读浮窗（角色信息 / 手牌）：同时只开一个
   const [infoActor, setInfoActor] = useState<string | null>(null);
   const [handActor, setHandActor] = useState<string | null>(null);
-  // 手牌上点词缀 → 叠一层卡牌详情
-  // 手牌上点词缀 → 叠一层卡牌详情（带上是哪枚词缀，右栏一打开就高亮它）
-  const [detailCard, setDetailCard] = useState<{ card: Card; affix: string } | null>(null);
+  // 中间那条的「查看」按下的卡 → 叠一层卡牌详情（手牌里整卡点击是"选中"，看详情另给入口）
+  const [viewCard, setViewCard] = useState<Card | null>(null);
   // 换行动角色就把两次选择都清掉（React 的「props 变了就重置 state」写法，不用 effect）：
   // 同一回合里 party → monster 组件不卸载，必须显式重置，否则残留的选中会指到新角色的手牌上。
   const [lastActor, setLastActor] = useState(currentActor);
@@ -178,13 +177,24 @@ export default function CombatTurnPanel({
                 <p className="muted combat-hand-note">点一张手牌开始出牌。</p>
               ) : (
                 <>
-                  {/* 提示矩形：文字在这里折行显示（与右边两颗卡状按钮并排成一行） */}
+                  {/* 提示矩形：文字在这里折行显示（与右边几颗卡状按钮并排成一行） */}
                   <p className="combat-hand-hint">
                     已选：{selected.name}
                     {targets.length === 0
                       ? " · 点上方角色选择目标"
                       : ` · ${targetHint(selected, targets)}`}
                   </p>
+                  {/* 手牌里整卡点击是"选中"，所以"看这张牌的详情"另给一颗按钮（非手牌那几处是整卡直开）*/}
+                  <button
+                    type="button"
+                    className="combat-hand-btn combat-hand-btn--view"
+                    onClick={() => setViewCard(selected)}
+                  >
+                    <span className="combat-hand-btn-glyph" aria-hidden="true">
+                      ☰
+                    </span>
+                    <span className="combat-hand-btn-caption">查看</span>
+                  </button>
                   {/* 两次选择都齐了才长出「出牌」——之前是点目标就发 API，容易误触。
                       按钮形状与开场房「回到地图」卡同族（图标在上、词在下），只是缩成方块。 */}
                   {targets.length === 0 ? null : (
@@ -226,10 +236,8 @@ export default function CombatTurnPanel({
                   <CardItem
                     key={card.uuid}
                     card={card}
-                    affixes="names"
                     selected={card.uuid === selectedUuid}
                     owner={current.name}
-                    onAffixClick={(card, affix) => setDetailCard({ card, affix })}
                     selectAriaLabel={
                       isMonster
                         ? `查看手牌：${card.name}`
@@ -318,13 +326,8 @@ export default function CombatTurnPanel({
       )}
 
       {/* 手牌上点词缀标记叠出的卡牌详情（词缀全文） */}
-      {detailCard === null ? null : (
-        <CardDetailDialog
-          card={detailCard.card}
-          initialAffix={detailCard.affix}
-          owner={current.name}
-          onClose={() => setDetailCard(null)}
-        />
+      {viewCard === null ? null : (
+        <CardDetailDialog card={viewCard} owner={current.name} onClose={() => setViewCard(null)} />
       )}
     </>
   );

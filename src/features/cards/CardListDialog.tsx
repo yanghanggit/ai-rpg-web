@@ -11,12 +11,10 @@ import type { Card } from "./types";
  * 牌组与手牌本质是同一个东西的两种来源（一个人的一组牌），所以只在 `title` / 空态文案上区分，
  * 渲染逻辑一份——否则同一张卡在两个浮窗里迟早会长得不一样。
  *
- * 卡面是**紧凑版**：一行最多三张、所有行严格等高（`.card-tiles--deck`），词缀只给 `[名称]` 标记
- * （点标记或整张卡都叠出**三级** `CardDetailDialog` 看完整信息）。三级开着时本层的关闭
- * （含 ESC）不响应，避免一次 ESC 连关两层。
- *
- * **点词缀 vs 点整卡**：两者都开三级，但点词缀会把**那一条词缀**一并带过去——详情右栏一打开就
- * 高亮它（见 `CardDetailDialog` 的两栏联动）。
+ * 卡面是**紧凑版**：一行最多三张、所有行严格等高（`.card-tiles--deck`）。**整张卡点开三级**
+ * `CardDetailDialog`（左栏卡面 / 右栏逐条展开）；**点标记 chip 只弹 tooltip**说明那一枚
+ * （`CardItem` 自带；详情里才改成定位右栏那一条）。三级开着时本层的关闭（含 ESC）不响应，
+ * 避免一次 ESC 连关两层。
  *
  * **来源显示**：牌组（`hideSource`）一律不显示（牌必属持有者）；手牌（`owner`）只在不是自己的牌
  * （【塞牌】）时才显示来源。
@@ -46,8 +44,8 @@ export default function CardListDialog({
   owner?: string;
   onClose: () => void;
 }) {
-  /** 三级浮窗正开着的卡；`null` 表示只在这层。`affix` 是从哪枚词缀点进来的（没有就是整卡点开）。 */
-  const [openedCard, setOpenedCard] = useState<{ card: Card; affix: string | null } | null>(null);
+  /** 三级浮窗正开着的卡；`null` 表示只在这层。 */
+  const [openedCard, setOpenedCard] = useState<Card | null>(null);
 
   return (
     <>
@@ -72,11 +70,9 @@ export default function CardListDialog({
               <CardItem
                 key={card.uuid}
                 card={card}
-                affixes="names"
                 hideSource={hideSource}
                 owner={owner}
-                onSelect={(card) => setOpenedCard({ card, affix: null })}
-                onAffixClick={(card, affix) => setOpenedCard({ card, affix })}
+                onSelect={setOpenedCard}
               />
             ))}
           </ul>
@@ -85,8 +81,7 @@ export default function CardListDialog({
 
       {openedCard === null ? null : (
         <CardDetailDialog
-          card={openedCard.card}
-          initialAffix={openedCard.affix}
+          card={openedCard}
           hideSource={hideSource}
           owner={owner}
           onClose={() => setOpenedCard(null)}

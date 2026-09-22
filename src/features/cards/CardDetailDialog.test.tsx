@@ -6,8 +6,9 @@ import type { Card } from "./types";
 /**
  * `CardDetailDialog` 的测试：**两栏分工 + 两栏联动**。
  *
- * 左栏是卡牌原样（词缀缩略成 `[名称]`），右栏是完整信息（说明全文 + 三种时机的词缀逐条全文）；
- * 点左栏某枚词缀 → 右栏对应那一条被标记为选中。
+ * 左栏是卡牌原样（词缀缩略成 `[名称]`），右栏是完整信息（说明全文 + **每一枚标记**逐条全文，
+ * 布尔与时机词缀分节）；点左栏某枚标记 → 右栏对应那条被选中，且**不弹 tooltip**
+ * （右栏已经把全文写在眼前，再弹一层是重复信息）。
  */
 const CARD: Card = {
   name: "钉棺",
@@ -27,66 +28,63 @@ const CARD: Card = {
   retain: false,
   ethereal: false,
   transferable: true,
-  playable: true,
+  playable: false,
 };
 
 const face = () => screen.getByRole("list", { name: "卡面" });
-const affixRows = () =>
-  within(screen.getByRole("region", { name: "词缀" })).getAllByRole("listitem");
-/** 第 `index` 条词缀（越界就抛错，免得测试因为 `undefined` 而静默放过）。 */
-function affixRow(index: number): HTMLElement {
-  const row = affixRows()[index];
-  if (row === undefined) {
-    throw new Error(`右栏没有第 ${index} 条词缀`);
+const section = (name: string) => screen.getByRole("region", { name });
+const rowsOf = (name: string) => within(section(name)).getAllByRole("listitem");
+/** 某节里第 `index` 条（越界就抛错，免得测试因为 `undefined` 而静默放过）。 */
+function row(name: string, index: number): HTMLElement {
+  const found = rowsOf(name)[index];
+  if (found === undefined) {
+    throw new Error(`「${name}」节里没有第 ${index} 条`);
   }
-  return row;
+  return found;
 }
 
 describe("CardDetailDialog", () => {
-  it("两栏：左栏是卡原样（词缀缩略），右栏是完整信息（说明全文 + 词缀逐条全文）", () => {
+  it("两栏：左栏是卡原样（词缀缩略），右栏按节列出每一枚标记的全文", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
     // 左栏 = 那张卡：词缀只写 `[名称]`，说明全文不在这里
     expect(within(face()).getByText("[破竹]")).toBeInTheDocument();
     expect(within(face()).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
 
-    // 右栏 = 完整信息：时机标签 + `[名称]` + 说明全文
-    expect(screen.getByRole("region", { name: "说明" })).toHaveTextContent(
-      /这句话在卡面上是放不下的/,
-    );
-    const rows = affixRows();
-    expect(rows).toHaveLength(2);
-    expect(within(affixRow(0)).getByText("打出时")).toBeInTheDocument();
-    expect(within(affixRow(0)).getByText(/本段命中后更容易击穿格挡/)).toBeInTheDocument();
-    expect(within(affixRow(1)).getByText("被命中时")).toBeInTheDocument();
-    expect(within(affixRow(1)).getByText(/命中的段数越多/)).toBeInTheDocument();
+    // 右栏 = 完整信息：说明全文
+    expect(section("说明")).toHaveTextContent(/这句话在卡面上是放不下的/);
+
+    // 布尔标记单独一节：只列"开了"的那些（playable=false → 不可出牌；可传递 → transferable）
+    expect(rowsOf("标记")).toHaveLength(2);
+    expect(within(row("标记", 0)).getByText("不可出牌")).toBeInTheDocument();
+    expect(
+      within(row("标记", 0)).getByText("系统会拦住这张牌：不能主动打出。"),
+    ).toBeInTheDocument();
+
+    // 时机词缀按分节标题分节（这里是"打出时"），每条写全文
+    expect(within(row("打出时", 0)).getByText(/本段命中后更容易击穿格挡/)).toBeInTheDocument();
+    expect(within(row("被命中时", 0)).getByText(/命中的段数越多/)).toBeInTheDocument();
   });
 
-  it("点左栏某枚词缀 → 右栏对应那条被选中；再点一次取消", () => {
+  it("点左栏某枚标记 → 右栏对应那条被选中（不弹 tooltip）；再点一次取消", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
-    // 只有左栏的词缀是按钮（右栏是只读的全文）
-    const chip = within(face()).getByRole("button", { name: "[入木]" });
-    expect(affixRow(1)).not.toHaveClass("card-detail-affix--active");
+    expect(row("标记", 0)).not.toHaveClass("card-detail-mark--active");
 
-    fireEvent.click(chip);
-    expect(affixRow(1)).toHaveClass("card-detail-affix--active");
-    expect(affixRow(0)).not.toHaveClass("card-detail-affix--active");
+    fireEvent.click(within(face()).getByRole("button", { name: "不可出牌" }));
+    expect(row("标记", 0)).toHaveClass("card-detail-mark--active");
+    // 右栏已把全文写在眼前，所以这里不再弹说明浮层
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
 
-    fireEvent.click(chip);
-    expect(affixRow(1)).not.toHaveClass("card-detail-affix--active");
+    fireEvent.click(within(face()).getByRole("button", { name: "不可出牌" }));
+    expect(row("标记", 0)).not.toHaveClass("card-detail-mark--active");
   });
 
-  it("从某枚词缀点进来的：右栏那一条一打开就是选中态", () => {
-    render(
-      <CardDetailDialog
-        card={CARD}
-        initialAffix="[入木]:命中的段数越多，棺盖越难再开"
-        onClose={() => {}}
-      />,
-    );
+  it("选中态只落在一枚标记上（点词缀不会连带选中布尔那一条）", () => {
+    render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
-    expect(affixRow(1)).toHaveClass("card-detail-affix--active");
-    expect(affixRow(0)).not.toHaveClass("card-detail-affix--active");
+    fireEvent.click(within(face()).getByRole("button", { name: "[入木]" }));
+    expect(row("被命中时", 0)).toHaveClass("card-detail-mark--active");
+    expect(row("标记", 0)).not.toHaveClass("card-detail-mark--active");
   });
 });

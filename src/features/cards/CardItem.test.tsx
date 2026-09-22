@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CardItem from "./CardItem";
 import type { Card } from "./types";
@@ -7,8 +7,8 @@ import type { Card } from "./types";
  * `CardItem` 的单元测试：**卡面各部件用的是不是同一套设计语言**。
  *
  * 卡牌与角色卡各有一套语言（见 `CardItem` 顶部注释），所以这里盯的是卡牌这一套：
- * 布尔属性（消耗 / 保留 / 虚无 / 可传递 / 不可出牌）与三种时机的词缀**都是带色 chip**，
- * 来源只在"不是自己的牌"时出现且标 `foreign`，`【塞牌】`这种"持有关系"不进卡面。
+ * 词缀（三种时机）与布尔属性**都是带色 chip、都是一颗按钮**——点它弹说明浮层
+ * （`CardMarkTip`），来源只在"不是自己的牌"时出现且标 `foreign`，`【塞牌】`不进卡面。
  */
 const CARD: Card = {
   name: "钉棺",
@@ -32,10 +32,10 @@ const CARD: Card = {
 };
 
 describe("CardItem", () => {
-  it("布尔属性与三种时机的词缀都渲染成带色 chip", () => {
+  it("词缀与布尔属性都渲染成带色 chip", () => {
     render(
       <ul>
-        <CardItem card={CARD} affixes="names" />
+        <CardItem card={CARD} />
       </ul>,
     );
 
@@ -53,7 +53,7 @@ describe("CardItem", () => {
   it("playable === false 才标「不可出牌」，卡面永远不出现【塞牌】", () => {
     render(
       <ul>
-        <CardItem card={{ ...CARD, playable: false }} affixes="names" />
+        <CardItem card={{ ...CARD, playable: false }} />
       </ul>,
     );
 
@@ -65,7 +65,7 @@ describe("CardItem", () => {
   it("来源只在「不是自己的牌」时显示，并标 foreign", () => {
     const { rerender } = render(
       <ul>
-        <CardItem card={{ ...CARD, source: "角色.无名" }} affixes="names" owner="角色.无名" />
+        <CardItem card={{ ...CARD, source: "角色.无名" }} owner="角色.无名" />
       </ul>,
     );
     // 持有者就是来源：不显示
@@ -73,25 +73,65 @@ describe("CardItem", () => {
 
     rerender(
       <ul>
-        <CardItem card={{ ...CARD, source: "角色.无名" }} affixes="names" owner="怪物.纸人" />
+        <CardItem card={{ ...CARD, source: "角色.无名" }} owner="怪物.纸人" />
       </ul>,
     );
     expect(screen.getByText("来源：角色.无名")).toHaveClass("card-tile-source--foreign");
   });
 
-  it("详情（full）写词缀全文，卡面（names）只写 [名称]", () => {
-    const { rerender } = render(
+  it("点任意一枚标记（布尔或词缀）都弹说明浮层；再点同一枚收起", () => {
+    render(
       <ul>
-        <CardItem card={CARD} affixes="names" />
+        <CardItem card={CARD} />
       </ul>,
     );
-    expect(screen.queryByText(/命中的段数越多/)).not.toBeInTheDocument();
 
-    rerender(
+    // 布尔标记：说明是前端自带的那一句话
+    fireEvent.click(screen.getByRole("button", { name: "保留" }));
+    const tip = screen.getByRole("tooltip");
+    expect(tip).toHaveTextContent("回合结束时留在手牌，不进入弃牌堆。");
+    // 浮层同时标出分类与名称（与卡面、详情右栏用的是同一对 chip）
+    expect(tip).toHaveTextContent("标记");
+    expect(tip).toHaveTextContent("保留");
+
+    // 词缀：说明就是它自己那段原文
+    fireEvent.click(screen.getByRole("button", { name: "[入木]" }));
+    expect(screen.getAllByRole("tooltip")).toHaveLength(1);
+    expect(screen.getByRole("tooltip")).toHaveTextContent("命中的段数越多，棺盖越难再开");
+
+    // 再点同一枚 → 收起
+    fireEvent.click(screen.getByRole("button", { name: "[入木]" }));
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("说明浮层：点外部 / 按 ESC 都会关", () => {
+    render(
       <ul>
-        <CardItem card={CARD} affixes="full" />
+        <CardItem card={CARD} />
       </ul>,
     );
-    expect(screen.getByText(/命中的段数越多/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "保留" }));
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    // 点浮层外面（`mousedown` 早于 click，所以不会跟"点另一枚 chip"抢）
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "保留" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
+  });
+
+  it("传了 onMarkClick 就交给调用方（详情左栏用它定位右栏，不再弹浮层）", () => {
+    const picked: string[] = [];
+    render(
+      <ul>
+        <CardItem card={CARD} onMarkClick={(mark) => picked.push(mark.id)} />
+      </ul>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "[入木]" }));
+    expect(picked).toEqual(["on_hit_affixes:[入木]:命中的段数越多，棺盖越难再开"]);
+    expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });

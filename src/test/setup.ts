@@ -11,6 +11,10 @@ import { resetMockSessionMessages } from "../mocks/sessionMessages";
 import { resetMockStages } from "../mocks/stages";
 import { resetMockTasks } from "../mocks/tasks";
 
+// jsdom 没有布局 / 滚动实现，`scrollIntoView` 直接抛错。给个空实现——组件里该滚就滚，
+// 测试环境只是不真的滚（视觉效果交给 `pnpm screenshot` 核对）。
+Element.prototype.scrollIntoView = () => {};
+
 // 默认挂 src/mocks/handlers 的共享 handlers；未注册的请求一律报错，
 // 避免测试静默打到真实后端。用例内用 server.use(...) 覆盖特定接口。
 beforeAll(() => server.listen({ onUnhandledRequest: "error" }));

@@ -1,65 +1,72 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Modal from "../../components/Modal";
-import CardItem, { AFFIX_TYPES } from "./CardItem";
-import { readAffixParts } from "./readAffixLabel";
+import CardItem from "./CardItem";
+import { type CardMark, readCardMarks } from "./cardMarks";
 import type { Card } from "./types";
 
 /**
  * 卡牌详情浮窗（三级）：**两栏**——左边是「这张卡原样长什么样」，右边是「完整信息」。
  *
- * 紧凑卡面（`affixes="names"`）为了「一行几张、所有行等高」只能把词缀压成 `[名称]`，也没有
- * 让长文本展开的地方；所以点开这一层后：
- * - **左栏**：直接复用 `CardItem`（同样是 `names` 颗粒度），是"这张卡在别处长什么样"的
- *   **字面复刻**——是什么就显示什么，词缀依旧缩略；
- * - **右栏**：`description` 全文（卡面可能放不下）+ 三种时机的词缀**逐条**列全文
- *   （`readAffixParts` 拆成 `[名称]` + 说明两段；解析不出名称时不猜，整条当说明）。
+ * - **左栏**：直接复用 `CardItem`，是"这张卡在别处长什么样"的**字面复刻**（词缀依旧缩略成 `[名称]`）；
+ * - **右栏**：`description` 全文（卡面可能放不下）+ **每一枚标记逐条展开**——布尔标记与三种时机的
+ *   词缀分节列出，用的就是 `readCardMarks` 那一份列表（所以卡面有哪几枚，这里必然就有哪几条）。
  *
- * **两栏联动**：点左栏任一词缀 chip → 右栏对应那一条标记为选中（左侧一条竖线 + 淡底），
- * 再点一次取消；从某枚词缀点进来的（`initialAffix`）一打开就是选中态。
+ * **两栏联动**：点左栏任一枚标记 → 右栏对应那条被选中（左边一条竖线 + 淡底，颜色取它自己的色调）
+ * 并滚进视野，再点一次取消。**这里不弹 tooltip**——右栏已经把全文写在眼前了，再弹一层是重复信息；
+ * tooltip 的职责是"全文不在眼前时先睹为快"（见 `CardItem`）。
  *
  * 两栏都从顶部对齐（`align-items: start`）：右栏比卡长时只往下长，卡不跟着被拉高。
  */
 export default function CardDetailDialog({
   card,
-  initialAffix = null,
   hideSource = false,
   owner,
   onClose,
 }: {
   card: Card;
-  /** 从某枚词缀点进来时那条词缀的原文：右栏对应条目一打开就选中。 */
-  initialAffix?: string | null;
   /** 与卡面同一口径：牌组不显示来源。 */
   hideSource?: boolean;
   /** 持有者原始名：`source !== owner` 时才显示来源（与卡面同一口径）。 */
   owner?: string;
   onClose: () => void;
 }) {
-  // 右栏当前选中的词缀原文；点同一枚再来一次就取消
-  const [activeAffix, setActiveAffix] = useState<string | null>(initialAffix);
+  // 右栏当前选中的那枚标记（`CardMark.id`）；点同一枚再来一次就取消
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLLIElement>());
 
-  // 三种时机的词缀摊平成一条条（顺序 = 打出时 → 被命中时 → 回合结束时）
-  const affixes = AFFIX_TYPES.flatMap(({ key, label, tone }) =>
-    card[key].map((affix) => ({ key, label, tone, affix })),
-  );
+  const marks = readCardMarks(card);
+  // 按 `group` 分节，顺序沿用 `readCardMarks`（标记 → 打出时 → 被命中时 → 回合结束时）
+  const sections: { group: string; marks: CardMark[] }[] = [];
+  for (const mark of marks) {
+    const last = sections[sections.length - 1];
+    if (last !== undefined && last.group === mark.group) {
+      last.marks.push(mark);
+    } else {
+      sections.push({ group: mark.group, marks: [mark] });
+    }
+  }
+
+  // 右栏长了以后，点左栏得能滚到那一条
+  useEffect(() => {
+    if (activeId !== null) {
+      rowRefs.current.get(activeId)?.scrollIntoView({ block: "nearest" });
+    }
+  }, [activeId]);
 
   return (
     <Modal title="卡牌" meta={card.name} onClose={onClose}>
       <div className="card-detail">
-        {/* 左栏：这张卡原样（紧凑卡面）。词缀 chip 是按钮，点一下联动右栏 */}
+        {/* 左栏：这张卡原样。标记 chip 是按钮，点一下定位右栏对应那条 */}
         <ul className="card-tiles card-detail-card" aria-label="卡面">
           <CardItem
             card={card}
-            affixes="names"
             hideSource={hideSource}
             owner={owner}
-            onAffixClick={(_card, affix) =>
-              setActiveAffix((current) => (current === affix ? null : affix))
-            }
+            onMarkClick={(mark) => setActiveId((current) => (current === mark.id ? null : mark.id))}
           />
         </ul>
 
-        {/* 右栏：完整信息——说明全文 + 词缀逐条全文 */}
+        {/* 右栏：完整信息——说明全文 + 每一枚标记的全文 */}
         <div className="card-detail-body">
           {card.description === "" ? null : (
             <section className="card-detail-section" aria-label="说明">
@@ -68,30 +75,32 @@ export default function CardDetailDialog({
             </section>
           )}
 
-          {affixes.length === 0 ? null : (
-            <section className="card-detail-section" aria-label="词缀">
-              <h3 className="card-detail-heading">词缀</h3>
-              <ul className="card-detail-affixes">
-                {affixes.map(({ key, label, tone, affix }) => {
-                  const { name, detail } = readAffixParts(affix);
-                  return (
-                    <li
-                      key={`${key}-${affix}`}
-                      className={`card-detail-affix card-detail-affix--${tone}${
-                        affix === activeAffix ? " card-detail-affix--active" : ""
-                      }`}
-                    >
-                      <span className={`affix-chip affix-chip--${tone}`}>{label}</span>
-                      {name === null ? null : (
-                        <span className={`affix-chip affix-chip--${tone}`}>[{name}]</span>
-                      )}
-                      <span className="card-detail-affix-text">{detail}</span>
-                    </li>
-                  );
-                })}
+          {sections.map(({ group, marks: groupMarks }) => (
+            <section key={group} className="card-detail-section" aria-label={group}>
+              {/* 分节标题已经写明分类（标记 / 打出时 / …），所以每行只留名称 chip */}
+              <h3 className="card-detail-heading">{group}</h3>
+              <ul className="card-detail-marks">
+                {groupMarks.map((mark) => (
+                  <li
+                    key={mark.id}
+                    ref={(node) => {
+                      if (node === null) {
+                        rowRefs.current.delete(mark.id);
+                      } else {
+                        rowRefs.current.set(mark.id, node);
+                      }
+                    }}
+                    className={`card-detail-mark card-detail-mark--${mark.tone}${
+                      mark.id === activeId ? " card-detail-mark--active" : ""
+                    }`}
+                  >
+                    <span className={`affix-chip affix-chip--${mark.tone}`}>{mark.label}</span>
+                    <span className="card-detail-mark-text">{mark.hint}</span>
+                  </li>
+                ))}
               </ul>
             </section>
-          )}
+          ))}
         </div>
       </div>
     </Modal>

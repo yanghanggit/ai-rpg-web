@@ -293,7 +293,7 @@ describe("副本房间 · 战斗房间", () => {
     await waitFor(() => expect(within(hand).queryByText("屏息")).not.toBeInTheDocument());
   });
 
-  it("出牌条：提示折行收在一块矩形里，两颗确认是与「回到地图」同族的卡状按钮", async () => {
+  it("出牌条：提示折行收在一块矩形里，几颗卡状按钮与「回到地图」同族", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -303,8 +303,12 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByText("点一张手牌开始出牌。")).toHaveClass("combat-hand-note");
 
     fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
-    // 只选了牌、还没选目标：「出牌」还没长出，只有「取消」
+    // 只选了牌、还没选目标：有「查看」与「取消」，但「出牌」还没长出
     expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看" })).toHaveClass(
+      "combat-hand-btn",
+      "combat-hand-btn--view",
+    );
     expect(screen.getByRole("button", { name: "取消" })).toHaveClass(
       "combat-hand-btn",
       "combat-hand-btn--cancel",
@@ -317,6 +321,30 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(play).getByText("出牌")).toHaveClass("combat-hand-btn-caption");
     // 「已选 / 目标」那段话折行收在同一个矩形块里
     expect(screen.getByText(/目标：纸人/)).toHaveClass("combat-hand-hint");
+  });
+
+  it("手牌：点词缀只弹说明浮层；整卡点击是「选中」，看详情要走中间那颗「查看」", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+
+    // 点词缀 chip = 问“这是什么”：弹一枚小浮层，不开详情（与牌组里整卡直开详情不同，
+    // 因为手牌里整卡点击有别的含义——选中待出）
+    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "[开棺]" }));
+    expect(screen.getByRole("tooltip")).toHaveTextContent("命中后可以再摸一张");
+    expect(screen.queryByRole("dialog", { name: "卡牌" })).not.toBeInTheDocument();
+    fireEvent.mouseDown(document.body);
+
+    // 整卡点击 = 选中：中间那条长出按钮，同样不开详情
+    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
+    expect(screen.queryByRole("dialog", { name: "卡牌" })).not.toBeInTheDocument();
+
+    // 「查看」是手牌里进详情的唯一入口；详情两栏：左卡面 / 右全文
+    fireEvent.click(screen.getByRole("button", { name: "查看" }));
+    const detail = await screen.findByRole("dialog", { name: "卡牌" });
+    expect(within(detail).getByRole("list", { name: "卡面" })).toBeInTheDocument();
+    expect(within(detail).getByText(/命中后可以再摸一张/)).toBeInTheDocument();
   });
 
   it("all / spread：选一个锚点 = 整阵营都压下；spread 的提示多一句「随机」", async () => {

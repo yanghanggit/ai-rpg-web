@@ -35,8 +35,8 @@ export default function SpoilsDialog({
 }) {
   const { candidateCards, claimedCards } = spoils;
   const hasClaimed = claimedCards.length > 0;
-  /** 二级浮窗正开着的卡；`null` 表示只在这层。`affix` 是从哪枚词缀点进来的（没有就是整卡点开）。 */
-  const [openedCard, setOpenedCard] = useState<{ card: Card; affix: string | null } | null>(null);
+  /** 二级浮窗正开着的卡；`null` 表示只在这层。 */
+  const [openedCard, setOpenedCard] = useState<Card | null>(null);
 
   return (
     <Modal
@@ -60,11 +60,9 @@ export default function SpoilsDialog({
               <CardItem
                 key={card.uuid}
                 card={card}
-                affixes="names"
                 action={null}
                 claimed
-                onSelect={(card) => setOpenedCard({ card, affix: null })}
-                onAffixClick={(card, affix) => setOpenedCard({ card, affix })}
+                onSelect={setOpenedCard}
               />
             ))}
           </ul>
@@ -77,9 +75,7 @@ export default function SpoilsDialog({
           <CardItem
             key={card.uuid}
             card={card}
-            affixes="names"
-            onSelect={(card) => setOpenedCard({ card, affix: null })}
-            onAffixClick={(card, affix) => setOpenedCard({ card, affix })}
+            onSelect={setOpenedCard}
             action={
               hasClaimed ? null : (
                 <button
@@ -97,11 +93,7 @@ export default function SpoilsDialog({
       </ul>
 
       {openedCard === null ? null : (
-        <CardDetailDialog
-          card={openedCard.card}
-          initialAffix={openedCard.affix}
-          onClose={() => setOpenedCard(null)}
-        />
+        <CardDetailDialog card={openedCard} onClose={() => setOpenedCard(null)} />
       )}
     </Modal>
   );

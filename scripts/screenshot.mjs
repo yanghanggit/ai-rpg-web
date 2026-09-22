@@ -52,6 +52,7 @@ const USAGE = `用真实浏览器给页面截图：导航 → 等待 → （可�
   --size <宽x高>     视口尺寸，默认 ${DEFAULT_SIZE}；本项目只保证桌面（最小宽度 1024）
   --click <文本>     截图前点一下这个按钮（按 aria-label 或按钮文字匹配）
                      用 | 分隔可连点多下，如：--click "加入|进入副本：荒村义庄"
+                     重名时点**最后一个**（浮层后渲染，也就是看得见的那一层）
   --wait <ms>        导航后等待，默认 ${DEFAULT_WAIT_MS}（等 React 挂载与接口返回）
   --click-wait <ms>  每次点击后等待，默认 ${DEFAULT_CLICK_WAIT_MS}
 
@@ -213,7 +214,7 @@ function clickExpression(label) {
   return `(() => {
     const wanted = ${JSON.stringify(label)};
     const buttons = [...document.querySelectorAll("button")];
-    const hit = buttons.find(
+    const hit = buttons.findLast(
       (button) => button.getAttribute("aria-label") === wanted || button.textContent.trim() === wanted,
     );
     if (hit !== undefined) {

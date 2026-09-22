@@ -1241,86 +1241,95 @@ ul.card-tiles--stack {
   z-index: 1;
 }
 
-/* 详情（`full`）的词缀行：时机标签 + 全文 */
-.card-tile-affixes {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
-  margin: 0;
-  font-size: 0.85rem;
-  line-height: 1.6;
-}
-
-/* 词缀标记：只写 `[名称]`（表达"有"），三种触发时机用颜色区分；点开看完整原文 */
-.affix-chip,
-.affix-mark {
+/* 标记 chip：词缀与布尔属性共用一颗（`cardMarks.ts` 里合成同一个形状）。
+   chip 本身就是一颗按钮——点它问"这是什么"（tooltip / 详情定位），所以不再需要 hover 时
+   才看得出可点：`button` 的指针与焦点行为白拿。 */
+.affix-chip {
   padding: 0.05rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 0.75rem;
   line-height: 1.5;
   white-space: nowrap;
-}
-
-.affix-chip {
   background: transparent;
   color: var(--muted);
 }
 
-.card-tile-marks button.affix-chip:hover:not(:disabled) {
+.card-tile-marks button.affix-chip:hover:not(:disabled),
+.card-tile-marks button.affix-chip:focus-visible {
   border-color: currentColor;
   background: color-mix(in srgb, currentColor 12%, transparent);
 }
 
-.affix-chip--play,
-.affix-mark--play {
+.affix-chip--play {
   border-color: var(--ok);
   color: var(--ok);
 }
 
-.affix-chip--hit,
-.affix-mark--hit {
+.affix-chip--hit {
   border-color: var(--err);
   color: var(--err);
 }
 
-.affix-chip--turn-end,
-.affix-mark--turn-end {
+.affix-chip--turn-end {
   border-color: var(--warn);
   color: var(--warn);
 }
 
 /* 【塞牌】/ 可传递：与三种词缀时机都不同的颜色 */
-.affix-chip--transfer,
-.affix-mark--transfer {
+.affix-chip--transfer {
   border-color: var(--transfer);
   color: var(--transfer);
 }
 
 /* 布尔标记：与三种时机同为一枚带色 chip，每种属性各一色（见 :root 的注释） */
-.affix-chip--retain,
-.affix-mark--retain {
+.affix-chip--retain {
   border-color: var(--retain);
   color: var(--retain);
 }
 
-.affix-chip--ethereal,
-.affix-mark--ethereal {
+.affix-chip--ethereal {
   border-color: var(--ethereal);
   color: var(--ethereal);
 }
 
-.affix-chip--exhaust,
-.affix-mark--exhaust {
+.affix-chip--exhaust {
   border-color: var(--exhaust);
   color: var(--exhaust);
 }
 
-.affix-chip--unplayable,
-.affix-mark--unplayable {
+.affix-chip--unplayable {
   border-color: var(--unplayable);
   color: var(--unplayable);
+}
+
+/* 标记说明小浮层（`CardMarkTip`）："这是什么"，点一下才出。
+   `fixed` 是为了逃出祖先的 `overflow`——战斗手牌在横向滚动区里，挂在 chip 上的气泡会被裁掉。 */
+.card-mark-tip {
+  position: fixed;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-width: min(22rem, calc(100vw - 1rem));
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 30%);
+  pointer-events: none;
+}
+
+.card-mark-tip-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.card-mark-tip-text {
+  font-size: 0.82rem;
+  line-height: 1.6;
 }
 
 .card-tile-source {
@@ -1427,8 +1436,8 @@ ul.card-detail-card > .card-tile {
   line-height: 1.7;
 }
 
-/* 词缀逐条：一条 = 时机 chip + `[名称]` chip + 说明全文 */
-ul.card-detail-affixes {
+/* 标记逐条：一条 = 名称 chip + 说明全文（分节标题已经写明分类，所以不再重复那枚 chip） */
+ul.card-detail-marks {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -1437,7 +1446,7 @@ ul.card-detail-affixes {
   list-style: none;
 }
 
-.card-detail-affix {
+.card-detail-mark {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1448,27 +1457,47 @@ ul.card-detail-affixes {
   border-radius: 6px;
 }
 
-/* 每条挂上自己那种时机的色调（三色与卡面同一套），选中时用它上色 */
-.card-detail-affix--play {
-  --affix-tone: var(--ok);
+/* 每条挂上自己的色调（与卡面 chip 同一套），选中时用它上色 */
+.card-detail-mark--play {
+  --mark-tone: var(--ok);
 }
 
-.card-detail-affix--hit {
-  --affix-tone: var(--err);
+.card-detail-mark--hit {
+  --mark-tone: var(--err);
 }
 
-.card-detail-affix--turn-end {
-  --affix-tone: var(--warn);
+.card-detail-mark--turn-end {
+  --mark-tone: var(--warn);
 }
 
-/* 被（左栏点选的那枚词缀）选中：左边一条竖线 + 淡底，颜色就是它自己那种时机的色——
+.card-detail-mark--transfer {
+  --mark-tone: var(--transfer);
+}
+
+.card-detail-mark--retain {
+  --mark-tone: var(--retain);
+}
+
+.card-detail-mark--ethereal {
+  --mark-tone: var(--ethereal);
+}
+
+.card-detail-mark--exhaust {
+  --mark-tone: var(--exhaust);
+}
+
+.card-detail-mark--unplayable {
+  --mark-tone: var(--unplayable);
+}
+
+/* 被（左栏点选的那枚标记）选中：左边一条竖线 + 淡底，颜色就是它自己的色调——
    两栏用的是同一套颜色词汇，所以“选中的是哪一条”不需要另加说明 */
-.card-detail-affix--active {
-  border-left-color: var(--affix-tone, var(--fg));
-  background: color-mix(in srgb, var(--affix-tone, var(--fg)) 12%, transparent);
+.card-detail-mark--active {
+  border-left-color: var(--mark-tone, var(--fg));
+  background: color-mix(in srgb, var(--mark-tone, var(--fg)) 12%, transparent);
 }
 
-.card-detail-affix-text {
+.card-detail-mark-text {
   font-size: 0.9rem;
   line-height: 1.7;
 }
@@ -1811,7 +1840,7 @@ ul.combat-hand-list .card-tile--selected {
 }
 
 /* 出牌状态条：占中列顶部那个空出来的场景卡位（`--card-short` 高）。
-   形状语言与开场房的「回到地图」卡同族：左边一块**提示矩形**（文字在这里折行），右边两颗
+   形状语言与开场房的「回到地图」卡同族：左边一块**提示矩形**（文字在这里折行），右边几颗
    **卡状按钮**（图标在上、词在下）——原来那两颗小按钮在这条里太轻，撑不住这么高的一条。 */
 .combat-hand-bar {
   display: flex;
@@ -1866,7 +1895,7 @@ ul.combat-hand-list .card-tile--selected {
   font-weight: 600;
 }
 
-/* 出牌 = 主行动（绿框，与「选中的手牌」同一色）；取消 = 次要（静默灰） */
+/* 出牌 = 主行动（绿框，与「选中的手牌」同一色）；查看 / 取消 = 次要（静默灰） */
 .combat-hand-btn--play {
   border-color: var(--ok);
   color: var(--ok);
@@ -1878,6 +1907,7 @@ ul.combat-hand-list .card-tile--selected {
   background: color-mix(in srgb, var(--ok) 12%, transparent);
 }
 
+.combat-hand-btn--view,
 .combat-hand-btn--cancel {
   color: var(--muted);
 }
