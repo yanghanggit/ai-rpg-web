@@ -226,15 +226,17 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
   });
 
-  it("出牌：点手牌选中 → 点名单里的目标 → 打出（记录改在 ⚙ 战斗信息里看）", async () => {
+  it("出牌：点手牌选中 → 点名单里的目标 → 点「出牌」确认（记录改在 ⚙ 战斗信息里看）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     const hand = await screen.findByRole("list", { name: "手牌" });
     fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
-    // 选中后名单进入「选目标」态：整卡可点
+    // 选中后名单进入「选目标」态：整卡可点；点一张 = **只选目标**（不直接出牌）
     fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    // 两次选择都齐了，才长出「出牌」确认钮
+    fireEvent.click(screen.getByRole("button", { name: "出牌" }));
 
     // 出牌成功 → 该卡离开手牌
     await waitFor(() => expect(within(hand).queryByText("剖棺")).not.toBeInTheDocument());
@@ -245,6 +247,83 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(within(menu).getByRole("button", { name: "战斗信息" }));
     const info = await screen.findByRole("dialog", { name: "战斗信息" });
     expect(within(info).getByText(/使用『剖棺』对 怪物.纸人/)).toBeInTheDocument();
+  });
+
+  it("选牌/选目标都要两次：手牌上移、目标下移，再点各自缩回去；两次都齐才出现「出牌」", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+
+    await screen.findByRole("list", { name: "手牌" });
+    const cardTile = cardTileOf("剖棺");
+    // 只选了牌（上移）还没选目标：只给提示，没有「出牌」
+    fireEvent.click(within(cardTile).getByRole("button", { name: "选中手牌：剖棺" }));
+    expect(cardTile).toHaveClass("card-tile--selected");
+    expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
+
+    // 选目标（下移）→ 才长出「出牌」
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    const paper = screen.getByRole("button", { name: "选择目标：纸人" }).closest("li");
+    expect(paper).toHaveClass("combatant-card--target");
+    expect(screen.getByRole("button", { name: "出牌" })).toBeInTheDocument();
+
+    // 再点同一张目标 → 缩回去，「出牌」也收回
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    expect(paper).not.toHaveClass("combatant-card--target");
+    expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
+
+    // 再点手牌 → 取消选中
+    fireEvent.click(within(cardTile).getByRole("button", { name: "取消选中：剖棺" }));
+    expect(cardTile).not.toHaveClass("card-tile--selected");
+  });
+
+  it("自身牌：选中就把自己那张压下去（自动目标），不用再点名单就能「出牌」", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+
+    const hand = await screen.findByRole("list", { name: "手牌" });
+    fireEvent.click(within(cardTileOf("屏息")).getByRole("button", { name: "选中手牌：屏息" }));
+
+    // 自己那张（当前行动者）自动下移，不需要去名单里点
+    expect(currentCombatant()).toHaveClass("combatant-card--target");
+    expect(screen.getByRole("button", { name: "出牌" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "出牌" }));
+    await waitFor(() => expect(within(hand).queryByText("屏息")).not.toBeInTheDocument());
+  });
+
+  it("all / spread：选一个锚点 = 整阵营都压下；spread 的提示多一句「随机」", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+
+    const monsters = ["纸人", "棺中殭尸", "纸傀儡", "吊死鬼"];
+    const targetTiles = () =>
+      monsters.map((name) =>
+        screen.getByRole("button", { name: `选择目标：${name}` }).closest("li"),
+      );
+
+    // all（摇铃）：点一个锚点 → 敌方**整阵营**都压下
+    fireEvent.click(within(cardTileOf("摇铃")).getByRole("button", { name: "选中手牌：摇铃" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    for (const tile of targetTiles()) {
+      expect(tile).toHaveClass("combatant-card--target");
+    }
+    // 我方不被选中；提示把整个阵营列出来
+    expect(currentCombatant()).not.toHaveClass("combatant-card--target");
+    expect(screen.getByText(/目标：纸人、棺中殭尸、纸傀儡、吊死鬼/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "取消" }));
+
+    // spread（照妖镜）：选中集合与 all 相同，只在提示里多一句随机
+    fireEvent.click(within(cardTileOf("照妖镜")).getByRole("button", { name: "选中手牌：照妖镜" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：棺中殭尸" }));
+    for (const tile of targetTiles()) {
+      expect(tile).toHaveClass("combatant-card--target");
+    }
+    expect(screen.getByText(/在以上目标中随机/)).toBeInTheDocument();
   });
 
   it("过牌推进到怪物；四只怪物推完后回到开始新回合", async () => {

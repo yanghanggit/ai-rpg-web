@@ -1,13 +1,23 @@
 import { useState } from "react";
 import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
 import CardDetailDialog from "../../cards/CardDetailDialog";
 import CardItem from "../../cards/CardItem";
 import CardListDialog from "../../cards/CardListDialog";
 import type { Card } from "../../cards/types";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import CombatActionRoster from "./CombatActionRoster";
-import type { Combatant } from "./readCombat";
+import { type Combatant, readTargetNames } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
+
+/**
+ * 中间那条提示里「目标」的说法：`all` 直接列全体；`spread` 是同一批人 + 「随机命中」。
+ * （`spread` 与 `all` 选中集合完全相同，差别在结算与这句话。）
+ */
+function targetHint(card: Card, targets: string[]): string {
+  const list = targets.map(displayName).join("、");
+  return card.target_type === "spread" ? `目标：${list}（在以上目标中随机）` : `目标：${list}`;
+}
 
 /**
  * 单个角色的回合行动（`ONGOING` 且有 `current_actor`，对应 TUI `CombatTurnActorScreen`）。
@@ -17,11 +27,13 @@ import type { CombatActions } from "./useCombatActions";
  *    名单本身就是行动顺序，不另画顺序条；
  * 2. **行动区**三栏：左列当前行动者的资源（HP 攻防 / 能量 / 总格挡 / 抽牌堆，2×2）、中间手牌横滑、
  *    右列收尾动作 + 牌堆（2×2：过牌 / 消耗牌堆 / 弃牌堆，空一格）；
- * 3. **出牌交互**：点一张手牌选中 → 点名单里的角色指定目标（整卡按钮）→ 出牌；
- *    自身牌没有目标，选中后在手牌条点「出牌（自身）」。
+ * 3. **出牌交互（两次选择 + 一次确认）**：点一张手牌 → 那张牌**上移**（再点一下缩回去 = 取消选中）；
+ *    点名单里的角色 → 那张卡**下移**（再点一下也缩回去）；两次都选好后，中间才长出「出牌」按钮，
+ *    点它才真的发 `play_cards`。自身牌（`self_target`）选中后**自动**把本人那张压下，
+ *    不需要再点名单，中间直接给「出牌」。
  *
  * 名单卡还挂着两个**只读**入口（不影响出牌）：点整张卡开**角色信息**（`ActorInfoDialog`）；
- * 点卡底那颗常驻按钮（只给 [被动] / [塞牌] 数量）开**手牌**（`CardListDialog`，可再点卡进三级卡牌详情）——
+ * 点卡底那行**平铺的文本**开**手牌**（`CardListDialog`，可再点卡进三级卡牌详情）——
  * 自己与对方都能看，口径统一。
  *
  * 我方与怪物**共用同一套版面**：怪物的手牌是 AI 控制的只读态（不可点选），右下那颗动作由
@@ -50,17 +62,20 @@ export default function CombatTurnPanel({
 }) {
   // 选中的手牌（uuid）；出牌 / 换行动角色后清空
   const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
+  // 选中的目标（原始名）；自身牌选中时会自动填成自己
+  const [targetName, setTargetName] = useState<string | null>(null);
   // 名单卡上的两个只读浮窗（角色信息 / 手牌）：同时只开一个
   const [infoActor, setInfoActor] = useState<string | null>(null);
   const [handActor, setHandActor] = useState<string | null>(null);
   // 手牌上点词缀 → 叠一层卡牌详情
   const [detailCard, setDetailCard] = useState<Card | null>(null);
-  // 换行动角色就清掉上一张选中的牌（React 的「props 变了就重置 state」写法，不用 effect）：
+  // 换行动角色就把两次选择都清掉（React 的「props 变了就重置 state」写法，不用 effect）：
   // 同一回合里 party → monster 组件不卸载，必须显式重置，否则残留的选中会指到新角色的手牌上。
   const [lastActor, setLastActor] = useState(currentActor);
   if (lastActor !== currentActor) {
     setLastActor(currentActor);
     setSelectedUuid(null);
+    setTargetName(null);
   }
 
   const latest = combat.rounds.at(-1) ?? null;
@@ -82,16 +97,20 @@ export default function CombatTurnPanel({
   const selected = current.hand.find((card) => card.uuid === selectedUuid) ?? null;
   // 选中的是非自身牌且是自己人时，名单进入「选目标」态；怪物手牌不可选，永远不进入
   const picking = !isMonster && selected !== null && !selected.self_target;
+  // 名单里该压下去的那些卡（选中态）：自身牌 = 自己；`all` / `spread` = 锚点所在阵营全体
+  const targets =
+    selected === null ? [] : readTargetNames(selected, targetName, actor.name, combatants);
   // 正开着「手牌」浮窗的那个角色（原始名匹配）
   const handOwner = combatants.find((combatant) => combatant.name === handActor) ?? null;
 
-  /** 出一张牌：自身牌自动指向自己，其余用名单里点中的目标。 */
-  function play(card: Card, targetName?: string) {
-    const targets = card.self_target ? [actor.name] : [targetName ?? ""];
+  /** 出一张牌：自身牌自动指向自己，其余用名单里点中的目标；出牌后把两次选择都清掉。 */
+  function play(card: Card, target: string | null) {
+    const targets = card.self_target ? [actor.name] : [target ?? ""];
     if (!card.self_target && targets[0] === "") {
       return;
     }
     setSelectedUuid(null);
+    setTargetName(null);
     actions.play.start(actor.name, card.name, targets);
   }
 
@@ -105,10 +124,10 @@ export default function CombatTurnPanel({
           order={latest?.action_order ?? []}
           completed={latest?.completed_actors ?? []}
           picking={picking}
+          targets={targets}
           onPick={(name) => {
-            if (selected !== null) {
-              play(selected, name);
-            }
+            // 只选目标（不直接出牌）：再点同一张就缩回去
+            setTargetName((prev) => (prev === name ? null : name));
           }}
           onOpenInfo={(name) => {
             setHandActor(null);
@@ -154,20 +173,32 @@ export default function CombatTurnPanel({
                 <p className="muted">怪物手牌由 AI 自动打出。</p>
               ) : selected === null ? (
                 <p className="muted">点一张手牌开始出牌。</p>
-              ) : selected.self_target ? (
-                <>
-                  <span>已选：{selected.name}</span>
-                  <button type="button" disabled={actions.isBusy} onClick={() => play(selected)}>
-                    出牌（自身）
-                  </button>
-                  <button type="button" onClick={() => setSelectedUuid(null)}>
-                    取消
-                  </button>
-                </>
               ) : (
                 <>
-                  <span>已选：{selected.name} · 点上方角色选择目标</span>
-                  <button type="button" onClick={() => setSelectedUuid(null)}>
+                  <span>
+                    已选：{selected.name}
+                    {targets.length === 0
+                      ? " · 点上方角色选择目标"
+                      : ` · ${targetHint(selected, targets)}`}
+                  </span>
+                  {/* 两次选择都齐了才长出「出牌」——之前是点目标就发 API，容易误触 */}
+                  {targets.length === 0 ? null : (
+                    <button
+                      type="button"
+                      disabled={actions.isBusy}
+                      // 只发锚点：`all` / `spread` 的阵营由服务端按锚点展开（见 readTargetNames）
+                      onClick={() => play(selected, targetName)}
+                    >
+                      出牌
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedUuid(null);
+                      setTargetName(null);
+                    }}
+                  >
                     取消
                   </button>
                 </>
@@ -197,8 +228,14 @@ export default function CombatTurnPanel({
                     {...(isMonster
                       ? {}
                       : {
-                          onSelect: () =>
-                            setSelectedUuid((prev) => (prev === card.uuid ? null : card.uuid)),
+                          // 点整张牌 = 选中/取消；选中时自身牌自动把目标填成自己
+                          onSelect: () => {
+                            const wasSelected = selectedUuid === card.uuid;
+                            setSelectedUuid(wasSelected ? null : card.uuid);
+                            setTargetName(
+                              wasSelected ? null : card.self_target ? current.name : null,
+                            );
+                          },
                         })}
                   />
                 ))}

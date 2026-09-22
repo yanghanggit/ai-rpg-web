@@ -12,7 +12,8 @@ import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } f
  *
  * 两个动作、两层含义：
  * - **整张卡**用铺满卡面的透明按钮实现（与 `ActorCard` 的 `actor-card-open` 同一手法）：
- *   选目标态（`picking`）下点卡 = 给选中的手牌指定目标；其余时候点卡 = 开角色信息（`onOpenInfo`）。
+ *   选目标态（`picking`）下点卡 = 选中 / 取消它作为手牌目标（**不直接出牌**）；其余时候点卡 = 开角色信息（`onOpenInfo`）。
+ *   被选中命中集里的卡（`targets`，`all` / `spread` 是整阵营）**下移**，与手牌选中时的**上移**成对（"提牌、压目标"）。
  * - **卡底那行平铺的文本**（没有按钮外框，词缀槽也不带 chip 圆角底色，仍整行可点）= 看这个角色的手牌（`onOpenHand`）：
  *   三件事平铺——`手牌 N` + `[被动] N`（手牌里「被命中时」词缀的条数）+（仅敌方）`[塞牌] M`
  *   （手牌里来自我方阵营的牌数）；后两者保留红 / 青的文字色。具体是哪张、什么词缀，点开手牌细看。
@@ -26,6 +27,7 @@ export default function CombatActionRoster({
   order,
   completed = [],
   picking = false,
+  targets = [],
   onPick,
   onOpenInfo,
   onOpenHand,
@@ -40,7 +42,9 @@ export default function CombatActionRoster({
   completed?: string[];
   /** 正在为一张手牌选目标：存活角色整卡可点（优先于 `onOpenInfo`）。 */
   picking?: boolean;
-  /** 点某名角色（指定为手牌目标）。 */
+  /** 玩家已选中的目标集（原始名）：命中集里的卡都**下移**（`all` / `spread` 是整阵营）。 */
+  targets?: string[];
+  /** 点某名角色：选中 / 取消它作为手牌目标（**不直接出牌**）。 */
   onPick?: (name: string) => void;
   /** 点整张卡（非选目标态）→ 开角色信息。 */
   onOpenInfo?: (name: string) => void;
@@ -73,6 +77,7 @@ export default function CombatActionRoster({
         const isCurrent = combatant.name === currentActor;
         const isCompleted = !isCurrent && completedSet.has(combatant.name);
         const isPickable = picking && onPick !== undefined;
+        const isTarget = targets.includes(combatant.name);
         const classes = ["combatant-card"];
         if (combatant.player) {
           classes.push("combatant-card--you");
@@ -85,6 +90,9 @@ export default function CombatActionRoster({
         }
         if (isPickable) {
           classes.push("combatant-card--pick");
+        }
+        if (isTarget) {
+          classes.push("combatant-card--target");
         }
         const onHitCount = countOnHitAffixes(combatant);
         const transferredCount = countTransferredCards(combatant, combatants);

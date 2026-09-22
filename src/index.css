@@ -19,6 +19,9 @@
      角色卡 / 场景卡 / 牌面共用这一对，所以「横（场景）」就是「竖（角色）」转 90°。 */
   --card-short: 13rem;
   --card-tall: 17rem;
+  /* 选中位移：手牌**上移**与目标卡**下移**共用这一个值（上下对称）。
+     幅度受两侧滚动容器的 padding 托底，所以不会盖住中列的内容（出牌条 / 手牌） */
+  --pick-shift: 1.25rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1435,7 +1438,8 @@ ul.combat-action-roster {
   justify-content: safe center;
   gap: 0.9rem;
   margin: 1.25rem 0 0;
-  padding: 0 0 0.5rem;
+  /* 底部留出「目标下移」的位（`overflow-x: auto` 会把纵向可见性也算成裁剪，不留就被切） */
+  padding: 0 0 var(--pick-shift);
   list-style: none;
   overflow-x: auto;
 }
@@ -1450,6 +1454,7 @@ ul.combat-action-roster {
   padding: 1.1rem 1.25rem;
   border: 1px solid var(--border);
   border-radius: 12px;
+  transition: transform 0.12s ease;
 }
 
 /* 「你」：与队友 / 怪物分开（不是绿框——绿框留给「当前行动」） */
@@ -1470,6 +1475,15 @@ ul.combat-action-roster {
 /* 可选目标：橙框（这一步会指定手牌的目标）；整卡可点的透明按钮复用 .actor-card-open */
 .combatant-card--pick {
   border-color: var(--warn);
+}
+
+/* 已选中的目标：整张卡**下移**（"压目标"，与手牌选中时的上移成对）+ 加一圈重描边 */
+.combatant-card--target {
+  transform: translateY(var(--pick-shift));
+  border-color: var(--warn);
+  box-shadow:
+    inset 0 0 0 1px var(--warn),
+    0 0 0 3px color-mix(in srgb, var(--warn) 25%, transparent);
 }
 
 /* 卡底动作行：**就一行平铺的文本**（手牌 N / [被动] N / [塞牌] M），
@@ -1685,7 +1699,8 @@ ul.combat-hand-list {
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 0 0 0.5rem;
+  /* 顶部留出「选中牌上移」的位（同名单卡的下移，同一个 `--pick-shift`） */
+  padding: var(--pick-shift) 0 0.5rem;
   list-style: none;
   overflow-x: auto;
 }
@@ -1694,10 +1709,12 @@ ul.combat-hand-list {
 ul.combat-hand-list .card-tile {
   flex: 0 0 var(--card-short);
   min-height: var(--card-tall);
+  transition: transform 0.12s ease;
 }
 
-/* 被选中待出的手牌：绿框（比 hover 更强，且 hover 也保持绿） */
+/* 被选中待出的手牌：**上移**（"提牌"）+ 绿框（比 hover 更强，且 hover 也保持绿） */
 ul.combat-hand-list .card-tile--selected {
+  transform: translateY(calc(-1 * var(--pick-shift)));
   border-color: var(--ok);
   box-shadow: inset 0 0 0 1px var(--ok);
 }

@@ -725,18 +725,22 @@ export const cardFixtures = {
  *
  * 张数故意拉开：玩家 9 张（三行满）、顾知秋 5 张（最后一行不满、居中）、小厮 2 张——
  * 这样「牌组」浏览里一行三张、多行、末行居中这三种情形在 mock 下都能一眼看到。
+ *
+ * 玩家的**前 5 张 = 每回合抓到手的那一把**（`MOCK_DRAW_PER_TURN = 5`，按数组顺序抓），所以把
+ * `single`（剖棺）/ `self_target`（屏息）/ 不可出牌（常驻厌胜）/ `spread`（照妖镜）/ `all`（摇铃）
+ * 这五种目标类型各摆一张在手牌里，方便直接在回合界面上试选目标。
  */
 export const deckFixtures: Record<string, Record<string, unknown>[]> = {
   [blueprintFixture.player_actor]: [
     cardFixtures.cleave,
     cardFixtures.breath,
     cardFixtures.passive,
-    cardFixtures.nail,
+    cardFixtures.mirror,
     cardFixtures.bell,
+    cardFixtures.nail,
     cardFixtures.shroud,
     cardFixtures.lantern,
     cardFixtures.chant,
-    cardFixtures.mirror,
   ],
   "角色.顾知秋": [
     cardFixtures.sweep,

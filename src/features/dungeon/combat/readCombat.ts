@@ -104,6 +104,42 @@ export function countTransferredCards(combatant: Combatant, combatants: Combatan
   return combatant.hand.filter((card) => isTransferredCard(card, combatant, combatants)).length;
 }
 
+/**
+ * 选中的这张牌、在名单里该被"压下"（选中）的目标（原始名）。
+ *
+ * - `self_target` → 出牌者自己；
+ * - `single` → 玩家点中的那一个锚点；
+ * - `all`（阵营全体）/ `spread`（阵营散射）→ **锚点所在阵营的全体存活者**。
+ *
+ * `all` / `spread` 的“阵营”与服务端 `resolve_targets` 里 `_expand_camp_members` 同一口径
+ * （取锚点的 `PartyMemberComponent` / `MonsterComponent`）：所以客户端能**提前把整个阵营算出来**，
+ * 直接给整阵营挂上选中态；发请求时仍只发那一个锚点（服务端要求恰好一个锚点）。
+ * `spread` 与 `all` 的差别只在结算（命中在阵营内随机）与文案，不在选中集合。
+ */
+export function readTargetNames(
+  card: Card,
+  anchor: string | null,
+  actor: string,
+  combatants: Combatant[],
+): string[] {
+  if (card.self_target) {
+    return [actor];
+  }
+  if (anchor === null) {
+    return [];
+  }
+  if (card.target_type === "single") {
+    return [anchor];
+  }
+  const anchorCombatant = combatants.find((combatant) => combatant.name === anchor);
+  if (anchorCombatant === undefined) {
+    return [anchor];
+  }
+  return combatants
+    .filter((combatant) => !combatant.dead && combatant.faction === anchorCombatant.faction)
+    .map((combatant) => combatant.name);
+}
+
 function countCards(entity: Entity, componentName: ComponentName): number {
   const data = getComponentData(entity, componentName);
   if (data === undefined || !Array.isArray(data.cards)) {
