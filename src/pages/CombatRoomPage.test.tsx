@@ -293,6 +293,32 @@ describe("副本房间 · 战斗房间", () => {
     await waitFor(() => expect(within(hand).queryByText("屏息")).not.toBeInTheDocument());
   });
 
+  it("出牌条：提示折行收在一块矩形里，两颗确认是与「回到地图」同族的卡状按钮", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+
+    // 还没选牌：只有一句说明，不给卡状按钮
+    expect(screen.getByText("点一张手牌开始出牌。")).toHaveClass("combat-hand-note");
+
+    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
+    // 只选了牌、还没选目标：「出牌」还没长出，只有「取消」
+    expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "取消" })).toHaveClass(
+      "combat-hand-btn",
+      "combat-hand-btn--cancel",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    const play = screen.getByRole("button", { name: "出牌" });
+    // 卡状按钮 = 图标（装饰，不进无障碍名字）+ 词；「出牌」是主行动（绿）
+    expect(play).toHaveClass("combat-hand-btn", "combat-hand-btn--play");
+    expect(within(play).getByText("出牌")).toHaveClass("combat-hand-btn-caption");
+    // 「已选 / 目标」那段话折行收在同一个矩形块里
+    expect(screen.getByText(/目标：纸人/)).toHaveClass("combat-hand-hint");
+  });
+
   it("all / spread：选一个锚点 = 整阵营都压下；spread 的提示多一句「随机」", async () => {
     server.use(instantTasks());
     renderCombatRoom();

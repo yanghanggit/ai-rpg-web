@@ -1719,16 +1719,76 @@ ul.combat-hand-list .card-tile--selected {
   box-shadow: inset 0 0 0 1px var(--ok);
 }
 
-/* 出牌状态条：占中列顶部空出来的那个场景卡位（`--card-short` 高），内容在空格里**正居中** */
+/* 出牌状态条：占中列顶部那个空出来的场景卡位（`--card-short` 高）。
+   形状语言与开场房的「回到地图」卡同族：左边一块**提示矩形**（文字在这里折行），右边两颗
+   **卡状按钮**（图标在上、词在下）——原来那两颗小按钮在这条里太轻，撑不住这么高的一条。 */
 .combat-hand-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   align-content: center;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 1rem;
   min-height: var(--card-short);
+}
+
+/* 没选牌 / 怪物回合时的说明句：居中一句话，不动用卡状按钮 */
+.combat-hand-note {
   text-align: center;
+}
+
+/* 提示矩形：把「已选 / 目标」那段话折行收进一个有边框的块里；宽度给上限，不做成一整条横幅。
+   高度与右边两颗卡状按钮对齐，三个块读成一行。 */
+.combat-hand-hint {
+  display: flex;
+  align-items: center;
+  max-width: 30rem;
+  min-height: 7.5rem;
+  margin: 0;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  text-align: left;
+  line-height: 1.6;
+}
+
+/* 卡状按钮：与「回到地图」卡（`.stage-next`）同一副形状（大图标 + 小字），只是缩成方块、小一号 */
+.combat-hand-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 7.5rem;
+  min-height: 7.5rem;
+  padding: 0.6rem;
+  border-radius: 12px;
+}
+
+.combat-hand-btn-glyph {
+  font-size: 2.25rem;
+  line-height: 1;
+}
+
+.combat-hand-btn-caption {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+/* 出牌 = 主行动（绿框，与「选中的手牌」同一色）；取消 = 次要（静默灰） */
+.combat-hand-btn--play {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+/* 悬停时保持绿框（否则会被全局 `button:hover` 压成灰）+ 一层淡绿底，主行动读得更重 */
+.combat-hand-btn--play:hover:not(:disabled) {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 12%, transparent);
+}
+
+.combat-hand-btn--cancel {
+  color: var(--muted);
 }
 
 /* 过牌 / 推进：接近方块的块状按钮（图标在上、短词在下），与左侧资源部件同一副体量 */

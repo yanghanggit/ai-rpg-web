@@ -30,7 +30,9 @@ function targetHint(card: Card, targets: string[]): string {
  * 3. **出牌交互（两次选择 + 一次确认）**：点一张手牌 → 那张牌**上移**（再点一下缩回去 = 取消选中）；
  *    点名单里的角色 → 那张卡**下移**（再点一下也缩回去）；两次都选好后，中间才长出「出牌」按钮，
  *    点它才真的发 `play_cards`。自身牌（`self_target`）选中后**自动**把本人那张压下，
- *    不需要再点名单，中间直接给「出牌」。
+ *    不需要再点名单，中间直接给「出牌」。出牌条就占中列顶部那个空出来的一格（`--card-short` 高）：
+ *    左边一块**提示矩形**（「已选 / 目标」那段话在这里折行），右边两颗与开场房「回到地图」卡
+ *    同族的**卡状按钮**（图标在上、词在下）——「出牌」是主行动（绿），「取消」静默。
  *
  * 名单卡还挂着两个**只读**入口（不影响出牌）：点整张卡开**角色信息**（`ActorInfoDialog`）；
  * 点卡底那行**平铺的文本**开**手牌**（`CardListDialog`，可再点卡进三级卡牌详情）——
@@ -170,36 +172,46 @@ export default function CombatTurnPanel({
           <div className="combat-hand">
             <div className="combat-hand-bar">
               {isMonster ? (
-                <p className="muted">怪物手牌由 AI 自动打出。</p>
+                <p className="muted combat-hand-note">怪物手牌由 AI 自动打出。</p>
               ) : selected === null ? (
-                <p className="muted">点一张手牌开始出牌。</p>
+                <p className="muted combat-hand-note">点一张手牌开始出牌。</p>
               ) : (
                 <>
-                  <span>
+                  {/* 提示矩形：文字在这里折行显示（与右边两颗卡状按钮并排成一行） */}
+                  <p className="combat-hand-hint">
                     已选：{selected.name}
                     {targets.length === 0
                       ? " · 点上方角色选择目标"
                       : ` · ${targetHint(selected, targets)}`}
-                  </span>
-                  {/* 两次选择都齐了才长出「出牌」——之前是点目标就发 API，容易误触 */}
+                  </p>
+                  {/* 两次选择都齐了才长出「出牌」——之前是点目标就发 API，容易误触。
+                      按钮形状与开场房「回到地图」卡同族（图标在上、词在下），只是缩成方块。 */}
                   {targets.length === 0 ? null : (
                     <button
                       type="button"
+                      className="combat-hand-btn combat-hand-btn--play"
                       disabled={actions.isBusy}
                       // 只发锚点：`all` / `spread` 的阵营由服务端按锚点展开（见 readTargetNames）
                       onClick={() => play(selected, targetName)}
                     >
-                      出牌
+                      <span className="combat-hand-btn-glyph" aria-hidden="true">
+                        ▶
+                      </span>
+                      <span className="combat-hand-btn-caption">出牌</span>
                     </button>
                   )}
                   <button
                     type="button"
+                    className="combat-hand-btn combat-hand-btn--cancel"
                     onClick={() => {
                       setSelectedUuid(null);
                       setTargetName(null);
                     }}
                   >
-                    取消
+                    <span className="combat-hand-btn-glyph" aria-hidden="true">
+                      ✕
+                    </span>
+                    <span className="combat-hand-btn-caption">取消</span>
                   </button>
                 </>
               )}
