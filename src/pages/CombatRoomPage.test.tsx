@@ -379,6 +379,45 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(detail).getByText(/命中后可以再摸一张/)).toBeInTheDocument();
   });
 
+  it("长牌组（15 张）：列表浮窗尺寸不跟着卡数走，超出的牌靠框内滚动看", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+
+    // 棺中殭尸的牌组在 mock 里被加到 15 张（5 行），专门用来碰「固定三行」那条线
+    fireEvent.click(await screen.findByRole("button", { name: "牌组" }));
+    const list = await screen.findByRole("dialog", { name: "牌组一览" });
+    fireEvent.click(await within(list).findByRole("button", { name: /棺中殭尸/ }));
+
+    const deck = await screen.findByRole("dialog", { name: "牌组" });
+    expect(within(deck).getByText("棺中殭尸 · 共 15 张")).toBeInTheDocument();
+    // 关键：**全部 15 张都在 DOM 里**——三行高是「视口」而不是截断（jsdom 量不到滚动条，
+    // 所以这一层能验的就是「没把超出的卡丢掉」，滚动的观感靠 `dev:mock` 手看）
+    expect(within(deck).getAllByRole("listitem")).toHaveLength(15);
+    // 固定尺寸与滚动都挂在这同一个类上，牌组 / 手牌 / 牌堆共用
+    expect(within(deck).getByRole("list")).toHaveClass("card-tiles--deck");
+  });
+
+  it("长牌堆：轮到怪物时它的抽牌堆（10 张）也是同一个浮窗、同样把牌都留着", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+
+    // 队伍里只有玩家：过牌 → 纸人 → 棺中殭尸（等行动者真的换了再点下一颗）
+    fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
+    await waitFor(() => expect(within(currentCombatant()).getByText("纸人")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+    await waitFor(() =>
+      expect(within(currentCombatant()).getByText("棺中殭尸")).toBeInTheDocument(),
+    );
+
+    // 15 张抓走 5 张（`MOCK_DRAW_PER_TURN`）→ 抽牌堆剩 10 张，四行
+    fireEvent.click(screen.getByRole("button", { name: "查看抽牌堆（10 张）" }));
+    const draw = await screen.findByRole("dialog", { name: "抽牌堆" });
+    expect(within(draw).getByText("棺中殭尸 · 共 10 张")).toBeInTheDocument();
+    expect(within(draw).getAllByRole("listitem")).toHaveLength(10);
+    expect(within(draw).getByRole("list")).toHaveClass("card-tiles--deck");
+  });
+
   it("三个牌堆都是按钮：点开是这一摞的卡牌列表（与手牌 / 牌组同一个浮窗）", async () => {
     server.use(instantTasks());
     renderCombatRoom();

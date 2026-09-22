@@ -29,12 +29,11 @@
   --card-list-gaps-w: calc((var(--card-cols) - 1) * var(--card-gap));
   --card-list-gaps-h: calc((var(--card-rows) - 1) * var(--card-gap));
   --card-list-w: calc(var(--card-cols) * var(--card-short) + var(--card-list-gaps-w));
-  /* 列表浮窗里卡面的**高度**。这里用短边，而不是手牌 / 角色卡那个竖牌足迹（`--card-tall`）：
-     三行竖牌 = 845px，加上标题行 ≈ 940px，比一般笔记本的视口还高——浮窗会被屏幕压住，
-     第三行永远只露一半，「固定三行」就成了空话。压成短边后三行 = 653px、浮窗 ≈ 755px，
-     任何桌面都装得下；而且这些卡片的自然内容高本来就只有 ≈ 13rem，竖牌多出来的那截全是留白。 */
-  --card-list-card-h: var(--card-short);
-  --card-list-h: calc(var(--card-rows) * var(--card-list-card-h) + var(--card-list-gaps-h));
+  /* 卡面区固定三行**竖牌**（行高 = `--card-tall`，与手牌 / 角色卡同一个足迹）。
+     三行 ≈ 845px，加上标题行 ≈ 940px，在一屏 85vh 的面板里装不下——**那就滚动**（见
+     `ul.card-tiles--deck`），而不是把卡面压矮去迁就屏幕：卡片的形状是设计语言，`--card-short`
+     是卡牌的**宽**，拿它当卡面的高就变成正方形了。 */
+  --card-list-h: calc(var(--card-rows) * var(--card-tall) + var(--card-list-gaps-h));
   /* 浮窗内边距（`Modal` 的标题行与内容区）。固定宽度的浮窗要把它算进去 */
   --overlay-pad-x: 1.25rem;
   /* 选中位移：手牌**上移**与目标卡**下移**共用这一个值（上下对称）。
@@ -1431,9 +1430,9 @@ ul.card-tiles--deck {
   overflow: hidden;
 }
 
-/* 卡面给足高度，保持「牌」的比例（行高与卡面区高度共用 `--card-list-card-h`） */
+/* 卡面给足高度，保持「牌」的比例（行高 = `--card-tall`，与手牌 / 角色卡同一个足迹） */
 ul.card-tiles--deck > .card-tile {
-  min-height: var(--card-list-card-h);
+  min-height: var(--card-tall);
 }
 
 /* 整张卡可点（打开卡牌详情）：铺一层透明按钮盖住卡面（词缀 / 动作按钮抬在它之上） */

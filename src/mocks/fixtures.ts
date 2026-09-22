@@ -762,6 +762,41 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
 
 /**
+ * `棺中殭尸` 多出来的那一段牌组（加在它原本的 5 张后面）。
+ *
+ * 为什么偏偏给它加长：卡牌列表浮窗（牌组 / 手牌 / 牌堆）是**固定三行 × 三列、超出在框内滚动**的，
+ * 而 3×3 = 9 张正是它的临界值——手牌 5 张、别家牌组 5 张都碰不到那条线，**滚动与裁切在 mock 里
+ * 根本走不到**。补到 15 张后：牌组浮窗 5 行、抽牌堆（15 减每回合抳的 5）4 行，两处都要滚，
+ * `dev:mock` 下一眼能看出「高度固定、里面滚」是不是想要的效果。
+ *
+ * 前 5 张（`cleave / breath / nail / shroud / bell`）是它每回合抓到手里的那一把，不能动——
+ * 手牌上的【塞牌】/【被动】演示靠它们。这里的牌名也不能与那 5 张重名（uuid 由牌名推出来）。
+ */
+const coffinExtraCards = [
+  mockCard("掐颈", { cost: 1, damage: 2 }),
+  mockCard("尸气", {
+    description: "（mock）吐出一口积在棺里的浊气，满室无风自动。",
+    cost: 1,
+    damage: 0,
+    target_type: "all",
+    on_turn_end_affixes: ["[尸毒]:回合结束时尸毒未散，仍在渗"],
+  }),
+  mockCard("破棺", { cost: 2, damage: 4, exhaust: true }),
+  mockCard("啃噬", { cost: 0, damage: 1, hit_count: 3 }),
+  mockCard("腐血", {
+    description: "（mock）指节一挤，黑血流下。",
+    cost: 1,
+    damage: 2,
+    on_hit_affixes: ["[蚀骨]:命中的段数越多，护体越薄"],
+  }),
+  mockCard("僵直", { cost: 1, damage: 0, block: 5, self_target: true }),
+  mockCard("拖拽", { cost: 1, damage: 2, target_type: "spread" }),
+  mockCard("阴风", { cost: 1, damage: 0, block: 3, target_type: "all" }),
+  mockCard("怨念", { cost: 0, damage: 0, playable: false }),
+  mockCard("立尸", { cost: 2, damage: 3, hit_count: 2, ethereal: true }),
+];
+
+/**
  * 副本怪物的固定牌组（按怪物名）。
  *
  * 怪物和队伍成员一样持 `DeckComponent`（后端战斗双方都有牌库，`build_deck_text` 一次列双方），
@@ -785,6 +820,7 @@ export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
     cardFixtures.nail,
     cardFixtures.shroud,
     cardFixtures.bell,
+    ...coffinExtraCards,
   ],
   "怪物.纸傀儡": [
     cardFixtures.nail,
