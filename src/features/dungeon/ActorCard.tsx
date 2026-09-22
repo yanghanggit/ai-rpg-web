@@ -22,6 +22,7 @@ export default function ActorCard({
   name,
   badge,
   stats,
+  showAttackDefense = false,
   extra,
   onOpenInfo,
   children,
@@ -32,6 +33,8 @@ export default function ActorCard({
   badge?: string;
   /** 角色属性（原始 `CharacterStats`，文案由 `characterStatsText` 统一生成）。 */
   stats: Schemas["CharacterStats"] | null;
+  /** 属性行连攻 / 防一起给（**开局准备那一屏**：那时对方的硬属性会影响决策）。不给就只写 `HP x/y`。 */
+  showAttackDefense?: boolean;
   /** 属性下的第二行（如「卡组 9」）；不给就不占行。 */
   extra?: string;
   /** 有则**整卡可点**（开角色信息浮窗）；没有就整卡不可点，名字是静态文本。 */
@@ -49,7 +52,7 @@ export default function ActorCard({
       </div>
 
       <p className="muted actor-card-stats">
-        <span>{characterStatsText(stats)}</span>
+        <span>{characterStatsText(stats, showAttackDefense)}</span>
         {extra === undefined ? null : <span>{extra}</span>}
       </p>
 

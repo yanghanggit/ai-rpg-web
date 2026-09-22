@@ -19,12 +19,14 @@
      角色卡 / 场景卡 / 牌面共用这一对，所以「横（场景）」就是「竖（角色）」转 90°。 */
   --card-short: 13rem;
   --card-tall: 17rem;
+  /* 两个**卡形块**之间的距离：每一条卡片横排都用它（敌人 / 队伍 / 手牌 / 牌堆 / 场景行 /
+     中间那一条……）。差个零点几 rem，两排并排时就看得出不齐。 */
+  --card-gap: 0.9rem;
   /* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）是**固定尺寸**：宽正好三张卡、高正好三行。
      卡多就在框内滚，卡少（甚至一张没有）也占住同一块面积——面板忽大忽小只会让人每次打开
      都要重新找位置。三处（牌组 / 手牌 / 牌堆）共用这一组，手感才会一致。 */
   --card-cols: 3;
   --card-rows: 3;
-  --card-gap: 0.9rem;
   /* 卡距的总和：宽向 `列数 - 1` 个、高向 `行数 - 1` 个（单独列出来纯粹是让下面两行读得下） */
   --card-list-gaps-w: calc((var(--card-cols) - 1) * var(--card-gap));
   --card-list-gaps-h: calc((var(--card-rows) - 1) * var(--card-gap));
@@ -1047,11 +1049,17 @@ li.dungeon-room--current {
 
 /* 场景行：**横置的场景卡**（固定大小）+ 右侧那张「回到地图」卡。
    横置是刻意的：横 = 场景 / 进度，竖 = 人（下面的角色卡）。两张卡同高，并排成一行。 */
+/* 场景行（中间那排）：高度就是一张**横置卡牌**（`--card-short`；场景卡自己就是这个高），
+   内容**重心居中**——与战斗房的出牌状态条（`.combat-hand-bar`）同一副骨架。
+   `safe` 是为了内容比容器宽时也不会把左边那一张推到看不见的地方。 */
 .stage-row {
   display: flex;
   flex-wrap: wrap;
-  align-items: stretch;
-  gap: 0.9rem;
+  align-items: center;
+  align-content: center;
+  justify-content: safe center;
+  min-height: var(--card-short);
+  gap: var(--card-gap);
   margin: 1.5rem 0 0;
 }
 
@@ -1161,11 +1169,16 @@ li.dungeon-room--current {
 }
 
 /* 队伍 / 敌人那排角色卡：**竖着的矩形卡牌**（短 × 长，就是场景卡足迹转 90°；也是牌组 / 奖励卡面
-   的形状语言）。列宽固定为 `--card-short`，不再随容器撞大——尺寸与场景卡对得上。
-   `.cards` 本身是通排的宽卡（家园页的副本卡），所以用修饰类只改这一处。 */
+   的形状语言）。
+   排法与战斗房的参战者名单（`.combat-action-roster`）**同一套**：一行、**重心居中**、放不下就
+   横滑。原先是 `auto-fill` 栅格——从左往右铺，人少时整排贴在左边，与中间那排不是同一条中线。
+   卡宽在 flex 里要写死（不写就按内容撞大），仍是 `--card-short`，所以尺寸与场景卡仍然对得上。 */
 .cards--party {
-  grid-template-columns: repeat(auto-fill, var(--card-short));
-  gap: 1rem;
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: safe center;
+  gap: var(--card-gap);
+  overflow-x: auto;
 }
 
 /* 队伍块：上面是环境叙述（固定高），这里不再有标题行，靠距离分组 */
@@ -1174,6 +1187,7 @@ li.dungeon-room--current {
 }
 
 .cards--party .card {
+  flex: 0 0 var(--card-short);
   min-height: var(--card-tall);
   padding: 1.1rem 1.25rem;
   border-radius: 12px;
@@ -1580,7 +1594,7 @@ ul.card-detail-marks {
 ul.combat-roster {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
-  gap: 0.9rem;
+  gap: var(--card-gap);
   margin: 1.25rem 0 0;
   padding: 0;
   list-style: none;
@@ -1628,7 +1642,7 @@ ul.combat-roster {
 ul.combat-action-roster {
   display: flex;
   justify-content: safe center;
-  gap: 0.9rem;
+  gap: var(--card-gap);
   margin: 1.25rem 0 0;
   /* 底部留出「目标下移」的位（`overflow-x: auto` 会把纵向可见性也算成裁剪，不留就被切） */
   padding: 0 0 var(--pick-shift);
@@ -1907,7 +1921,7 @@ ul.combat-action-roster {
 ul.combat-hand-list {
   display: flex;
   justify-content: safe center;
-  gap: 0.9rem;
+  gap: var(--card-gap);
   width: 100%;
   min-width: 0;
   margin: 0;
@@ -1940,7 +1954,7 @@ ul.combat-hand-list .card-tile--selected {
   align-items: center;
   align-content: center;
   justify-content: center;
-  gap: 1rem;
+  gap: var(--card-gap);
   min-height: var(--card-short);
 }
 

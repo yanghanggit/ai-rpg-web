@@ -42,6 +42,43 @@ function currentCombatant(): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
+  it("开局准备的角色卡连攻 / 防一起给（这时对方的硬属性影响决策）；开打后只留 HP", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+
+    // 准备屏：敌人与队伍都写全（还没开打，要看清双方多硬）
+    expect(await screen.findByText("HP 9/9 · 攻 3 · 防 1")).toBeInTheDocument();
+    expect(screen.getByText("HP 12/15 · 攻 3 · 防 1")).toBeInTheDocument();
+
+    // 开打之后（turn）卡面省掉攻 / 防
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+    const roster = screen.getByRole("list", { name: "参战者" });
+    expect(within(roster).queryByText(/攻 3/)).not.toBeInTheDocument();
+    expect(within(roster).getByText("HP 9/9")).toBeInTheDocument();
+  });
+
+  it("开局准备：三排卡片（敌人 / 场景 + 开始 / 队伍），上下的排法与战斗房名单同一套", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+
+    // 版面就是三排，顺序即读到的顺序
+    const enemies = await screen.findByRole("region", { name: "敌人" });
+    const scene = screen.getByRole("region", { name: "场景描述" });
+    const party = screen.getByRole("region", { name: "队伍" });
+    expect(enemies.compareDocumentPosition(scene) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(scene.compareDocumentPosition(party) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // 上 / 下两排共用同一套排法（一个类，居中 + 横滑都写在它上面；实际几何 jsdom 量不到）
+    expect(enemies).toHaveClass("cards", "cards--party");
+    expect(party).toHaveClass("cards", "cards--party");
+    // 中间那排是一张横置卡牌那么高的一条，里面就场景卡 + 「开始」卡
+    expect(scene).toHaveClass("stage-row");
+    expect(within(scene).getByRole("button", { name: /查看场景/ })).toHaveClass("stage-card");
+    // 「开始」要等自动初始化落地才从「准备中…」变成它
+    expect(await within(scene).findByRole("button", { name: "开始!" })).toHaveClass("stage-next");
+  });
+
   it("进入战斗房间是准备阶段：上面敌人 / 中间开始卡 / 下面队伍，开始后落到玩家回合", async () => {
     server.use(instantTasks());
     renderCombatRoom();
