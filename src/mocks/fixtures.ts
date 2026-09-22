@@ -759,7 +759,15 @@ export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleav
 export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
   // 前几张混入「来自我方阵营」的牌（`source` 是我方成员）+ 带 `on_hit` 词缀的牌，
   // 这样 `dev:mock` 下能一眼看到名单卡上的 [被动] / [塞牌]（见种子 `combat:turn`）。
-  "怪物.纸人": [cardFixtures.nail, cardFixtures.paper, cardFixtures.ward],
+  // `spark` / `lantern` 额外把「消耗牌」（橙）/「虚无」（紫）两个布尔标记也铺到一张手牌里，
+  // 方便一次看全卡面全部的标记颜色。
+  "怪物.纸人": [
+    cardFixtures.nail,
+    cardFixtures.paper,
+    cardFixtures.ward,
+    cardFixtures.spark,
+    cardFixtures.lantern,
+  ],
   "怪物.棺中殭尸": [
     cardFixtures.cleave,
     cardFixtures.breath,

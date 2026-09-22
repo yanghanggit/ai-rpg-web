@@ -12,7 +12,8 @@ import type { Card, CardTargetType } from "./types";
  *   - 三种时机的自由文本词缀 `on_play_affixes` / `on_hit_affixes` / `on_turn_end_affixes`
  *     （绿 / 红 / 黄；卡面只写 `[名称]`，点开看全文）；
  *   - 布尔属性 `exhaust`（消耗牌）/ `retain`（保留）/ `ethereal`（虚无）/ `playable`（不可出牌）/
- *     `transferable`（可传递，独立色 `--transfer`）。
+ *     `transferable`（可传递）——与三种时机一样**各配一色**（橙 / 蓝 / 紫 / 灰 / 青），
+ *     视觉上就是同一排带色 chip。
  *
  * **`transferable` 是"牌属性"，`【塞牌】` 是"牌与持有者的关系"**：后者不进卡面（此时主体就是这张卡），
  * 只挂在 ActorCard 一侧。`source` 只在"不是持有者的牌"时才显示，且用 `--transfer` 色强调。
@@ -36,19 +37,20 @@ const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
 ];
 
 /**
- * 卡面的布尔标记（当作词缀看的那一类）。
+ * 卡面的布尔标记（当作词缀看的那一类）：与三种时机一样都带颜色 —— 消耗牌（橙）/ 保留（蓝）/
+ * 虚无（紫）/ 可传递（青）/ 不可出牌（灰）。
  *
  * 极性是**逐项写死**的，不是因为啰嗦：`playable` 是「false 才标」，其余是「true 才标」，
  * 用一个「布尔 → 标签」的表会把这个差异藏起来。
  */
-function flagLabels(card: Card): { label: string; tone?: string }[] {
+function flagLabels(card: Card): { label: string; tone: string }[] {
   return [
-    !card.playable ? { label: "不可出牌" } : null,
-    card.exhaust ? { label: "消耗牌" } : null,
-    card.retain ? { label: "保留" } : null,
-    card.ethereal ? { label: "虚无" } : null,
+    !card.playable ? { label: "不可出牌", tone: "unplayable" } : null,
+    card.exhaust ? { label: "消耗牌", tone: "exhaust" } : null,
+    card.retain ? { label: "保留", tone: "retain" } : null,
+    card.ethereal ? { label: "虚无", tone: "ethereal" } : null,
     card.transferable ? { label: "可传递", tone: "transfer" } : null,
-  ].filter((entry): entry is { label: string; tone?: string } => entry !== null);
+  ].filter((entry): entry is { label: string; tone: string } => entry !== null);
 }
 
 /** 数值行：`费用 1 · 伤害 3 ×2 · 格挡 0 · 目标 单体`（连击只在多段时出现）。 */
@@ -130,10 +132,7 @@ export default function CardItem({
       {/* 标记行：布尔属性 + 三种时机的词缀，统一 chip；`names` 时都在这里，`full` 的词缀另起段 */}
       <div className="card-tile-marks">
         {flagLabels(card).map(({ label, tone }) => (
-          <span
-            key={label}
-            className={tone === undefined ? "affix-chip" : `affix-chip affix-chip--${tone}`}
-          >
+          <span key={label} className={`affix-chip affix-chip--${tone}`}>
             {label}
           </span>
         ))}

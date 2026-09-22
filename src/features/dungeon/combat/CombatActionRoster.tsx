@@ -13,9 +13,9 @@ import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } f
  * 两个动作、两层含义：
  * - **整张卡**用铺满卡面的透明按钮实现（与 `ActorCard` 的 `actor-card-open` 同一手法）：
  *   选目标态（`picking`）下点卡 = 给选中的手牌指定目标；其余时候点卡 = 开角色信息（`onOpenInfo`）。
- * - **卡底常驻那颗按钮** = 看这个角色的手牌（`onOpenHand`）：**只给数量**——「[被动] N」
- *   （手牌里「被命中时」词缀的条数）与（仅敌方）「[塞牌] M」（手牌里来自我方阵营的牌数）。
- *   具体是哪张、什么词缀，点开手牌细看。
+ * - **卡底那行平铺的文本**（没有按钮外框，词缀槽也不带 chip 圆角底色，仍整行可点）= 看这个角色的手牌（`onOpenHand`）：
+ *   三件事平铺——`手牌 N` + `[被动] N`（手牌里「被命中时」词缀的条数）+（仅敌方）`[塞牌] M`
+ *   （手牌里来自我方阵营的牌数）；后两者保留红 / 青的文字色。具体是哪张、什么词缀，点开手牌细看。
  *
  * 名字显示走 `displayName`（`怪物.纸人` → `纸人`），但 key / 比较一律用原始名。
  */
@@ -115,6 +115,8 @@ export default function CombatActionRoster({
               onClick={() => onOpenHand?.(combatant.name)}
             >
               <span className="combatant-card-hand-text">
+                {/* 「手牌 N」是标签（不是词缀），所以不用 chip 外框，只跟词缀同排 */}
+                <span className="combatant-card-hand-label">手牌 {combatant.hand.length}</span>
                 <span className="affix-chip affix-chip--hit">[被动] {onHitCount}</span>
                 {combatant.faction === "monster" ? (
                   <span className="affix-chip affix-chip--transfer">[塞牌] {transferredCount}</span>

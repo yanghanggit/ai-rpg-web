@@ -147,8 +147,33 @@ export default function CombatTurnPanel({
             </li>
           </ul>
 
-          {/* 中间：手牌横滑 + 出牌条 */}
+          {/* 中间：出牌状态条（占中列顶部那个空出来的场景卡位）+ 手牌横滑 */}
           <div className="combat-hand">
+            <div className="combat-hand-bar">
+              {isMonster ? (
+                <p className="muted">怪物手牌由 AI 自动打出。</p>
+              ) : selected === null ? (
+                <p className="muted">点一张手牌开始出牌。</p>
+              ) : selected.self_target ? (
+                <>
+                  <span>已选：{selected.name}</span>
+                  <button type="button" disabled={actions.isBusy} onClick={() => play(selected)}>
+                    出牌（自身）
+                  </button>
+                  <button type="button" onClick={() => setSelectedUuid(null)}>
+                    取消
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>已选：{selected.name} · 点上方角色选择目标</span>
+                  <button type="button" onClick={() => setSelectedUuid(null)}>
+                    取消
+                  </button>
+                </>
+              )}
+            </div>
+
             {current.hand.length === 0 ? (
               <p className="muted">（手牌为空）</p>
             ) : (
@@ -179,31 +204,6 @@ export default function CombatTurnPanel({
                 ))}
               </ul>
             )}
-
-            <div className="combat-hand-bar">
-              {isMonster ? (
-                <p className="muted">怪物手牌由 AI 自动打出。</p>
-              ) : selected === null ? (
-                <p className="muted">点一张手牌开始出牌。</p>
-              ) : selected.self_target ? (
-                <>
-                  <span>已选：{selected.name}</span>
-                  <button type="button" disabled={actions.isBusy} onClick={() => play(selected)}>
-                    出牌（自身）
-                  </button>
-                  <button type="button" onClick={() => setSelectedUuid(null)}>
-                    取消
-                  </button>
-                </>
-              ) : (
-                <>
-                  <span>已选：{selected.name} · 点上方角色选择目标</span>
-                  <button type="button" onClick={() => setSelectedUuid(null)}>
-                    取消
-                  </button>
-                </>
-              )}
-            </div>
           </div>
 
           {/* 右列：本回合的收尾动作 + 两个牌堆（三个块在卡高内均匀分布） */}

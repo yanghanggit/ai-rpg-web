@@ -120,7 +120,7 @@ describe("副本房间 · 战斗房间", () => {
     // 怪物也能点进二级看牌组（怪物同样持 DeckComponent）
     fireEvent.click(paper);
     const deck = await screen.findByRole("dialog", { name: "牌组" });
-    expect(within(deck).getByText("纸人 · 共 3 张")).toBeInTheDocument();
+    expect(within(deck).getByText("纸人 · 共 5 张")).toBeInTheDocument();
     // 牌组一律不显示来源（牌必属持有者），即使 mock 里混了别家的牌
     expect(within(deck).queryByText(/来源：/)).not.toBeInTheDocument();
   });

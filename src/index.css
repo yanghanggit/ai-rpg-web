@@ -7,6 +7,12 @@
   --warn: #b45309;
   /* 青：传递 / 【塞牌】——与 on_play（绿）/ on_hit（红）/ on_turn_end（黄）都不同色 */
   --transfer: #0891b2;
+  /* 卡牌布尔标记（当作词缀看的那一类）各配一色，与三种时机同样是一枚带色 chip：
+     保留（蓝）/ 虚无（紫）/ 消耗牌（橙）/ 不可出牌（灰，"这张牌是死的"，比 rest 的灰略重） */
+  --retain: #2563eb;
+  --ethereal: #7c3aed;
+  --exhaust: #ea580c;
+  --unplayable: #475569;
   --border: #e5e7eb;
   --bg: #ffffff;
   /* 卡片足迹（dungeon）：短边 = 角色卡的宽 = 场景卡的高，长边 = 角色卡的高 = 场景卡的宽。
@@ -23,6 +29,10 @@
     --err: #f87171;
     --warn: #fbbf24;
     --transfer: #22d3ee;
+    --retain: #60a5fa;
+    --ethereal: #a78bfa;
+    --exhaust: #fb923c;
+    --unplayable: #94a3b8;
     --border: #374151;
     --bg: #0b0f14;
   }
@@ -1147,9 +1157,10 @@ li.dungeon-room--current {
   gap: 0.6rem;
 }
 
+/* 卡底按钮：宽度统一铺满卡宽（不随文案长短变化）——同一排的角色卡底部按钮因此一样宽 */
 .actor-card .card-actions button {
-  width: auto;
-  flex: 1 1 auto;
+  width: 100%;
+  flex: 1 1 0;
   /* 抬到「整卡可点」那层之上：奖励按钮自己的点击自己收下 */
   position: relative;
   z-index: 1;
@@ -1284,6 +1295,31 @@ ul.card-tiles--stack {
   color: var(--transfer);
 }
 
+/* 布尔标记：与三种时机同为一枚带色 chip，每种属性各一色（见 :root 的注释） */
+.affix-chip--retain,
+.affix-mark--retain {
+  border-color: var(--retain);
+  color: var(--retain);
+}
+
+.affix-chip--ethereal,
+.affix-mark--ethereal {
+  border-color: var(--ethereal);
+  color: var(--ethereal);
+}
+
+.affix-chip--exhaust,
+.affix-mark--exhaust {
+  border-color: var(--exhaust);
+  color: var(--exhaust);
+}
+
+.affix-chip--unplayable,
+.affix-mark--unplayable {
+  border-color: var(--unplayable);
+  color: var(--unplayable);
+}
+
 .card-tile-source {
   margin: 0;
   font-size: 0.8rem;
@@ -1392,9 +1428,11 @@ ul.combat-roster {
 
 /* ── 战斗房间 · 行动面板（turn） ───────────────────────────── */
 
-/* 参战者横滑名单：**名单顺序 = 行动顺序**（已行动置灰 / 当前绿框），不再单独画顺序条 */
+/* 参战者横滑名单：**名单顺序 = 行动顺序**（已行动置灰 / 当前绿框），不再单独画顺序条。
+   水平居中（`safe center`：放得下就居中，放不下就回到 start 可横向滚，不会被左边缘藏住） */
 ul.combat-action-roster {
   display: flex;
+  justify-content: safe center;
   gap: 0.9rem;
   margin: 1.25rem 0 0;
   padding: 0 0 0.5rem;
@@ -1434,8 +1472,10 @@ ul.combat-action-roster {
   border-color: var(--warn);
 }
 
-/* 卡底动作：**独立按钮**（与副本流程里的「领取奖励」同一设计语言），里面放【被动】/【塞牌】标记；
-   抬到「整卡可点」那层之上 */
+/* 卡底动作行：**就一行平铺的文本**（手牌 N / [被动] N / [塞牌] M），
+   没有按钮外框，也没有 chip 的圆角底色；整行仍可点（看该角色手牌）。
+   颜色靠词缀槽色保留（[被动] 红 / [塞牌] 青），字体不保留也无妨。
+   抬到「整卡可点」那层之上。 */
 .combatant-card-hand {
   position: relative;
   z-index: 1;
@@ -1445,10 +1485,21 @@ ul.combat-action-roster {
   gap: 0.4rem;
   width: 100%;
   margin-top: auto;
-  padding: 0.3rem 0.55rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
+  padding: 0.1rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 0.75rem;
   text-align: left;
+  cursor: pointer;
+}
+
+/* 这一行里的词缀槽不带 chip 外框（就是平铺的词），但保留槽色文字（`.affix-chip--hit` / `--transfer`） */
+.combatant-card-hand .affix-chip {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: 0.75rem;
 }
 
 .combatant-card-hand-chevron {
@@ -1459,9 +1510,21 @@ ul.combat-action-roster {
 .combatant-card-hand-text {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 0.3rem;
   min-width: 0;
   line-height: 1.5;
+}
+
+/* 悬停提示：整行（含箭头）微微提亮，不再把词缀当成 chip 点亮 */
+.combatant-card-hand:hover {
+  color: var(--fg);
+}
+
+/* 「手牌 N」：标签而非词缀，不给 chip 外框 */
+.combatant-card-hand-label {
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .badge--dead {
@@ -1469,12 +1532,14 @@ ul.combat-action-roster {
   color: var(--err);
 }
 
-/* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆 */
+/* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆。
+   中间列顶部空出 `--card-short`（= 一张**横置场景卡**的高度），所以左右两列用 `center`
+   相对这整列的重心对齐——不是各自贴顶，否则中间被抬高后两列会显得沉在下面。 */
 .combat-action-area {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 1.25rem;
-  align-items: start;
+  align-items: center;
   margin-top: 1.5rem;
 }
 
@@ -1604,19 +1669,18 @@ ul.combat-action-roster {
   clip-path: polygon(25% 2%, 75% 2%, 100% 50%, 75% 98%, 25% 98%, 0 50%);
 }
 
-/* 中间手牌：横向滚动，固定卡宽（与牌面同一副足迹） */
+/* 中间列：顶部空出一张「横置场景卡」的位置（`--card-short`）放**出牌状态条**，手牌横滑落在它下面 */
 .combat-hand {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
   min-width: 0;
   overflow: hidden;
-  /* 比左右两列往下错开一大段：中间手牌在视觉上抬出来 */
-  margin-top: 5rem;
 }
 
 ul.combat-hand-list {
   display: flex;
+  justify-content: safe center;
   gap: 0.9rem;
   width: 100%;
   min-width: 0;
@@ -1638,13 +1702,16 @@ ul.combat-hand-list .card-tile--selected {
   box-shadow: inset 0 0 0 1px var(--ok);
 }
 
-/* 出牌条：未选牌时是提示，选牌后长出「出牌 / 取消」 */
+/* 出牌状态条：占中列顶部空出来的那个场景卡位（`--card-short` 高），内容在空格里**正居中** */
 .combat-hand-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  align-content: center;
+  justify-content: center;
   gap: 0.6rem;
-  min-height: 2.2rem;
+  min-height: var(--card-short);
+  text-align: center;
 }
 
 /* 过牌 / 推进：接近方块的块状按钮（图标在上、短词在下），与左侧资源部件同一副体量 */
