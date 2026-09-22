@@ -129,6 +129,7 @@ export default function DeckBrowserDialog({
           actorName={picked.name}
           cards={picked.deck}
           emptyText="（牌组为空）"
+          hideSource
           onClose={() => setPicked(null)}
         />
       ) : null}

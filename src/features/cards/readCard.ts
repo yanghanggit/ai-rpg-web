@@ -45,6 +45,7 @@ export function readCard(value: unknown): Card | undefined {
     exhaust: readBoolean(value, "exhaust") ?? false,
     retain: readBoolean(value, "retain") ?? false,
     ethereal: readBoolean(value, "ethereal") ?? false,
+    transferable: readBoolean(value, "transferable") ?? false,
     playable: readBoolean(value, "playable") ?? true,
   };
 }

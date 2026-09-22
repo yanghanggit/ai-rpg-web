@@ -630,13 +630,14 @@ function mockCard(name: string, overrides: Record<string, unknown> = {}): Record
 
 /** 几张示例卡，覆盖卡面上的各种部件（数值 / 多段 / 自身目标 / 阵营散射 / 消耗 / 不可出牌 / 词缀）。 */
 export const cardFixtures = {
-  cleave: mockCard("剖棺", { cost: 1, damage: 3, source: "角色.无名" }),
+  cleave: mockCard("剖棺", { cost: 1, damage: 3, source: "角色.无名", transferable: true }),
   sweep: mockCard("撬棍横击", {
     cost: 2,
     damage: 2,
     hit_count: 2,
     on_play_affixes: ["[破竹]:本段命中后更容易击穿格挡"],
     source: "角色.顾知秋",
+    transferable: true,
   }),
   breath: mockCard("屏息", {
     description: "（mock）贴着棺壁屏住呼吸，把手里的家伙握稳。",
@@ -680,6 +681,7 @@ export const cardFixtures = {
     hit_count: 2,
     on_hit_affixes: ["[入木]:命中的段数越多，棺盖越难再开"],
     source: "角色.无名",
+    transferable: true,
   }),
   bell: mockCard("摇铃", {
     description: "（mock）摄魂铃一响，满堂的纸人都慢半拍。",

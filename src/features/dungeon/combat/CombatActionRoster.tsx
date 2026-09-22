@@ -115,11 +115,10 @@ export default function CombatActionRoster({
               onClick={() => onOpenHand?.(combatant.name)}
             >
               <span className="combatant-card-hand-text">
-                [被动] {onHitCount}
-                {combatant.faction === "monster" ? ` · [塞牌] ${transferredCount}` : null}
-              </span>
-              <span className="combatant-card-hand-chevron" aria-hidden="true">
-                ›
+                <span className="affix-chip affix-chip--hit">[被动] {onHitCount}</span>
+                {combatant.faction === "monster" ? (
+                  <span className="affix-chip affix-chip--transfer">[塞牌] {transferredCount}</span>
+                ) : null}
               </span>
             </button>
             {/* 整卡可点：选目标态 → 指定目标；否则 → 看角色信息 */}

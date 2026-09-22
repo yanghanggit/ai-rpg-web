@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { displayName } from "../../../components/displayName";
 import Modal from "../../../components/Modal";
+import CardDetailDialog from "../../cards/CardDetailDialog";
 import CardItem from "../../cards/CardItem";
 import type { Card } from "../../cards/types";
 
@@ -33,12 +35,19 @@ export default function SpoilsDialog({
 }) {
   const { candidateCards, claimedCards } = spoils;
   const hasClaimed = claimedCards.length > 0;
+  /** 二级浮窗正开着的卡；`null` 表示只在这层。 */
+  const [openedCard, setOpenedCard] = useState<Card | null>(null);
 
   return (
     <Modal
       title="奖励"
       meta={`${displayName(memberName)} · 候选 ${candidateCards.length} 张`}
-      onClose={onClose}
+      onClose={() => {
+        // 卡牌详情开着时本层不响应关闭（ESC 一次只关一层）
+        if (openedCard === null) {
+          onClose();
+        }
+      }}
     >
       {hasClaimed ? <p className="muted">（已领取，以下为本次候选，仅供参考）</p> : null}
       {error ? <p className="error">领卡失败：{error}</p> : null}
@@ -48,7 +57,14 @@ export default function SpoilsDialog({
           <p className="muted">已领取 {claimedCards.length} 张：</p>
           <ul className="card-tiles card-tiles--stack">
             {claimedCards.map((card) => (
-              <CardItem key={card.uuid} card={card} action={null} claimed />
+              <CardItem
+                key={card.uuid}
+                card={card}
+                affixes="names"
+                action={null}
+                claimed
+                onSelect={setOpenedCard}
+              />
             ))}
           </ul>
           <p className="muted">待领取候选 {candidateCards.length} 张：</p>
@@ -60,6 +76,8 @@ export default function SpoilsDialog({
           <CardItem
             key={card.uuid}
             card={card}
+            affixes="names"
+            onSelect={setOpenedCard}
             action={
               hasClaimed ? null : (
                 <button
@@ -75,6 +93,10 @@ export default function SpoilsDialog({
           />
         ))}
       </ul>
+
+      {openedCard !== null ? (
+        <CardDetailDialog card={openedCard} onClose={() => setOpenedCard(null)} />
+      ) : null}
     </Modal>
   );
 }

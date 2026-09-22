@@ -5,6 +5,8 @@
   --ok: #16a34a;
   --err: #dc2626;
   --warn: #b45309;
+  /* 青：传递 / 【塞牌】——与 on_play（绿）/ on_hit（红）/ on_turn_end（黄）都不同色 */
+  --transfer: #0891b2;
   --border: #e5e7eb;
   --bg: #ffffff;
   /* 卡片足迹（dungeon）：短边 = 角色卡的宽 = 场景卡的高，长边 = 角色卡的高 = 场景卡的宽。
@@ -20,6 +22,7 @@
     --ok: #4ade80;
     --err: #f87171;
     --warn: #fbbf24;
+    --transfer: #22d3ee;
     --border: #374151;
     --bg: #0b0f14;
   }
@@ -1168,6 +1171,7 @@ ul.card-tiles--stack {
 }
 
 .card-tile {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -1207,11 +1211,70 @@ ul.card-tiles--stack {
   line-height: 1.6;
 }
 
-.card-tile-stats,
-.card-tile-affixes {
+.card-tile-stats {
   margin: 0;
   font-size: 0.85rem;
   line-height: 1.6;
+}
+
+/* 词缀行：卡面（`names`）是一排可点的标记，详情（`full`）是「时机标签 + 全文」 */
+.card-tile-affixes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  /* 抬到「整卡可点」那层之上：词缀标记自己收下点击 */
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+/* 词缀标记：只写 `[名称]`（表达"有"），三种触发时机用颜色区分；点开看完整原文 */
+.affix-chip,
+.affix-mark {
+  padding: 0.05rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.affix-chip {
+  background: transparent;
+  color: var(--muted);
+}
+
+.card-tile-affixes .affix-chip:hover:not(:disabled) {
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.affix-chip--play,
+.affix-mark--play {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.affix-chip--hit,
+.affix-mark--hit {
+  border-color: var(--err);
+  color: var(--err);
+}
+
+.affix-chip--turn-end,
+.affix-mark--turn-end {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+/* 【塞牌】/ 可传递：与三种词缀时机都不同的颜色 */
+.affix-chip--transfer,
+.affix-mark--transfer {
+  border-color: var(--transfer);
+  color: var(--transfer);
 }
 
 .card-tile-source {
@@ -1246,20 +1309,20 @@ ul.card-tiles--deck > .card-tile {
   min-height: var(--card-tall);
 }
 
-/* 整张卡可点（打开卡牌详情）：内容包一层按钮，撑满卡面（点击区域 = 整张卡） */
+/* 整张卡可点（打开卡牌详情）：铺一层透明按钮盖住卡面（词缀 / 动作按钮抬在它之上） */
 .card-tile-open {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0;
+  position: absolute;
+  inset: 0;
   border: 0;
+  border-radius: inherit;
   background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
   cursor: pointer;
+}
+
+/* 卡内动作按钮（如奖励的「挑选」）抬到「整卡可点」那层之上 */
+.card-tile .card-actions {
+  position: relative;
+  z-index: 1;
 }
 
 .card-tile--open:hover {
@@ -1357,31 +1420,37 @@ ul.combat-action-roster {
   border-color: var(--warn);
 }
 
-/* 卡底常驻按钮（看该角色手牌）：有受击词缀就是词缀，没有就是「查看」；
-   抬到「整卡可点」那层之上（与 .actor-card .card-actions button 同一手法） */
+/* 卡底的【被动】/【塞牌】标记行：**不画按钮外框**，排布与普通 Card 的词缀行一致（一排标记），
+   整行仍然可点（看该角色手牌）；抬到「整卡可点」那层之上 */
 .combatant-card-hand {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.4rem;
   width: 100%;
   margin-top: auto;
-  padding: 0.3rem 0.55rem;
-  border-radius: 8px;
-  font-size: 0.78rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: inherit;
   text-align: left;
+  cursor: pointer;
+}
+
+/* 悬停把标记点亮一下，提示这排标记可点（不再靠外框提示） */
+.combatant-card-hand:hover .affix-chip {
+  border-color: currentColor;
+  background: color-mix(in srgb, currentColor 12%, transparent);
 }
 
 .combatant-card-hand-text {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
   min-width: 0;
   line-height: 1.5;
-}
-
-.combatant-card-hand-chevron {
-  color: var(--muted);
-  line-height: 1;
 }
 
 .badge--dead {
@@ -1389,10 +1458,10 @@ ul.combat-action-roster {
   color: var(--err);
 }
 
-/* 「传递」：敌方手牌里来自我方阵营的牌（我方递过去的）——自定义概念，给个强调色 */
+/* 「传递」：敌方手牌里来自我方阵营的牌（我方塞过去的）——与三种词缀颜色都不同 */
 .badge--transfer {
-  border-color: var(--fg);
-  color: var(--fg);
+  border-color: var(--transfer);
+  color: var(--transfer);
   font-weight: 600;
 }
 
@@ -1538,6 +1607,8 @@ ul.combat-action-roster {
   gap: 0.6rem;
   min-width: 0;
   overflow: hidden;
+  /* 比左右两列往下错开一大段：中间手牌在视觉上抬出来 */
+  margin-top: 5rem;
 }
 
 ul.combat-hand-list {

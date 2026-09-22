@@ -121,6 +121,8 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(paper);
     const deck = await screen.findByRole("dialog", { name: "牌组" });
     expect(within(deck).getByText("纸人 · 共 3 张")).toBeInTheDocument();
+    // 牌组一律不显示来源（牌必属持有者），即使 mock 里混了别家的牌
+    expect(within(deck).queryByText(/来源：/)).not.toBeInTheDocument();
   });
 
   it("战斗的宏观状态收在 ⚙「副本操作」里：一行「战斗信息」写着状态 / 回合 / 结果，点开看全部回合", async () => {
@@ -215,6 +217,10 @@ describe("副本房间 · 战斗房间", () => {
     const handDialog = await screen.findByRole("dialog", { name: "手牌" });
     expect(within(handDialog).getByText("棺中殭尸 · 共 5 张")).toBeInTheDocument();
     expect(within(handDialog).getAllByText("[塞牌]")).toHaveLength(2);
+    // 手牌只显示"不是自己的"来源（剖棺 / 钉棺 来自我方），自己的 / 空来源不显示
+    expect(within(handDialog).getAllByText("来源：角色.无名")).toHaveLength(2);
+    // 卡面词缀是一枚标记（`[入木]`），点开才看全文
+    expect(within(handDialog).getByRole("button", { name: "[入木]" })).toBeInTheDocument();
     fireEvent.click(within(handDialog).getByRole("button", { name: "查看卡牌：钉棺" }));
     expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
   });

@@ -12,9 +12,12 @@ import type { Card } from "./types";
  * 牌组与手牌本质是同一个东西的两种来源（一个人的一组牌），所以只在 `title` / 空态文案上区分，
  * 渲染逻辑一份——否则同一张卡在两个浮窗里迟早会长得不一样。
  *
- * 卡面是**紧凑版**：一行最多三张、所有行严格等高（`.card-tiles--deck`），词缀只给 `[名称]`；
- * 点某张卡再叠出**三级** `CardDetailDialog` 看完整信息（词缀全文）。三级开着时本层的关闭
+ * 卡面是**紧凑版**：一行最多三张、所有行严格等高（`.card-tiles--deck`），词缀只给 `[名称]` 标记
+ * （点标记或整张卡都叠出**三级** `CardDetailDialog` 看完整信息）。三级开着时本层的关闭
  * （含 ESC）不响应，避免一次 ESC 连关两层。
+ *
+ * **来源显示**：牌组（`hideSource`）一律不显示（牌必属持有者）；手牌（`owner`）只在不是自己的牌
+ * （【塞牌】）时才显示来源。
  *
  * 面板宽度用 `Modal` 的 `size="fit"` 随卡数收缩（1 张 ~240px、3 张 ~670px），卡少也不留一片空；
  * 列数由 `card-tiles--deck-N`（N = min(卡数, 3)）给出，网格才能算得准内容宽度。
@@ -25,6 +28,8 @@ export default function CardListDialog({
   cards,
   emptyText,
   cardBadge,
+  hideSource = false,
+  owner,
   onClose,
 }: {
   /** 浮窗标题（「牌组」/「手牌」）。 */
@@ -36,6 +41,10 @@ export default function CardListDialog({
   emptyText: string;
   /** 给单张卡额外挂一枚标记（如手牌里的【塞牌】）；不给就不挂。 */
   cardBadge?: (card: Card) => ReactNode;
+  /** 一律不显示来源（牌组）。 */
+  hideSource?: boolean;
+  /** 持有者原始名：只在 `source !== owner` 时显示来源（手牌）。 */
+  owner?: string;
   onClose: () => void;
 }) {
   /** 三级浮窗正开着的卡；`null` 表示只在这层。 */
@@ -66,6 +75,8 @@ export default function CardListDialog({
                 card={card}
                 affixes="names"
                 badge={cardBadge?.(card)}
+                hideSource={hideSource}
+                owner={owner}
                 onSelect={setOpenedCard}
               />
             ))}

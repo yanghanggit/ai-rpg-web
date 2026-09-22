@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Schemas } from "../../../api/types";
+import CardDetailDialog from "../../cards/CardDetailDialog";
 import CardItem from "../../cards/CardItem";
 import CardListDialog from "../../cards/CardListDialog";
 import type { Card } from "../../cards/types";
@@ -52,6 +53,8 @@ export default function CombatTurnPanel({
   // 名单卡上的两个只读浮窗（角色信息 / 手牌）：同时只开一个
   const [infoActor, setInfoActor] = useState<string | null>(null);
   const [handActor, setHandActor] = useState<string | null>(null);
+  // 手牌上点词缀 → 叠一层卡牌详情
+  const [detailCard, setDetailCard] = useState<Card | null>(null);
   // 换行动角色就清掉上一张选中的牌（React 的「props 变了就重置 state」写法，不用 effect）：
   // 同一回合里 party → monster 组件不卸载，必须显式重置，否则残留的选中会指到新角色的手牌上。
   const [lastActor, setLastActor] = useState(currentActor);
@@ -154,7 +157,10 @@ export default function CombatTurnPanel({
                   <CardItem
                     key={card.uuid}
                     card={card}
+                    affixes="names"
                     selected={card.uuid === selectedUuid}
+                    owner={current.name}
+                    onAffixClick={setDetailCard}
                     selectAriaLabel={
                       isMonster
                         ? `查看手牌：${card.name}`
@@ -256,6 +262,7 @@ export default function CombatTurnPanel({
           actorName={handActor}
           cards={handOwner?.hand ?? []}
           emptyText="（手牌为空）"
+          owner={handActor}
           // 敌方手里来自我方阵营的牌 → 标「[塞牌]」（即"我方塞过去的"）
           cardBadge={(card) =>
             handOwner !== null && isTransferredCard(card, handOwner, combatants) ? (
@@ -266,6 +273,11 @@ export default function CombatTurnPanel({
           }
           onClose={() => setHandActor(null)}
         />
+      )}
+
+      {/* 手牌上点词缀标记叠出的卡牌详情（词缀全文） */}
+      {detailCard === null ? null : (
+        <CardDetailDialog card={detailCard} onClose={() => setDetailCard(null)} />
       )}
     </>
   );
