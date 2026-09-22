@@ -72,6 +72,7 @@ export default function CardItem({
   onSelect,
   selected = false,
   selectAriaLabel,
+  badge,
 }: {
   card: Card;
   action?: ReactNode;
@@ -85,12 +86,15 @@ export default function CardItem({
   selected?: boolean;
   /** 无障得名字；不给就用「查看卡牌：xxx」（`onSelect` 的默认语义）。 */
   selectAriaLabel?: string;
+  /** 调用方额外要挂在卡头的一枚标记（如敌方手牌里来自我方的【塞牌】）。 */
+  badge?: ReactNode;
 }) {
   const content = (
     <>
       <div className="card-tile-head">
         <span className="card-tile-name">{card.name}</span>
         {claimed ? <span className="badge badge--claimed">已领取</span> : null}
+        {badge}
         {flagLabels(card).map((label) => (
           <span key={label} className="badge">
             {label}

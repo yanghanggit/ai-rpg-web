@@ -15,6 +15,8 @@ describe("readDungeonInfo", () => {
     expect(info.rooms[1]?.monsters.map((monster) => monster.name)).toEqual([
       "怪物.纸人",
       "怪物.棺中殭尸",
+      "怪物.纸傀儡",
+      "怪物.吊死鬼",
     ]);
   });
 

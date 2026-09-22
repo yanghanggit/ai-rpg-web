@@ -136,7 +136,7 @@ export default function RoomScaffold({
       : "副本操作";
 
   return (
-    <main className="page page--wide">
+    <main className="page page--wide page--room">
       {/* 标题行：齿轮图标紧贴标题右侧，留出正文空间（与卡片右上角 .card-info-button 同一套做法） */}
       <div className="page-head">
         <h1>

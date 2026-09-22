@@ -81,6 +81,29 @@ export function computeHandBlock(cards: Card[]): number {
   return cards.reduce((sum, card) => sum + card.block, 0);
 }
 
+/** 手牌里「被命中时」（`on_hit_affixes`）词缀的条数。 */
+export function countOnHitAffixes(combatant: Combatant): number {
+  return combatant.hand.reduce((total, card) => total + card.on_hit_affixes.length, 0);
+}
+
+/**
+ * 一张牌是不是「**我方塞到敌方手里**」的：持牌者是敌方（怪物），而 `source` 是我方成员。
+ *
+ * 我方成员自己手里的牌（哪怕 `source` 也是我方）**不算**——那是本家牌，不是
+ * "塞牌"（界面标 [塞牌]）。这是给当前决策者看的一个信号：对手手里有没有、有几张是我方塞过去的。
+ */
+export function isTransferredCard(card: Card, owner: Combatant, combatants: Combatant[]): boolean {
+  if (owner.faction !== "monster") {
+    return false;
+  }
+  return combatants.some((other) => other.name === card.source && other.faction === "party");
+}
+
+/** 手牌里来自我方阵营的牌数（即"我方塞过去的"，界面标 [塞牌]）。 */
+export function countTransferredCards(combatant: Combatant, combatants: Combatant[]): number {
+  return combatant.hand.filter((card) => isTransferredCard(card, combatant, combatants)).length;
+}
+
 function countCards(entity: Entity, componentName: ComponentName): number {
   const data = getComponentData(entity, componentName);
   if (data === undefined || !Array.isArray(data.cards)) {

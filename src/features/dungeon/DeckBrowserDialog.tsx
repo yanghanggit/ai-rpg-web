@@ -2,8 +2,8 @@ import { useState } from "react";
 import type { Schemas } from "../../api/types";
 import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
+import CardListDialog from "../cards/CardListDialog";
 import type { Card } from "../cards/types";
-import DeckDialog from "./DeckDialog";
 import { useDungeonDecks } from "./useDungeonDecks";
 
 /**
@@ -24,7 +24,7 @@ interface PickedDeck {
 
 /**
  * 「牌组一览」浮窗：**一级**列出**本间**双方——我方队伍（玩家排在第一位）与本间场景里的怪物，
- * 点某一行叠出**二级** `DeckDialog` 看该角色的牌组（再点卡则是 `DeckDialog` 自己管的三级卡牌详情）。
+ * 点某一行叠出**二级** `CardListDialog`（标题「牌组」）看该角色的牌组（再点卡则是它自己管的三级卡牌详情）。
  *
  * 数据来自 `useDungeonDecks`（队伍复用 `useDungeonParty`；怪物以当前房间 `room.stage.actors`
  * 覆盖——`setup_dungeon` 会一次建出副本所有房间的怪物，所以必须按房间过滤，见该 hook 注释）。
@@ -124,7 +124,13 @@ export default function DeckBrowserDialog({
       </Modal>
 
       {picked !== null ? (
-        <DeckDialog memberName={picked.name} cards={picked.deck} onClose={() => setPicked(null)} />
+        <CardListDialog
+          title="牌组"
+          actorName={picked.name}
+          cards={picked.deck}
+          emptyText="（牌组为空）"
+          onClose={() => setPicked(null)}
+        />
       ) : null}
     </>
   );

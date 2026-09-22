@@ -61,6 +61,11 @@ body {
   .page--wide {
     max-width: 1180px;
   }
+
+  /* 副本房间正文：再宽一截——左右资源列贴到两边，中间手牌才有地方铺开 */
+  .page--room {
+    max-width: 1800px;
+  }
 }
 
 /* 大厅页布局：桌面基线以上左右双栏（左表单 / 右蓝图详情） */
@@ -1347,25 +1352,48 @@ ul.combat-action-roster {
   opacity: 0.55;
 }
 
-.combatant-card--dead {
-  opacity: 0.45;
-}
-
 /* 可选目标：橙框（这一步会指定手牌的目标）；整卡可点的透明按钮复用 .actor-card-open */
 .combatant-card--pick {
   border-color: var(--warn);
 }
 
-.combatant-card-affixes {
-  /* 压到卡底（与 ActorCard 把动作压到底同一手法），卡片不至于头重脚轻 */
-  margin: auto 0 0;
-  font-size: 0.85rem;
+/* 卡底常驻按钮（看该角色手牌）：有受击词缀就是词缀，没有就是「查看」；
+   抬到「整卡可点」那层之上（与 .actor-card .card-actions button 同一手法） */
+.combatant-card-hand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
+  margin-top: auto;
+  padding: 0.3rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  text-align: left;
+}
+
+.combatant-card-hand-text {
+  min-width: 0;
   line-height: 1.5;
+}
+
+.combatant-card-hand-chevron {
+  color: var(--muted);
+  line-height: 1;
 }
 
 .badge--dead {
   border-color: var(--err);
   color: var(--err);
+}
+
+/* 「传递」：敌方手牌里来自我方阵营的牌（我方递过去的）——自定义概念，给个强调色 */
+.badge--transfer {
+  border-color: var(--fg);
+  color: var(--fg);
+  font-weight: 600;
 }
 
 /* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆 */
@@ -1377,14 +1405,30 @@ ul.combat-action-roster {
   margin-top: 1.5rem;
 }
 
-/* 行动区左右两列：都以手牌卡的足迹高度（--card-tall）为基准高，块间用 space-between 均分，
-   整行左右两侧读成同一条 */
-.combat-resources,
-.combat-piles {
-  display: flex;
-  flex-direction: column;
+/* 行动区左右两列都以手牌卡的足迹高度（--card-tall）为基准高，整行左右两侧读成同一条 */
+.combat-resources {
+  /* 左列 2×2：HP / 能量 / 总格挡 / 抽牌堆 */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  justify-items: center;
+  align-content: space-evenly;
+  gap: 0.5rem;
+  width: 11.5rem;
   min-height: var(--card-tall);
-  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.combat-piles {
+  /* 右列也是 2×2（与左列同宽）：上排「过牌」（接近方块的块状按钮）+ 消耗牌堆，下排弃牌堆 */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-content: space-evenly;
+  justify-items: center;
+  gap: 0.5rem;
+  width: 11.5rem;
+  min-height: var(--card-tall);
   margin: 0;
   padding: 0;
   list-style: none;
@@ -1413,9 +1457,9 @@ ul.combat-action-roster {
 .res-gem {
   display: grid;
   place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  font-size: 1rem;
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--fg);
 }
@@ -1424,14 +1468,14 @@ ul.combat-action-roster {
   position: relative;
   display: grid;
   place-items: center;
-  width: 4.25rem;
-  height: 2.75rem;
-  font-size: 1rem;
+  width: 4.5rem;
+  height: 3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--fg);
   background: color-mix(in srgb, var(--ok) 20%, transparent);
   border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
-  border-radius: 50% / 0.6rem;
+  border-radius: 50% / 0.65rem;
 }
 
 /* 圆柱顶面：一条椭圆，读作「一摞牌」 */
@@ -1439,7 +1483,7 @@ ul.combat-action-roster {
   content: "";
   position: absolute;
   inset: 0 0 auto;
-  height: 0.8rem;
+  height: 0.9rem;
   border-radius: 50%;
   background: color-mix(in srgb, var(--ok) 35%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
@@ -1456,7 +1500,7 @@ ul.combat-action-roster {
 }
 
 .res--hp .res-value {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--fg);
 }
@@ -1493,11 +1537,14 @@ ul.combat-action-roster {
   flex-direction: column;
   gap: 0.6rem;
   min-width: 0;
+  overflow: hidden;
 }
 
 ul.combat-hand-list {
   display: flex;
   gap: 0.9rem;
+  width: 100%;
+  min-width: 0;
   margin: 0;
   padding: 0 0 0.5rem;
   list-style: none;
@@ -1525,16 +1572,19 @@ ul.combat-hand-list .card-tile--selected {
   min-height: 2.2rem;
 }
 
-/* 右列的收尾动作：给足按钮感（深色实心图标 + 描边/底色），不再只是一行文字 */
+/* 过牌 / 推进：接近方块的块状按钮（图标在上、短词在下），与左侧资源部件同一副体量 */
 .combat-pass {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   width: 100%;
-  padding: 0.7rem 1rem;
+  min-height: 4.5rem;
+  padding: 0.5rem 0.35rem;
   border: 1px solid var(--fg);
   border-radius: 10px;
+  font-size: 0.85rem;
   font-weight: 700;
   background: color-mix(in srgb, var(--fg) 8%, transparent);
 }

@@ -29,6 +29,8 @@ type Entity = Schemas["EntitySerialization"];
 const PLAYER = blueprintFixture.player_actor;
 const MONSTER_1 = "怪物.纸人";
 const MONSTER_2 = "怪物.棺中殭尸";
+const MONSTER_3 = "怪物.纸傀儡";
+const MONSTER_4 = "怪物.吊死鬼";
 const COMBAT_STAGE = "场景.停柩房";
 
 /** 进入副本并推进到战斗房间：队伍固化 + 战斗复位为 INITIALIZATION。 */
@@ -62,13 +64,25 @@ describe("进入战斗房间", () => {
     enterCombat();
     expect(readMockCombat().state).toBe(1);
     expect(readMockCombat().rounds).toEqual([]);
-    expect(readMockCombatParticipants()).toEqual([PLAYER, MONSTER_1, MONSTER_2]);
+    expect(readMockCombatParticipants()).toEqual([
+      PLAYER,
+      MONSTER_1,
+      MONSTER_2,
+      MONSTER_3,
+      MONSTER_4,
+    ]);
   });
 
   it("队伍与怪物被搬进战斗场景，队伍离开家园场景", () => {
     enterCombat();
     const actorsByStage = readMockStages().actors_by_stage;
-    expect(actorsByStage[COMBAT_STAGE]).toEqual([PLAYER, MONSTER_1, MONSTER_2]);
+    expect(actorsByStage[COMBAT_STAGE]).toEqual([
+      PLAYER,
+      MONSTER_1,
+      MONSTER_2,
+      MONSTER_3,
+      MONSTER_4,
+    ]);
     expect(actorsByStage["场景.门厅"]).not.toContain(PLAYER);
   });
 });
@@ -90,7 +104,7 @@ describe("初始化 / 抓牌", () => {
     const round = readMockCombat().rounds[0];
     expect(round?.draw_completed).toBe(true);
     expect(round?.current_actor).toBe(PLAYER);
-    expect(round?.action_order).toEqual([PLAYER, MONSTER_1, MONSTER_2]);
+    expect(round?.action_order).toEqual([PLAYER, MONSTER_1, MONSTER_2, MONSTER_3, MONSTER_4]);
     // 同一回合不能重复抓牌
     expect(drawMockCards().ok).toBe(false);
   });
@@ -105,7 +119,7 @@ describe("回合行动", () => {
 
   it("出牌记日志 / 叙事并把卡从手牌移到弃牌堆", () => {
     startRound();
-    expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(3);
+    expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(5);
 
     expect(playMockCards(PLAYER, "剖棺", [MONSTER_1])).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
@@ -113,7 +127,7 @@ describe("回合行动", () => {
     expect(round?.cards_narrative).toHaveLength(1);
 
     const after = actorEntity(PLAYER);
-    expect(componentData(after, COMPONENT.Hand)?.cards).toHaveLength(2);
+    expect(componentData(after, COMPONENT.Hand)?.cards).toHaveLength(4);
     expect(componentData(after, COMPONENT.DiscardPile)?.cards).toHaveLength(1);
   });
 

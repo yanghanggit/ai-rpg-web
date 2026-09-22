@@ -22,6 +22,12 @@ import { addMockRosterMember } from "./roster";
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
 const DUNGEON = "副本.荒村义庄";
 
+/** 演示用：进副本前把队伍补满（队伍在进入那一刻固化，必须在 enter 之前调用）。 */
+function fillParty(): void {
+  addMockRosterMember("角色.顾知秋");
+  addMockRosterMember("角色.小厮");
+}
+
 /** token → 「造出该阶段」的一串 mock 调用（每个 token 覆盖一个 `deriveCombatPhase` 分支）。 */
 const SEEDS: Record<string, () => void> = {
   // OPENING：刚进入副本的开场房间，**未初始化**（进入房间那一刻才自动跑初始化）
@@ -54,24 +60,26 @@ const SEEDS: Record<string, () => void> = {
   // OPENING：队伍里有同伴（用于看 / 调试「牌组」浏览：一级名单里有三个角色）
   "party:full": () => {
     // 名单必须在 enter 之前补：队伍是进副本那一刻固化的
-    addMockRosterMember("角色.顾知秋");
-    addMockRosterMember("角色.小厮");
+    fillParty();
     enterMockDungeon(DUNGEON);
     initMockOpening();
   },
   // INITIALIZATION：刚推进到战斗房间，等待初始化
   "combat:init": () => {
+    fillParty();
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
   },
   // ONGOING 且无回合：等待「抓牌 / 开启新回合」
   "combat:round_start": () => {
+    fillParty();
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     initMockCombat();
   },
   // ONGOING 且回合已抓牌：轮到某个角色行动
   "combat:turn": () => {
+    fillParty();
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     initMockCombat();
@@ -79,6 +87,7 @@ const SEEDS: Record<string, () => void> = {
   },
   // POST_COMBAT：结算态（胜利 + 战利品 + 怪物战死）
   "combat:post": () => {
+    fillParty();
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     prepareMockPostCombat();

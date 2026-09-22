@@ -53,6 +53,8 @@ export default function CombatRoomPanel({
 
       {phase === "turn" ? (
         <CombatTurnPanel
+          userName={userName}
+          gameName={gameName}
           combat={room.combat}
           combatants={scene.combatants}
           currentActor={currentActor}

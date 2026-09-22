@@ -53,10 +53,10 @@ describe("副本房间 · 战斗房间", () => {
     // 进入战斗房间自动初始化；成功后开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByText(/抓牌以开启第一回合/)).not.toBeInTheDocument();
-    // 参战者：队友不入队时只有玩家 + 两个怪物
+    // 参战者：队友不入队时只有玩家 + 四个怪物
     expect(await screen.findByText("纸人")).toBeInTheDocument();
     expect(screen.getByText("棺中殭尸")).toBeInTheDocument();
-    expect(screen.getAllByText("怪物")).toHaveLength(2);
+    expect(screen.getAllByText("怪物")).toHaveLength(4);
 
     // 开始 = 抓牌：直接落到玩家回合（第一回合有了；初始化是自动跑的）
     fireEvent.click(screen.getByRole("button", { name: "开始!" }));
@@ -111,7 +111,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(await within(list).findByRole("heading", { name: "我方" })).toBeInTheDocument();
     expect(await within(list).findByRole("button", { name: /无名/ })).toHaveTextContent("玩家");
 
-    // 敌方：本间（停柩房）的两个怪物与我方同列，且持有牌组
+    // 敌方：本间（停柩房）的怪物与我方同列，且持有牌组
     expect(await within(list).findByRole("heading", { name: "敌方" })).toBeInTheDocument();
     const paper = await within(list).findByRole("button", { name: /纸人/ });
     expect(paper).toHaveTextContent("怪物");
@@ -189,6 +189,36 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
+  it("名单卡可点开角色信息；卡底按钮只给 [被动] / [塞牌] 数量，点开看手牌", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+
+    // 卡底常驻按钮只给数量；怪物才多一项「[塞牌]」
+    const paperHand = await screen.findByRole("button", { name: "查看手牌：纸人" });
+    expect(paperHand).toHaveTextContent("[被动] 1");
+    expect(paperHand).toHaveTextContent("[塞牌] 1");
+    const corpseHand = screen.getByRole("button", { name: "查看手牌：棺中殭尸" });
+    expect(corpseHand).toHaveTextContent("[被动] 1");
+    expect(corpseHand).toHaveTextContent("[塞牌] 2");
+    // 我方自己那格不出现「[塞牌]」
+    expect(screen.getByRole("button", { name: "查看手牌：无名" })).not.toHaveTextContent("[塞牌]");
+
+    // 整卡可点 → 角色信息
+    fireEvent.click(screen.getByRole("button", { name: "查看角色：纸人" }));
+    const info = await screen.findByRole("dialog", { name: "角色信息" });
+    await within(info).findByText("属性");
+    fireEvent.click(within(info).getByRole("button", { name: "关闭" }));
+
+    // 卡底按钮 → 该角色手牌：来自我方阵营的牌标「[塞牌]」，再点卡进三级卡牌详情
+    fireEvent.click(corpseHand);
+    const handDialog = await screen.findByRole("dialog", { name: "手牌" });
+    expect(within(handDialog).getByText("棺中殭尸 · 共 5 张")).toBeInTheDocument();
+    expect(within(handDialog).getAllByText("[塞牌]")).toHaveLength(2);
+    fireEvent.click(within(handDialog).getByRole("button", { name: "查看卡牌：钉棺" }));
+    expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
+  });
+
   it("出牌：点手牌选中 → 点名单里的目标 → 打出（记录改在 ⚙ 战斗信息里看）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
@@ -210,7 +240,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(info).getByText(/使用『剖棺』对 怪物.纸人/)).toBeInTheDocument();
   });
 
-  it("过牌推进到怪物；推进怪物回合结束后回到开始新回合", async () => {
+  it("过牌推进到怪物；四只怪物推完后回到开始新回合", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -219,13 +249,13 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
     await waitFor(() => expect(within(currentCombatant()).getByText("纸人")).toBeInTheDocument());
 
-    // 第一只怪物 → 第二只怪物：等行动者真的换了再点，避免点到忙碌中的按钮
-    fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
-    await waitFor(() =>
-      expect(within(currentCombatant()).getByText("棺中殭尸")).toBeInTheDocument(),
-    );
+    // 依次推完四只怪物：等行动者真的换了再点下一颗，避免点到忙碌中的按钮
+    for (const name of ["棺中殭尸", "纸傀儡", "吊死鬼"]) {
+      fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+      await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
+    }
 
-    // 第二只怪物 → 全员行动完，回准备屏（已有回合 → 按钮改成「开始新回合」）
+    // 最后一只推完 → 全员行动完，回准备屏（已有回合 → 按钮改成「开始新回合」）
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
     expect(await screen.findByRole("button", { name: "开始新回合" })).toBeInTheDocument();
   });
@@ -243,8 +273,8 @@ describe("副本房间 · 战斗房间", () => {
     // 战利品走 ItemRow：显示名 + 数量后缀 + 中文类型
     expect(screen.getByText("腐骨 ×2")).toBeInTheDocument();
     expect(screen.getByText("材料")).toBeInTheDocument();
-    // 两只怪物都已战死
-    expect(screen.getAllByText("已战死")).toHaveLength(2);
+    // 四只怪物都已战死
+    expect(screen.getAllByText("已战死")).toHaveLength(4);
   });
 
   it("结算：收取战利品后列表清空、按钮禁用", async () => {

@@ -39,8 +39,8 @@ const RESULT_LOSE = 2;
 
 /** 每回合起始能量（真实后端由 `CharacterStats` 初始化，mock 给固定值）。 */
 const MOCK_ENERGY = 3;
-/** 每回合每人抓牌张数。 */
-const MOCK_DRAW_PER_TURN = 3;
+/** 每回合每人抓牌张数（故意大于 3，方便看手牌横向滚动 / 超过三张的排布）。 */
+const MOCK_DRAW_PER_TURN = 5;
 
 /** 单个参战者的战斗组件状态（手牌 / 三个牌堆 / 能量）。 */
 interface BattleActor {

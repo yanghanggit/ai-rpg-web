@@ -492,6 +492,18 @@ export const dungeonFixture: Schemas["Dungeon"] = {
           },
           "（mock）棺木爆开处爬出的殭尸，浑身裹着霉烂的殓布，指爪青黑。",
         ),
+        dungeonActor(
+          "怪物.纸傀儡",
+          "Monster",
+          { hp: 7, max_hp: 7, attack: 2, defense: 0 },
+          "（mock）一具提线纸傀儡，关节用麻绳系着，走起来哔哒作响。",
+        ),
+        dungeonActor(
+          "怪物.吊死鬼",
+          "Monster",
+          { hp: 12, max_hp: 12, attack: 4, defense: 1 },
+          "（mock）悬在梁上的吊死鬼，脚不沾地，脖颈勒出一道乌痕。",
+        ),
       ]),
     },
   ],
@@ -743,12 +755,29 @@ export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleav
  * 所以「牌组一览」要能读到它们。只列 `dungeonFixture` 里出现的怪物；未列出的用默认牌组。
  */
 export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
-  "怪物.纸人": [cardFixtures.paper, cardFixtures.spark, cardFixtures.ward],
+  // 前几张混入「来自我方阵营」的牌（`source` 是我方成员）+ 带 `on_hit` 词缀的牌，
+  // 这样 `dev:mock` 下能一眼看到名单卡上的 [被动] / [塞牌]（见种子 `combat:turn`）。
+  "怪物.纸人": [cardFixtures.nail, cardFixtures.paper, cardFixtures.ward],
   "怪物.棺中殭尸": [
     cardFixtures.cleave,
     cardFixtures.breath,
     cardFixtures.nail,
     cardFixtures.shroud,
+    cardFixtures.bell,
+  ],
+  "怪物.纸傀儡": [
+    cardFixtures.nail,
+    cardFixtures.sweep,
+    cardFixtures.ward,
+    cardFixtures.shroud,
+    cardFixtures.paper,
+  ],
+  "怪物.吊死鬼": [
+    cardFixtures.nail,
+    cardFixtures.bell,
+    cardFixtures.chant,
+    cardFixtures.mirror,
+    cardFixtures.ward,
   ],
 };
 
