@@ -7,8 +7,48 @@ import CardListDialog from "../../cards/CardListDialog";
 import type { Card } from "../../cards/types";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import CombatActionRoster from "./CombatActionRoster";
-import { type Combatant, readTargetNames } from "./readCombat";
+import { type Combatant, type CombatPileKind, readTargetNames } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
+
+/** 三个牌堆的界面说法（键与 `Combatant["piles"]` 同名）。 */
+const PILE_LABELS: Record<CombatPileKind, string> = {
+  draw: "抽牌堆",
+  exhaust: "消耗牌堆",
+  discard: "弃牌堆",
+};
+
+/**
+ * 一个牌堆（圆柱 + 名称）。
+ *
+ * 与同一列的 HP / 能量 / 格挡不同，这三个牌堆是**可点的**（打开这一撑的卡牌列表），所以它自带
+ * 一颗按钮的完整描边（css `.res--pile`）——「可点」与「只读」在同一列里一眼分得开。
+ */
+function PileButton({
+  kind,
+  cards,
+  onOpen,
+}: {
+  kind: CombatPileKind;
+  cards: Card[];
+  onOpen: () => void;
+}) {
+  const label = PILE_LABELS[kind];
+  return (
+    <li className="combat-pile">
+      <button
+        type="button"
+        className="res res--pile"
+        // 无障碍名带上张数：与圆柱里那个数字一致，不必先点开才知道有几张
+        aria-label={`查看${label}（${cards.length} 张）`}
+        title={`查看${label}`}
+        onClick={onOpen}
+      >
+        <span className="res-cylinder">{cards.length}</span>
+        <span className="res-label">{label}</span>
+      </button>
+    </li>
+  );
+}
 
 /**
  * 中间那条提示里「目标」的说法：`all` 直接列全体；`spread` 是同一批人 + 「随机命中」。
@@ -37,6 +77,10 @@ function targetHint(card: Card, targets: string[]): string {
  * 名单卡还挂着两个**只读**入口（不影响出牌）：点整张卡开**角色信息**（`ActorInfoDialog`）；
  * 点卡底那行**平铺的文本**开**手牌**（`CardListDialog`，可再点卡进三级卡牌详情）——
  * 自己与对方都能看，口径统一。
+ *
+ * 左右两列里那三个**牌堆也是按钮**（抽牌堆 / 消耗牌堆 / 弃牌堆）：点开看这一摞到底是哪些牌。
+ * 它们与手牌 / 牌组共用 `CardListDialog`，只是换了标题与内容（`owner` 用当前行动者，
+ * 所以【塞牌】照样能认出来）。
  *
  * 我方与怪物**共用同一套版面**：怪物的手牌是 AI 控制的只读态（不可点选），右下那颗动作由
  * 「过牌」换成「推进怪物回合」。
@@ -71,6 +115,8 @@ export default function CombatTurnPanel({
   const [handActor, setHandActor] = useState<string | null>(null);
   // 中间那条的「查看」按下的卡 → 叠一层卡牌详情（手牌里整卡点击是"选中"，看详情另给入口）
   const [viewCard, setViewCard] = useState<Card | null>(null);
+  // 正开着的牌堆浮窗（抽牌 / 消耗 / 弃牌）；三个都是当前行动者自己的牌堆
+  const [pile, setPile] = useState<CombatPileKind | null>(null);
   // 换行动角色就把两次选择都清掉（React 的「props 变了就重置 state」写法，不用 effect）：
   // 同一回合里 party → monster 组件不卸载，必须显式重置，否则残留的选中会指到新角色的手牌上。
   const [lastActor, setLastActor] = useState(currentActor);
@@ -162,10 +208,7 @@ export default function CombatTurnPanel({
               <span className="res-gem">{current.block}</span>
               <span className="res-label">总格挡</span>
             </li>
-            <li className="res res--pile">
-              <span className="res-cylinder">{current.piles.draw}</span>
-              <span className="res-label">抽牌堆</span>
-            </li>
+            <PileButton kind="draw" cards={current.piles.draw} onOpen={() => setPile("draw")} />
           </ul>
 
           {/* 中间：出牌状态条（占中列顶部那个空出来的场景卡位）+ 手牌横滑 */}
@@ -289,14 +332,16 @@ export default function CombatTurnPanel({
                     : "过牌"}
               </button>
             </li>
-            <li className="res res--pile">
-              <span className="res-cylinder">{current.piles.exhaust}</span>
-              <span className="res-label">消耗牌堆</span>
-            </li>
-            <li className="res res--pile">
-              <span className="res-cylinder">{current.piles.discard}</span>
-              <span className="res-label">弃牌堆</span>
-            </li>
+            <PileButton
+              kind="exhaust"
+              cards={current.piles.exhaust}
+              onOpen={() => setPile("exhaust")}
+            />
+            <PileButton
+              kind="discard"
+              cards={current.piles.discard}
+              onOpen={() => setPile("discard")}
+            />
           </ul>
         </div>
 
@@ -322,6 +367,18 @@ export default function CombatTurnPanel({
           emptyText="（手牌为空）"
           owner={handActor}
           onClose={() => setHandActor(null)}
+        />
+      )}
+
+      {/* 牌堆浮窗：与牌组 / 手牌同一个 `CardListDialog`（同一套卡面 + 三级详情），只换标题与内容 */}
+      {pile === null ? null : (
+        <CardListDialog
+          title={PILE_LABELS[pile]}
+          actorName={current.name}
+          cards={current.piles[pile]}
+          emptyText={`（${PILE_LABELS[pile]}为空）`}
+          owner={current.name}
+          onClose={() => setPile(null)}
         />
       )}
 

@@ -347,6 +347,36 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(detail).getByText(/命中后可以再摸一张/)).toBeInTheDocument();
   });
 
+  it("三个牌堆都是按钮：点开是这一摞的卡牌列表（与手牌 / 牌组同一个浮窗）", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    await screen.findByRole("list", { name: "手牌" });
+
+    // 按钮就那么一颗（圆柱 + 名称），无障碍名里带着张数——不必先点开才知道有几张
+    const drawButton = screen.getByRole("button", { name: "查看抽牌堆（4 张）" });
+    expect(drawButton).toHaveClass("res", "res--pile");
+    expect(drawButton.closest("li")).toHaveClass("combat-pile");
+
+    // 无名 9 张牌抓走 5 张（`MOCK_DRAW_PER_TURN`），抽牌堆剩 4 张
+    fireEvent.click(drawButton);
+    const draw = await screen.findByRole("dialog", { name: "抽牌堆" });
+    expect(within(draw).getByText("无名 · 共 4 张")).toBeInTheDocument();
+    expect(within(draw).getAllByRole("listitem")).toHaveLength(4);
+    // 与牌组 / 手牌共用一套卡面（行数封顶写在样式里，jsdom 量不到）
+    expect(within(draw).getByRole("list")).toHaveClass("card-tiles--deck");
+    // 牌堆也是「整卡点开三级详情」那一套
+    fireEvent.click(within(draw).getByRole("button", { name: "查看卡牌：钉棺" }));
+    expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
+    fireEvent.keyDown(document, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    // 空牌堆：给一句空态，而不是一片空白
+    fireEvent.click(screen.getByRole("button", { name: "查看弃牌堆（0 张）" }));
+    const discard = await screen.findByRole("dialog", { name: "弃牌堆" });
+    expect(within(discard).getByText("（弃牌堆为空）")).toBeInTheDocument();
+  });
+
   it("all / spread：选一个锚点 = 整阵营都压下；spread 的提示多一句「随机」", async () => {
     server.use(instantTasks());
     renderCombatRoom();

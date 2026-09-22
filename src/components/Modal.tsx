@@ -21,9 +21,10 @@ export default function Modal({
   /** 标题右侧的补充信息，如「共 12 条」。 */
   meta?: string;
   /** 面板宽度变体；`sm` 给内容少的菜单类浮窗（避免右侧大片留白）；
-   *  `fit` 给内容宽度会变的浮窗（如牌组：卡少就窄，卡多就撑到 680px）；
+   *  `cards` 给卡牌列表浮窗（牌组 / 手牌 / 牌堆）：宽度以**卡牌为度量**（正好三张卡），
+   *  不跟着卡数变——三个浮窗打开就是同一个框，位置不必重新找；
    *  `lg` 给内容多的浮窗（如地图：整份房间与敌人清单）。 */
-  size?: "default" | "sm" | "fit" | "lg";
+  size?: "default" | "sm" | "cards" | "lg";
   onClose: () => void;
   children: ReactNode;
 }) {

@@ -11,7 +11,7 @@ import type { Card } from "./types";
  * 牌组与手牌本质是同一个东西的两种来源（一个人的一组牌），所以只在 `title` / 空态文案上区分，
  * 渲染逻辑一份——否则同一张卡在两个浮窗里迟早会长得不一样。
  *
- * 卡面是**紧凑版**：一行最多三张、所有行严格等高（`.card-tiles--deck`）。**整张卡点开三级**
+ * 卡面是**紧凑版**：三列、行高一致（`.card-tiles--deck`，卡面用短边足迹）。**整张卡点开三级**
  * `CardDetailDialog`（左栏卡面 / 右栏逐条展开）；**点标记 chip 只弹 tooltip**说明那一枚
  * （`CardItem` 自带；详情里才改成定位右栏那一条）。三级开着时本层的关闭（含 ESC）不响应，
  * 避免一次 ESC 连关两层。
@@ -19,8 +19,9 @@ import type { Card } from "./types";
  * **来源显示**：牌组（`hideSource`）一律不显示（牌必属持有者）；手牌（`owner`）只在不是自己的牌
  * （【塞牌】）时才显示来源。
  *
- * 面板宽度用 `Modal` 的 `size="fit"` 随卡数收缩（1 张 ~240px、3 张 ~670px），卡少也不留一片空；
- * 列数由 `card-tiles--deck-N`（N = min(卡数, 3)）给出，网格才能算得准内容宽度。
+ * **固定尺寸，不跟着卡数走**（`Modal` 的 `size="cards"`）：宽正好三张卡、高正好三行
+ * （`--card-list-w` / `--card-list-h`），多出来的在框内滚动。卡少（甚至一张没有）也占住同一块
+ * 面积——否则牌组 / 手牌 / 牌堆三个浮窗会一个比一个窄，每次打开都要重新找位置。
  */
 export default function CardListDialog({
   title,
@@ -52,7 +53,7 @@ export default function CardListDialog({
       <Modal
         title={title}
         meta={`${displayName(actorName)} · 共 ${cards.length} 张`}
-        size="fit"
+        size="cards"
         onClose={() => {
           // 三级开着时本层不响应关闭（ESC 一次只关一层）
           if (openedCard === null) {
@@ -61,11 +62,9 @@ export default function CardListDialog({
         }}
       >
         {cards.length === 0 ? (
-          <p className="muted">{emptyText}</p>
+          <p className="muted card-list-empty">{emptyText}</p>
         ) : (
-          <ul
-            className={`card-tiles card-tiles--deck card-tiles--deck-${Math.min(cards.length, 3)}`}
-          >
+          <ul className="card-tiles card-tiles--deck">
             {cards.map((card) => (
               <CardItem
                 key={card.uuid}

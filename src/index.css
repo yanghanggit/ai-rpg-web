@@ -19,6 +19,24 @@
      角色卡 / 场景卡 / 牌面共用这一对，所以「横（场景）」就是「竖（角色）」转 90°。 */
   --card-short: 13rem;
   --card-tall: 17rem;
+  /* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）是**固定尺寸**：宽正好三张卡、高正好三行。
+     卡多就在框内滚，卡少（甚至一张没有）也占住同一块面积——面板忽大忽小只会让人每次打开
+     都要重新找位置。三处（牌组 / 手牌 / 牌堆）共用这一组，手感才会一致。 */
+  --card-cols: 3;
+  --card-rows: 3;
+  --card-gap: 0.9rem;
+  /* 卡距的总和：宽向 `列数 - 1` 个、高向 `行数 - 1` 个（单独列出来纯粹是让下面两行读得下） */
+  --card-list-gaps-w: calc((var(--card-cols) - 1) * var(--card-gap));
+  --card-list-gaps-h: calc((var(--card-rows) - 1) * var(--card-gap));
+  --card-list-w: calc(var(--card-cols) * var(--card-short) + var(--card-list-gaps-w));
+  /* 列表浮窗里卡面的**高度**。这里用短边，而不是手牌 / 角色卡那个竖牌足迹（`--card-tall`）：
+     三行竖牌 = 845px，加上标题行 ≈ 940px，比一般笔记本的视口还高——浮窗会被屏幕压住，
+     第三行永远只露一半，「固定三行」就成了空话。压成短边后三行 = 653px、浮窗 ≈ 755px，
+     任何桌面都装得下；而且这些卡片的自然内容高本来就只有 ≈ 13rem，竖牌多出来的那截全是留白。 */
+  --card-list-card-h: var(--card-short);
+  --card-list-h: calc(var(--card-rows) * var(--card-list-card-h) + var(--card-list-gaps-h));
+  /* 浮窗内边距（`Modal` 的标题行与内容区）。固定宽度的浮窗要把它算进去 */
+  --overlay-pad-x: 1.25rem;
   /* 选中位移：手牌**上移**与目标卡**下移**共用这一个值（上下对称）。
      幅度受两侧滚动容器的 padding 托底，所以不会盖住中列的内容（出牌条 / 手牌） */
   --pick-shift: 1.25rem;
@@ -513,10 +531,11 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
   width: min(100%, 26rem);
 }
 
-/* 内容宽度会变的浮窗：面板跟着内容收缩（上限同默认）；卡少时不会留一大片空 */
-.overlay-panel--fit {
-  width: fit-content;
-  max-width: min(100%, 680px);
+/* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）：以**卡牌为度量**的固定宽度（`--card-list-w` = 三张卡）。
+   卡数不再影响宽度（网格永远三列），所以不必再 fit 着内容算——打开哪个牌堆都是同一个框。
+   高度写在卡面区自己身上：面板还有标题行，多高不必在这算。 */
+.overlay-panel--cards {
+  width: calc(var(--card-list-w) + 2 * var(--overlay-pad-x) + 2px);
 }
 
 /* 内容多的浮窗（地图：整份房间与敌人清单）：比默认宽一档，一屏读得下 */
@@ -528,7 +547,7 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
+  padding: 1rem var(--overlay-pad-x);
   border-bottom: 1px solid var(--border);
 }
 
@@ -548,7 +567,15 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
 
 .overlay-body {
   overflow-y: auto;
-  padding: 1rem 1.25rem 1.25rem;
+  padding: 1rem var(--overlay-pad-x) 1.25rem;
+}
+
+/* 卡面区是 body 里唯一的弹性项：窗口矮时它**缩到能给的那么多**（而不是被裁掉，也不是自己再滚一条），
+   于是滚动条始终只有一条——要么在卡面区里，要么在 body 上，不会同时出现两条。 */
+.overlay-panel--cards .overlay-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .overlay-body p {
@@ -1344,31 +1371,45 @@ ul.card-tiles--stack {
   color: var(--transfer);
 }
 
-/* 牌组浮窗：一行最多三张，**所有行严格等高**（`1fr` 行高由最高的那张决定，不再参差）；
-   列数由 card-tiles--deck-N（N = min(卡数, 3)）给出，固定列宽让 `fit` 面板算得准内容宽度。
+/* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）里的卡面区——**以卡牌为度量的固定尺寸**：
+   永远三列（`--card-cols`）、固定三行高（`--card-rows` × `--card-tall`），多出来的在框内滚。
+   列数不跟着卡数变，所以「一张牌」和「十几张牌」的浮窗一模一样大。
+   `align-content: start`：行**不随容器高矮拉伸**——只放一张牌时它也只占一行，
+   剩下两行的位置空着（这正是想要的：面积保住，位置不跳）。
+   行高由 `.card-tile` 的 `min-height` 托底，所以牌多时不会被压矮，而是直接溢出出滚动条。
    写在 .card-tile 之后，避免 specificity 倒序。 */
 ul.card-tiles--deck {
   display: grid;
-  gap: 0.9rem;
-  grid-auto-rows: 1fr;
-  justify-content: center;
+  grid-template-columns: repeat(var(--card-cols), var(--card-short));
+  gap: var(--card-gap);
+  align-content: start;
+  /* body 里唯一的弹性项：窗口矮时缩到能给的高度（而不是被裁），滚动条始终只有一条 */
+  flex: 0 1 auto;
+  width: var(--card-list-w);
+  height: var(--card-list-h);
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
 }
 
-ul.card-tiles--deck-1 {
-  grid-template-columns: var(--card-short);
+/* 空牌堆 / 空牌组：与卡面区**同一块面积**，只把这句话摆到正中——
+   浮窗不会因为没牌就缩成一条。 */
+.card-list-empty {
+  display: grid;
+  place-items: center;
+  flex: 0 1 auto;
+  width: var(--card-list-w);
+  height: var(--card-list-h);
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
 }
 
-ul.card-tiles--deck-2 {
-  grid-template-columns: repeat(2, var(--card-short));
-}
-
-ul.card-tiles--deck-3 {
-  grid-template-columns: repeat(3, var(--card-short));
-}
-
-/* 卡面给足高度，保持「牌」的比例 */
+/* 卡面给足高度，保持「牌」的比例（行高与卡面区高度共用 `--card-list-card-h`） */
 ul.card-tiles--deck > .card-tile {
-  min-height: var(--card-tall);
+  min-height: var(--card-list-card-h);
 }
 
 /* 整张卡可点（打开卡牌详情）：铺一层透明按钮盖住卡面（词缀 / 动作按钮抬在它之上） */
@@ -1759,6 +1800,26 @@ ul.combat-action-roster {
   border-radius: 50%;
   background: color-mix(in srgb, var(--ok) 35%, transparent);
   border-bottom: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+}
+
+/* 牌堆 = 按钮（点开看这一摞到底是哪些牌）。它与同列的 HP / 能量 / 格挡不同，是可点的，
+   所以独占一颗**完整的描边**（其余只画各自的形状）——「可点」与「只读」在同一列里一眼分得开。 */
+.combat-pile {
+  display: grid;
+  place-items: center;
+}
+
+.res--pile {
+  padding: 0.35rem 0.55rem;
+  border-color: color-mix(in srgb, var(--ok) 30%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--ok) 6%, transparent);
+}
+
+.res--pile:hover:not(:disabled),
+.res--pile:focus-visible {
+  border-color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 16%, transparent);
 }
 
 /* HP：唯一的长方形部件（名字 + 大号数值 + 攻防小字） */

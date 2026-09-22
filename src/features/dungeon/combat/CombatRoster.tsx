@@ -46,8 +46,8 @@ export default function CombatRoster({
             </div>
             <p className="muted combatant-stats">{characterStatsText(combatant.stats)}</p>
             <p className="muted combatant-stats">
-              能量 {combatant.energy} · 格挡 {combatant.block} · 抽 {combatant.piles.draw} / 弃{" "}
-              {combatant.piles.discard} / 消耗 {combatant.piles.exhaust}
+              能量 {combatant.energy} · 格挡 {combatant.block} · 抽 {combatant.piles.draw.length} /
+              弃 {combatant.piles.discard.length} / 消耗 {combatant.piles.exhaust.length}
             </p>
           </li>
         );

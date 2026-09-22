@@ -9,12 +9,12 @@
  * 「战斗界面要看哪些字段」的领域选择（阵营 / 手牌 / 牌堆 / 格挡）与展示口径，对齐 TUI：
  * - 阵营 `classify_faction`（`cmd_combat.py`）：玩家 / NPC → 我方，怪物 → 敌方；
  * - 总格挡 `compute_hand_block`（`models/utils.py`）：手牌 `block` 求和；
- * - 牌堆只数张数（抽牌 / 弃牌 / 消耗），与 `/hand` 命令一致。
+ * - 牌堆**内容**（不只张数）：抽牌堆浮窗要列出这一撑到底是哪些牌。
  */
 import type { Schemas } from "../../../api/types";
 import { readCards } from "../../cards/readCards";
 import type { Card } from "../../cards/types";
-import { COMPONENT, type ComponentName } from "../../entities/componentNames";
+import { COMPONENT } from "../../entities/componentNames";
 import { getComponentData, hasComponent, readCharacterStats, readNumber } from "../../entities/ecs";
 
 type Entity = Schemas["EntitySerialization"];
@@ -22,12 +22,19 @@ type Entity = Schemas["EntitySerialization"];
 /** 战斗阵营：我方（玩家 + 队友）/ 敌方（怪物）/ 未知。 */
 export type Faction = "party" | "monster" | "unknown";
 
-/** 三个牌堆的张数。 */
-export interface CombatPiles {
-  draw: number;
-  discard: number;
-  exhaust: number;
-}
+/** 三个牌堆（键与后端 `DrawPileComponent` / `DiscardPileComponent` / `ExhaustPileComponent` 同名）。 */
+export type CombatPileKind = "draw" | "discard" | "exhaust";
+
+/**
+ * 三个牌堆里的牌（空堆 = 空数组）。
+ *
+ * 存的是**整张卡**而不是张数：界面上的三个牌堆都是按钮，点开要列出这一撑的牌，
+ * 张数由 `cards.length` 直接得出（不再单独存一份计数，两者就不会对不上）。
+ *
+ * 顺序照抄服务端给的数组——抽牌堆是 **FIFO**（第一张就是下一张会摸到的），
+ * 弃牌 / 消耗堆是追加顺序（最近进的排最后）。
+ */
+export type CombatPiles = Record<CombatPileKind, Card[]>;
 
 /** 单个参战角色在战斗界面里需要的全部字段。 */
 export interface Combatant {
@@ -140,20 +147,12 @@ export function readTargetNames(
     .map((combatant) => combatant.name);
 }
 
-function countCards(entity: Entity, componentName: ComponentName): number {
-  const data = getComponentData(entity, componentName);
-  if (data === undefined || !Array.isArray(data.cards)) {
-    return 0;
-  }
-  return data.cards.length;
-}
-
-/** 三个牌堆的张数；未抓牌时都为 0。 */
+/** 三个牌堆里的牌；未抓牌时都为空数组。 */
 export function readPiles(entity: Entity): CombatPiles {
   return {
-    draw: countCards(entity, COMPONENT.DrawPile),
-    discard: countCards(entity, COMPONENT.DiscardPile),
-    exhaust: countCards(entity, COMPONENT.ExhaustPile),
+    draw: readCards(entity.components, COMPONENT.DrawPile),
+    discard: readCards(entity.components, COMPONENT.DiscardPile),
+    exhaust: readCards(entity.components, COMPONENT.ExhaustPile),
   };
 }
 

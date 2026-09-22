@@ -93,17 +93,20 @@ describe("readHand / computeHandBlock", () => {
 });
 
 describe("readPiles", () => {
-  it("数出抽牌 / 弃牌 / 消耗堆张数", () => {
+  it("读出抽牌 / 弃牌 / 消耗堆里的牌（顺序照抄服务端）", () => {
     const e = entity("角色.无名", [
       { name: COMPONENT.DrawPile, data: { cards: [cardFixtures.cleave, cardFixtures.breath] } },
       { name: COMPONENT.DiscardPile, data: { cards: [cardFixtures.ward] } },
       { name: COMPONENT.ExhaustPile, data: { cards: [] } },
     ]);
-    expect(readPiles(e)).toEqual({ draw: 2, discard: 1, exhaust: 0 });
+    const piles = readPiles(e);
+    expect(piles.draw.map((card) => card.name)).toEqual(["剖棺", "屏息"]);
+    expect(piles.discard.map((card) => card.name)).toEqual(["镇棺符"]);
+    expect(piles.exhaust).toEqual([]);
   });
 
-  it("无牌堆组件时全为 0", () => {
-    expect(readPiles(entity("角色.无名", []))).toEqual({ draw: 0, discard: 0, exhaust: 0 });
+  it("无牌堆组件时三个堆都为空", () => {
+    expect(readPiles(entity("角色.无名", []))).toEqual({ draw: [], discard: [], exhaust: [] });
   });
 });
 
@@ -137,7 +140,11 @@ describe("readCombatant", () => {
         expect.objectContaining({ name: "镇棺符" }),
       ],
       block: 5,
-      piles: { draw: 1, discard: 0, exhaust: 1 },
+      piles: {
+        draw: [expect.objectContaining({ name: "剖棺" })],
+        discard: [],
+        exhaust: [expect.objectContaining({ name: "火折子" })],
+      },
     });
   });
 
@@ -158,7 +165,7 @@ describe("readCombatant", () => {
       energy: 0,
       hand: [],
       block: 0,
-      piles: { draw: 0, discard: 0, exhaust: 0 },
+      piles: { draw: [], discard: [], exhaust: [] },
     });
   });
 });

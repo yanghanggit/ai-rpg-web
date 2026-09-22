@@ -236,8 +236,8 @@ describe("副本房间 · 共同框架", () => {
 
     const deck = await screen.findByRole("dialog", { name: "牌组" });
     expect(within(deck).getByText("顾知秋 · 共 5 张")).toBeInTheDocument();
-    // 一行最多三张：5 张 → 三列、两行（行高由网格统一，不由内容撑）
-    expect(within(deck).getByRole("list")).toHaveClass("card-tiles--deck-3");
+    // 固定三列（不随卡数变）：5 张 → 三列、两行，剩下的位置空着
+    expect(within(deck).getByRole("list")).toHaveClass("card-tiles--deck");
     // 紧凑卡面只给词缀名字，不给触发倾向的描述
     expect(within(deck).getByText("[破竹]")).toBeInTheDocument();
     expect(within(deck).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
