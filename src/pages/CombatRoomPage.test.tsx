@@ -23,13 +23,22 @@ function renderCombatRoom() {
   renderCombat();
 }
 
-/** 找到某张手牌所在的 <li>（出牌控件在卡面里）。 */
+/** 找到某张手牌所在的 <li>（选中它是整卡那颗按钮）。 */
 function cardTileOf(cardName: string): HTMLElement {
   const tile = screen.getByText(cardName).closest("li");
   if (!(tile instanceof HTMLElement)) {
     throw new Error(`找不到卡牌 ${cardName} 的卡片`);
   }
   return tile;
+}
+
+/** 当前行动者那张参战者卡（名单用 `aria-current` 标出来）。 */
+function currentCombatant(): HTMLElement {
+  const el = document.querySelector('[aria-current="true"]');
+  if (!(el instanceof HTMLElement)) {
+    throw new Error("名单里没有标记当前行动者");
+  }
+  return el;
 }
 
 describe("副本房间 · 战斗房间", () => {
@@ -172,21 +181,33 @@ describe("副本房间 · 战斗房间", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    expect(await screen.findByRole("heading", { name: "手牌" })).toBeInTheDocument();
-    expect(screen.getByText("剖棺")).toBeInTheDocument();
-    expect(screen.getByText("屏息")).toBeInTheDocument();
+    const hand = await screen.findByRole("list", { name: "手牌" });
+    expect(within(hand).getByText("剖棺")).toBeInTheDocument();
+    expect(within(hand).getByText("屏息")).toBeInTheDocument();
+    // 行动者资源（能量 / 总格挡）与过牌按钮
+    expect(screen.getByRole("list", { name: "行动者资源" })).toHaveTextContent("能量");
     expect(screen.getByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
-  it("出牌：按默认目标打出，回合记录出现该次出牌", async () => {
+  it("出牌：点手牌选中 → 点名单里的目标 → 打出（记录改在 ⚙ 战斗信息里看）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    await screen.findByText("剖棺");
-    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "出牌" }));
+    const hand = await screen.findByRole("list", { name: "手牌" });
+    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
+    // 选中后名单进入「选目标」态：整卡可点
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
 
-    expect(await screen.findByText(/使用『剖棺』对 怪物.纸人/)).toBeInTheDocument();
+    // 出牌成功 → 该卡离开手牌
+    await waitFor(() => expect(within(hand).queryByText("剖棺")).not.toBeInTheDocument());
+
+    // 本次出牌的 log 仍可从 ⚙「战斗信息」查看（页面上不再常驻回合记录）
+    fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
+    const menu = await screen.findByRole("dialog", { name: "副本操作" });
+    fireEvent.click(within(menu).getByRole("button", { name: "战斗信息" }));
+    const info = await screen.findByRole("dialog", { name: "战斗信息" });
+    expect(within(info).getByText(/使用『剖棺』对 怪物.纸人/)).toBeInTheDocument();
   });
 
   it("过牌推进到怪物；推进怪物回合结束后回到开始新回合", async () => {
@@ -194,13 +215,15 @@ describe("副本房间 · 战斗房间", () => {
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    // 我方过牌 → 轮到第一个怪物
+    // 我方过牌 → 轮到第一个怪物（名单的「当前行动」标记从无名换到纸人）
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
-    await screen.findByText(/当前由 纸人 行动/);
+    await waitFor(() => expect(within(currentCombatant()).getByText("纸人")).toBeInTheDocument());
 
     // 第一只怪物 → 第二只怪物：等行动者真的换了再点，避免点到忙碌中的按钮
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
-    await screen.findByText(/当前由 棺中殭尸 行动/);
+    await waitFor(() =>
+      expect(within(currentCombatant()).getByText("棺中殭尸")).toBeInTheDocument(),
+    );
 
     // 第二只怪物 → 全员行动完，回准备屏（已有回合 → 按钮改成「开始新回合」）
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));

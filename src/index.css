@@ -1261,9 +1261,9 @@ ul.card-tiles--deck > .card-tile {
   border-color: var(--fg);
 }
 
-/* ── 战斗房间 ─────────────────────────────────────────────── */
+/* ── 战斗房间 · 参战者一览（只读名单；结算页在用） ─────────── */
 
-/* 参战者一览：比队伍卡紧凑，一格里放身份、血量、能量/牌堆两行文字 */
+/* 一格里放身份、血量、能量/牌堆两行文字，比队伍卡紧凑 */
 ul.combat-roster {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
@@ -1308,20 +1308,246 @@ ul.combat-roster {
   font-size: 0.85rem;
 }
 
+/* ── 战斗房间 · 行动面板（turn） ───────────────────────────── */
+
+/* 参战者横滑名单：**名单顺序 = 行动顺序**（已行动置灰 / 当前绿框），不再单独画顺序条 */
+ul.combat-action-roster {
+  display: flex;
+  gap: 0.9rem;
+  margin: 1.25rem 0 0;
+  padding: 0 0 0.5rem;
+  list-style: none;
+  overflow-x: auto;
+}
+
+.combatant-card {
+  position: relative;
+  display: flex;
+  flex: 0 0 var(--card-short);
+  flex-direction: column;
+  /* 与 ActorCard / 手牌 CardItem 共用同一副卡足迹（短 × 长）+ 同一套内边距，视觉成族 */
+  min-height: var(--card-tall);
+  padding: 1.1rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* 「你」：与队友 / 怪物分开（不是绿框——绿框留给「当前行动」） */
+.combatant-card--you {
+  border-color: color-mix(in srgb, var(--fg) 35%, transparent);
+}
+
+/* 当前 turn 角色：绿框，与家园卡的「当前所在」同一视觉语言 */
+.combatant-card--current {
+  border-color: var(--ok);
+  box-shadow: inset 0 0 0 1px var(--ok);
+}
+
+.combatant-card--done {
+  opacity: 0.55;
+}
+
+.combatant-card--dead {
+  opacity: 0.45;
+}
+
+/* 可选目标：橙框（这一步会指定手牌的目标）；整卡可点的透明按钮复用 .actor-card-open */
+.combatant-card--pick {
+  border-color: var(--warn);
+}
+
+.combatant-card-affixes {
+  /* 压到卡底（与 ActorCard 把动作压到底同一手法），卡片不至于头重脚轻 */
+  margin: auto 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
 .badge--dead {
   border-color: var(--err);
   color: var(--err);
 }
 
-/* 手牌卡上的出牌控件：目标下拉 + 出牌按钮横排 */
-.combat-hand-actions {
+/* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆 */
+.combat-action-area {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 1.25rem;
+  align-items: start;
+  margin-top: 1.5rem;
+}
+
+/* 行动区左右两列：都以手牌卡的足迹高度（--card-tall）为基准高，块间用 space-between 均分，
+   整行左右两侧读成同一条 */
+.combat-resources,
+.combat-piles {
+  display: flex;
+  flex-direction: column;
+  min-height: var(--card-tall);
+  justify-content: space-between;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.combat-piles-action {
+  width: 100%;
+}
+
+/* 资源部件：突出当前行动者的关键数值。形状语言 = 面板（HP）/ 星（能量）/ 六边形（格挡）/ 圆柱（牌堆） */
+.res {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.res-label {
+  line-height: 1.2;
+  color: var(--muted);
+}
+
+.res-gem {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.res-cylinder {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4.25rem;
+  height: 2.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--ok) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  border-radius: 50% / 0.6rem;
+}
+
+/* 圆柱顶面：一条椭圆，读作「一摞牌」 */
+.res-cylinder::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ok) 35%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+}
+
+/* HP：唯一的长方形部件（名字 + 大号数值 + 攻防小字） */
+.res--hp {
+  align-items: stretch;
+  gap: 0.1rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: left;
+}
+
+.res--hp .res-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--fg);
+}
+
+.res--hp .res-sub {
+  font-size: 0.72rem;
+}
+
+/* 能量 = 十角星；总格挡 = 六边形 */
+.res--energy .res-gem {
+  background: color-mix(in srgb, var(--warn) 32%, transparent);
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+}
+
+.res--block .res-gem {
+  background: color-mix(in srgb, var(--ok) 30%, transparent);
+  clip-path: polygon(25% 2%, 75% 2%, 100% 50%, 75% 98%, 25% 98%, 0 50%);
+}
+
+/* 中间手牌：横向滚动，固定卡宽（与牌面同一副足迹） */
+.combat-hand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+ul.combat-hand-list {
+  display: flex;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0 0 0.5rem;
+  list-style: none;
+  overflow-x: auto;
+}
+
+/* 手牌卡固定为竖牌足迹 */
+ul.combat-hand-list .card-tile {
+  flex: 0 0 var(--card-short);
+  min-height: var(--card-tall);
+}
+
+/* 被选中待出的手牌：绿框（比 hover 更强，且 hover 也保持绿） */
+ul.combat-hand-list .card-tile--selected {
+  border-color: var(--ok);
+  box-shadow: inset 0 0 0 1px var(--ok);
+}
+
+/* 出牌条：未选牌时是提示，选牌后长出「出牌 / 取消」 */
+.combat-hand-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  min-height: 2.2rem;
 }
 
-.combat-turn h3 {
-  margin: 1.25rem 0 0.25rem;
-  font-size: 1rem;
+/* 右列的收尾动作：给足按钮感（深色实心图标 + 描边/底色），不再只是一行文字 */
+.combat-pass {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--fg);
+  border-radius: 10px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+/* 过牌 / 推进的图标：实心圆底 + 右向双箭头 */
+.combat-pass-icon {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+  font-size: 0.85rem;
+  line-height: 1;
 }

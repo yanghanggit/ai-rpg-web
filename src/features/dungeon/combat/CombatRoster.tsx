@@ -7,6 +7,9 @@ import { type Combatant, roleLabel } from "./readCombat";
  *
  * 当前 turn 角色加绿框 + 「当前行动」徽标，已战死的置灰——一眼看出轮到谁。
  * 名字显示走 `displayName`（`怪物.纸人` → `纸人`），但 key / 比较一律用原始名。
+ *
+ * 这是**只读名单**（结算页在用）；行动面板那份要承担排序与选目标的横滑名单是
+ * `CombatActionRoster`——两处故意分开，结算页后续再单独演化。
  */
 export default function CombatRoster({
   combatants,

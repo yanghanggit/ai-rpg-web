@@ -1,24 +1,28 @@
 import { useState } from "react";
 import type { Schemas } from "../../../api/types";
-import { displayName } from "../../../components/displayName";
 import CardItem from "../../cards/CardItem";
-import CombatRoster from "./CombatRoster";
-import CombatRoundLog from "./CombatRoundLog";
+import type { Card } from "../../cards/types";
+import CombatActionRoster from "./CombatActionRoster";
 import type { Combatant } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
 /**
  * 单个角色的回合行动（`ONGOING` 且有 `current_actor`，对应 TUI `CombatTurnActorScreen`）。
  *
- * 按当前 turn 角色的阵营分两套操作（与 TUI 的 `_command_defs_for_faction` 同一开关）：
- * - 我方：手牌逐张「出牌」（非自身牌先选目标），另有「过牌」结束本角色回合；
- * - 怪物：「推进怪物回合」，由服务端自动出牌 / 过牌。
+ * 版面分三块（对应设计草稿）：
+ * 1. **参战者横滑名单**（`CombatRoster`）：按 `action_order` 排，已行动 / 当前 / 待行动一眼可读——
+ *    名单本身就是行动顺序，不另画顺序条；
+ * 2. **行动区**三栏：左列当前行动者的资源（HP 攻防 / 能量 / 总格挡 / 抽牌堆）、中间手牌横滑、
+ *    右列「过牌」+ 消耗 / 弃牌堆；
+ * 3. **出牌交互**：点一张手牌选中 → 点名单里的角色指定目标（`CombatRoster` 的整卡按钮）→ 出牌；
+ *    自身牌没有目标，选中后在手牌条点「出牌（自身）」。
  *
- * 目标选择放在手牌卡面上（`CardItem` 的 `action` 插槽）：服务端 `resolve_targets` 要求
- * 非 `self_target` 牌**恰好一个目标**作为锚点，所以每张牌自带一个目标下拉。自身牌不需要目标。
+ * 我方与怪物**共用同一套版面**：怪物的手牌是 AI 控制的只读态（不可点选），右下那颗动作由
+ * 「过牌」换成「推进怪物回合」。
  *
- * `play / use / gear` 不推进行动权，`pass`/怪物推进才结束回合；本页不预判换手——
- * 动作成功后失效刷新、`CombatRoomPanel` 重新派生 phase 自然会切到下一页。
+ * 服务端 `resolve_targets` 要求非 `self_target` 牌**恰好一个目标**作为锚点，所以目标必须显式选。
+ * `play / use / gear` 不推进行动权，`pass`/怪物推进才结束回合；动作成功后失效刷新、
+ * `CombatRoomPanel` 重新派生 phase 自然会切换 / 重渲染。
  */
 export default function CombatTurnPanel({
   combat,
@@ -33,14 +37,18 @@ export default function CombatTurnPanel({
   combatPending: boolean;
   actions: CombatActions;
 }) {
-  const [targets, setTargets] = useState<Record<string, string>>({});
+  // 选中的手牌（uuid）；出牌 / 换行动角色后清空
+  const [selectedUuid, setSelectedUuid] = useState<string | null>(null);
+  // 换行动角色就清掉上一张选中的牌（React 的「props 变了就重置 state」写法，不用 effect）：
+  // 同一回合里 party → monster 组件不卸载，必须显式重置，否则残留的选中会指到新角色的手牌上。
+  const [lastActor, setLastActor] = useState(currentActor);
+  if (lastActor !== currentActor) {
+    setLastActor(currentActor);
+    setSelectedUuid(null);
+  }
 
   const latest = combat.rounds.at(-1) ?? null;
   const current = combatants.find((combatant) => combatant.name === currentActor) ?? null;
-
-  // 可被选为目标：所有存活者（治疗牌可能指向友方，攻击牌指向怪物，交给服务端校验）
-  const alive = combatants.filter((combatant) => !combatant.dead);
-  const defaultTarget = (alive.find((c) => c.faction === "monster") ?? alive[0])?.name ?? "";
 
   const actionError =
     actions.play.error ??
@@ -49,122 +57,161 @@ export default function CombatTurnPanel({
     actions.use.error ??
     actions.gear.error;
 
+  if (current === null) {
+    return <p className="error">找不到当前行动角色：{currentActor ?? "（无）"}</p>;
+  }
+
+  const isMonster = current.faction === "monster";
+  const actor = current;
+  const selected = current.hand.find((card) => card.uuid === selectedUuid) ?? null;
+  // 选中的是非自身牌且是自己人时，名单进入「选目标」态；怪物手牌不可选，永远不进入
+  const picking = !isMonster && selected !== null && !selected.self_target;
+
+  /** 出一张牌：自身牌自动指向自己，其余用名单里点中的目标。 */
+  function play(card: Card, targetName?: string) {
+    const targets = card.self_target ? [actor.name] : [targetName ?? ""];
+    if (!card.self_target && targets[0] === "") {
+      return;
+    }
+    setSelectedUuid(null);
+    actions.play.start(actor.name, card.name, targets);
+  }
+
   return (
-    <>
-      <section>
-        <div className="section-head">
-          <h2>参战者</h2>
-        </div>
-        <CombatRoster combatants={combatants} currentActor={currentActor} pending={combatPending} />
-      </section>
+    <section className="combat-turn" aria-label="回合行动">
+      <CombatActionRoster
+        combatants={combatants}
+        currentActor={currentActor}
+        pending={combatPending}
+        order={latest?.action_order ?? []}
+        completed={latest?.completed_actors ?? []}
+        picking={picking}
+        onPick={(name) => {
+          if (selected !== null) {
+            play(selected, name);
+          }
+        }}
+      />
 
-      <section className="combat-turn">
-        <div className="section-head">
-          <h2>回合行动</h2>
-        </div>
+      <div className="combat-action-area">
+        {/* 左列：当前行动者的资源 */}
+        <ul className="combat-resources" aria-label="行动者资源">
+          <li className="res res--hp">
+            <span className="res-value">
+              HP {current.stats === null ? "—" : `${current.stats.hp}/${current.stats.max_hp}`}
+            </span>
+            <span className="res-sub">
+              {current.stats === null
+                ? ""
+                : `攻 ${current.stats.attack} · 防 ${current.stats.defense}`}
+            </span>
+          </li>
+          <li className="res res--energy">
+            <span className="res-gem">{current.energy}</span>
+            <span className="res-label">能量</span>
+          </li>
+          <li className="res res--block">
+            <span className="res-gem">{current.block}</span>
+            <span className="res-label">总格挡</span>
+          </li>
+          <li className="res res--pile">
+            <span className="res-cylinder">{current.piles.draw}</span>
+            <span className="res-label">抽牌堆</span>
+          </li>
+        </ul>
 
-        {current === null ? (
-          <p className="error">找不到当前行动角色：{currentActor ?? "（无）"}</p>
-        ) : current.faction === "monster" ? (
-          <>
-            <p className="muted">
-              当前由 {displayName(current.name)} 行动，点击下方按钮让 AI 自动出牌或过牌。
-            </p>
-            <div className="toolbar">
-              <button
-                type="button"
-                disabled={actions.isBusy}
-                onClick={() => actions.advance.start(current.name)}
-              >
-                {actions.advance.isBusy ? "推进中…" : "推进怪物回合"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <ul className="chips">
-              <li className="chip">行动者：{displayName(current.name)}</li>
-              <li className="chip">能量 {current.energy}</li>
-              <li className="chip">格挡 {current.block}</li>
-              {current.stats === null ? null : (
-                <li className="chip">
-                  HP {current.stats.hp}/{current.stats.max_hp}
-                </li>
-              )}
+        {/* 中间：手牌横滑 + 出牌条 */}
+        <div className="combat-hand">
+          {current.hand.length === 0 ? (
+            <p className="muted">（手牌为空）</p>
+          ) : (
+            <ul className="combat-hand-list" aria-label="手牌">
+              {current.hand.map((card) => (
+                <CardItem
+                  key={card.uuid}
+                  card={card}
+                  selected={card.uuid === selectedUuid}
+                  selectAriaLabel={
+                    isMonster
+                      ? `查看手牌：${card.name}`
+                      : card.uuid === selectedUuid
+                        ? `取消选中：${card.name}`
+                        : `选中手牌：${card.name}`
+                  }
+                  // 怪物手牌只读：不给 onSelect 就整卡不可点
+                  {...(isMonster
+                    ? {}
+                    : {
+                        onSelect: () =>
+                          setSelectedUuid((prev) => (prev === card.uuid ? null : card.uuid)),
+                      })}
+                />
+              ))}
             </ul>
+          )}
 
-            <h3>手牌</h3>
-            {current.hand.length === 0 ? (
-              <p className="muted">（手牌为空）</p>
+          <div className="combat-hand-bar">
+            {isMonster ? (
+              <p className="muted">怪物手牌由 AI 自动打出。</p>
+            ) : selected === null ? (
+              <p className="muted">点一张手牌开始出牌。</p>
+            ) : selected.self_target ? (
+              <>
+                <span>已选：{selected.name}</span>
+                <button type="button" disabled={actions.isBusy} onClick={() => play(selected)}>
+                  出牌（自身）
+                </button>
+                <button type="button" onClick={() => setSelectedUuid(null)}>
+                  取消
+                </button>
+              </>
             ) : (
-              <ul className="card-tiles">
-                {current.hand.map((card) => {
-                  const chosen = targets[card.uuid] ?? defaultTarget;
-                  const playTargets = card.self_target ? [current.name] : [chosen];
-                  return (
-                    <CardItem
-                      key={card.uuid}
-                      card={card}
-                      action={
-                        <span className="combat-hand-actions">
-                          {card.self_target ? null : (
-                            <label className="muted">
-                              目标{" "}
-                              <select
-                                aria-label={`${card.name} 的目标`}
-                                value={chosen}
-                                disabled={actions.isBusy}
-                                onChange={(event) =>
-                                  setTargets((prev) => ({
-                                    ...prev,
-                                    [card.uuid]: event.target.value,
-                                  }))
-                                }
-                              >
-                                {alive.map((target) => (
-                                  <option key={target.name} value={target.name}>
-                                    {displayName(target.name)}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          )}
-                          <button
-                            type="button"
-                            disabled={actions.isBusy || (!card.self_target && chosen === "")}
-                            onClick={() => actions.play.start(current.name, card.name, playTargets)}
-                          >
-                            {card.self_target ? "出牌（自身）" : "出牌"}
-                          </button>
-                        </span>
-                      }
-                    />
-                  );
-                })}
-              </ul>
+              <>
+                <span>已选：{selected.name} · 点上方角色选择目标</span>
+                <button type="button" onClick={() => setSelectedUuid(null)}>
+                  取消
+                </button>
+              </>
             )}
-
-            <div className="toolbar">
-              <button
-                type="button"
-                disabled={actions.isBusy}
-                onClick={() => actions.pass.start(current.name)}
-              >
-                {actions.pass.isBusy ? "过牌中…" : "过牌（结束回合）"}
-              </button>
-            </div>
-          </>
-        )}
-
-        {actionError ? <p className="error">回合动作失败：{actionError}</p> : null}
-      </section>
-
-      <section>
-        <div className="section-head">
-          <h2>本回合记录</h2>
+          </div>
         </div>
-        <CombatRoundLog round={latest} />
-      </section>
-    </>
+
+        {/* 右列：本回合的收尾动作 + 两个牌堆（三个块在卡高内均匀分布） */}
+        <ul className="combat-piles" aria-label="牌堆">
+          <li className="combat-piles-action">
+            <button
+              type="button"
+              className="combat-pass"
+              aria-label={isMonster ? "推进怪物回合" : "过牌（结束回合）"}
+              disabled={actions.isBusy}
+              onClick={() =>
+                isMonster ? actions.advance.start(current.name) : actions.pass.start(current.name)
+              }
+            >
+              <span className="combat-pass-icon" aria-hidden="true">
+                »
+              </span>
+              {isMonster
+                ? actions.advance.isBusy
+                  ? "推进中…"
+                  : "推进怪物回合"
+                : actions.pass.isBusy
+                  ? "过牌中…"
+                  : "过牌（结束回合）"}
+            </button>
+          </li>
+          <li className="res res--pile">
+            <span className="res-cylinder">{current.piles.exhaust}</span>
+            <span className="res-label">消耗牌堆</span>
+          </li>
+          <li className="res res--pile">
+            <span className="res-cylinder">{current.piles.discard}</span>
+            <span className="res-label">弃牌堆</span>
+          </li>
+        </ul>
+      </div>
+
+      {actionError ? <p className="error">回合动作失败：{actionError}</p> : null}
+    </section>
   );
 }

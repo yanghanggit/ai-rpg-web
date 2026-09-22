@@ -70,6 +70,8 @@ export default function CardItem({
   claimed = false,
   affixes = "full",
   onSelect,
+  selected = false,
+  selectAriaLabel,
 }: {
   card: Card;
   action?: ReactNode;
@@ -79,6 +81,10 @@ export default function CardItem({
   affixes?: "full" | "names";
   /** 给了就整张卡可点（回调拿卡本身，调用方决定开哪层浮窗）。 */
   onSelect?: (card: Card) => void;
+  /** 该卡处于选中态（如战斗手牌被点选待出）：加绿框。 */
+  selected?: boolean;
+  /** 无障得名字；不给就用「查看卡牌：xxx」（`onSelect` 的默认语义）。 */
+  selectAriaLabel?: string;
 }) {
   const content = (
     <>
@@ -115,7 +121,7 @@ export default function CardItem({
 
   const tileClass = `card-tile${claimed ? " card-tile--claimed" : ""}${
     onSelect ? " card-tile--open" : ""
-  }`;
+  }${selected ? " card-tile--selected" : ""}`;
 
   return (
     <li className={tileClass}>
@@ -123,7 +129,7 @@ export default function CardItem({
         <button
           type="button"
           className="card-tile-open"
-          aria-label={`查看卡牌：${card.name}`}
+          aria-label={selectAriaLabel ?? `查看卡牌：${card.name}`}
           onClick={() => onSelect(card)}
         >
           {content}

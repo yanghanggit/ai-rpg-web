@@ -97,8 +97,14 @@ function monsterActor(name: string): Schemas["Actor"] | undefined {
 function newBattleActor(name: string): BattleActor {
   const isMonster = monsterActor(name) !== undefined;
   return {
-    // 怪物不出牌（由 MonsterPrePlay 自动决策），所以不备牌堆；队伍成员用其固定牌组。
-    draw: isMonster ? [] : clone(deckFixtures[name] ?? defaultDeckFixture),
+    // 队伍用固定牌组，怪物用其 `DeckComponent` 里的牌。**怪物也抓牌**（后端
+    // `DrawCardsActionSystem` 给所有存活角色填 `HandComponent`）：只是它们不出牌，由
+    // `MonsterPrePlaySystem` 自动决策。手牌里的「受击词缀」是对手可见的信息（见 `cmd_hand`）。
+    draw: clone(
+      isMonster
+        ? (monsterDeckFixtures[name] ?? defaultMonsterDeckFixture)
+        : (deckFixtures[name] ?? defaultDeckFixture),
+    ),
     hand: [],
     discard: [],
     exhaust: [],
