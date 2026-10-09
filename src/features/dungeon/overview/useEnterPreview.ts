@@ -11,11 +11,12 @@
  * 等储物箱名字解析出来再查 details 是同一个模式），避免用空名单先发一次无用请求。
  *
  * 道具的读取复用 `features/items` 的 `readItems`：`InventoryComponent` 的解析规则
- * 只该有一份，复制第二份等于把「读 `ComponentSerialization.data`」这件事写错两次的机会翻倍
+ * 只该有一份，复制第二份等于把「读组件的 `data`」这件事写错两次的机会翻倍
  * （单向依赖，items 不依赖 dungeon，不构成环）。见 docs/conventions.md 三。
  */
 import { $api } from "../../../api/query";
 import { COMPONENT } from "../../entities/componentNames";
+import { resolveEntities } from "../../entities/ecs";
 import { readItems } from "../../items/readItems";
 import { readPartyMember } from "../../roster/readPartyMember";
 import { usePartyRoster } from "../../roster/usePartyRoster";
@@ -37,7 +38,9 @@ export function useEnterPreview(userName: string, gameName: string, playerActor:
   );
 
   // 保持「玩家 → 名单顺序」，不重新排序；查不到的实体直接跳过（名字失效时页面还能用）
-  const byName = new Map(details.data?.entities.map((entity) => [entity.name, entity]) ?? []);
+  const byName = new Map(
+    resolveEntities(details.data?.entities ?? {}).map((entity) => [entity.name, entity]),
+  );
   const party = names.flatMap((name) => {
     const entity = byName.get(name);
     return entity === undefined ? [] : [readPartyMember(entity)];
@@ -47,7 +50,7 @@ export function useEnterPreview(userName: string, gameName: string, playerActor:
 
   return {
     party,
-    inventory: playerEntity ? readItems(playerEntity.components, COMPONENT.Inventory) : [],
+    inventory: playerEntity ? readItems(playerEntity, COMPONENT.Inventory) : [],
     isPending: roster.isPending || details.isPending,
     isError: roster.isError || details.isError,
     error: roster.error ?? details.error ?? null,

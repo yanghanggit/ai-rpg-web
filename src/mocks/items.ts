@@ -8,8 +8,8 @@
  * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 效果提示词，装备/时装不堆叠；
  * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物按同一规则并入储物箱。
  */
-import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { Entity } from "../features/entities/ecs";
 import {
   npcEntityFixtures,
   playerEntityFixture,
@@ -106,26 +106,23 @@ export function readMockStorageEntityName(): string {
 }
 
 /** 玩家实体：在 fixture 组件之外补一份当前 `InventoryComponent`。 */
-export function readMockPlayerEntity(): Schemas["EntitySerialization"] {
+export function readMockPlayerEntity(): Entity {
   return {
     name: playerEntityFixture.name,
-    components: [
-      ...playerEntityFixture.components,
-      {
-        name: COMPONENT.Inventory,
-        data: { name: playerEntityFixture.name, items: clone(inventory) },
-      },
-    ],
+    data: {
+      ...playerEntityFixture.data,
+      [COMPONENT.Inventory]: { name: playerEntityFixture.name, items: clone(inventory) },
+    },
   };
 }
 
 /** 储物箱世界实体（当前库存）。 */
-export function readMockStorageEntity(): Schemas["EntitySerialization"] {
+export function readMockStorageEntity(): Entity {
   return {
     name: STORAGE_ENTITY,
-    components: [
-      { name: COMPONENT.Storage, data: { name: STORAGE_ENTITY, items: clone(storage) } },
-    ],
+    data: {
+      [COMPONENT.Storage]: { name: STORAGE_ENTITY, items: clone(storage) },
+    },
   };
 }
 
@@ -133,7 +130,7 @@ export function readMockStorageEntity(): Schemas["EntitySerialization"] {
  * 任意角色的完整实体：玩家 = 夹具 + 背包，NPC = 夹具；若其穿着时装则附上
  * `WornCostumeComponent`。未知名字返回 `null`。
  */
-export function readMockActorEntity(name: string): Schemas["EntitySerialization"] | null {
+export function readMockActorEntity(name: string): Entity | null {
   const base =
     name === playerEntityFixture.name
       ? readMockPlayerEntity()
@@ -146,18 +143,15 @@ export function readMockActorEntity(name: string): Schemas["EntitySerialization"
   if (wornEntry === undefined) {
     return entity;
   }
-  entity.components.push({
-    name: COMPONENT.WornCostume,
-    data: { name, item: clone(wornEntry.item) },
-  });
+  entity.data[COMPONENT.WornCostume] = { name, item: clone(wornEntry.item) };
   return entity;
 }
 
 /** 穿戴中时装实体（group `WornCostumeComponent` 用）。 */
-export function readMockWornEntities(): Schemas["EntitySerialization"][] {
+export function readMockWornEntities(): Entity[] {
   return worn.map(({ wearer, item }) => ({
     name: wearer,
-    components: [{ name: COMPONENT.WornCostume, data: { name: wearer, item: clone(item) } }],
+    data: { [COMPONENT.WornCostume]: { name: wearer, item: clone(item) } },
   }));
 }
 

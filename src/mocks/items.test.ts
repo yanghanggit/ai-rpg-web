@@ -10,11 +10,11 @@ import {
 } from "./items";
 
 function storageItems() {
-  return readItems(readMockStorageEntity().components, COMPONENT.Storage);
+  return readItems(readMockStorageEntity(), COMPONENT.Storage);
 }
 
 function inventoryItems() {
-  return readItems(readMockPlayerEntity().components, COMPONENT.Inventory);
+  return readItems(readMockPlayerEntity(), COMPONENT.Inventory);
 }
 
 describe("mock 道具堆叠（对齐后端 Item 语义）", () => {

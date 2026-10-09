@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import type { Schemas } from "../../api/types";
 import { blueprintFixture } from "../../mocks/fixtures";
 import { COMPONENT } from "../entities/componentNames";
+import type { EntityData } from "../entities/ecs";
 import { collectItemContainers } from "./collectItemContainers";
 
-type Component = Schemas["ComponentSerialization"];
-
 /** 只带一个世界实体的最小蓝图，方便逐个用例替换 components。 */
-function blueprintWithStorage(components: Component[]): Schemas["Blueprint"] {
+function blueprintWithStorage(components: EntityData): Schemas["Blueprint"] {
   return {
     name: "Game1",
     player_actor: "角色.玩家",
@@ -19,9 +18,9 @@ function blueprintWithStorage(components: Component[]): Schemas["Blueprint"] {
   };
 }
 
-const storageWithItems = (items: unknown[]): Component[] => [
-  { name: COMPONENT.Storage, data: { name: "世界.储物箱", items } },
-];
+const storageWithItems = (items: unknown[]): EntityData => ({
+  [COMPONENT.Storage]: { name: "世界.储物箱", items },
+});
 
 describe("collectItemContainers", () => {
   it("把随身背包与储物箱收进来，标签是固定的两个", () => {
@@ -61,15 +60,12 @@ describe("collectItemContainers", () => {
               base_body: "",
               system_message: "",
               character_stats: { hp: 1, max_hp: 1, attack: 1, defense: 1 },
-              components: [
-                {
-                  name: COMPONENT.Inventory,
-                  data: { items: [{ name: "b", type: "MaterialItem" }] },
-                },
-              ],
+              components: {
+                [COMPONENT.Inventory]: { items: [{ name: "b", type: "MaterialItem" }] },
+              },
             },
           ],
-          components: [],
+          components: {},
         },
       ],
     };
@@ -88,19 +84,15 @@ describe("collectItemContainers", () => {
   it("没有对应组件时不出现", () => {
     expect(
       collectItemContainers(
-        blueprintWithStorage([{ name: COMPONENT.PlayerAudit, data: { name: "世界.储物箱" } }]),
+        blueprintWithStorage({ [COMPONENT.PlayerAudit]: { name: "世界.储物箱" } }),
       ),
     ).toEqual([]);
   });
 
   it("data 里没有 items（或不是数组）时安全返回空，不抛错", () => {
+    expect(collectItemContainers(blueprintWithStorage({ [COMPONENT.Storage]: {} }))).toEqual([]);
     expect(
-      collectItemContainers(blueprintWithStorage([{ name: COMPONENT.Storage, data: {} }])),
-    ).toEqual([]);
-    expect(
-      collectItemContainers(
-        blueprintWithStorage([{ name: COMPONENT.Storage, data: { items: "不是数组" } }]),
-      ),
+      collectItemContainers(blueprintWithStorage({ [COMPONENT.Storage]: { items: "不是数组" } })),
     ).toEqual([]);
   });
 

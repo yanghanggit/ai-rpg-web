@@ -1,14 +1,12 @@
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
 import {
+  type Entity,
   getComponentData,
   isRecord,
   readCharacterStats,
   readNumber,
   readString,
 } from "../entities/ecs";
-
-type Entity = Schemas["EntitySerialization"];
 
 /**
  * 从角色实体的序列化数据里读出「角色信息浮窗」需要的字段。

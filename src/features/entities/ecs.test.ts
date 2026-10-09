@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Schemas } from "../../api/types";
 import { COMPONENT, type ComponentName } from "./componentNames";
 import {
-  getComponent,
+  type Entity,
   getComponentData,
   hasComponent,
   isRecord,
@@ -12,17 +11,15 @@ import {
   readString,
 } from "./ecs";
 
-type Entity = Schemas["EntitySerialization"];
-
 const entity: Entity = {
   name: "角色.无名",
-  components: [
-    { name: COMPONENT.Player, data: { player_name: "webdev" } },
-    {
-      name: COMPONENT.CharacterStats,
-      data: { name: "角色.无名", stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 } },
+  data: {
+    [COMPONENT.Player]: { player_name: "webdev" },
+    [COMPONENT.CharacterStats]: {
+      name: "角色.无名",
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
     },
-  ],
+  },
 };
 
 describe("isRecord", () => {
@@ -35,14 +32,9 @@ describe("isRecord", () => {
   });
 });
 
-describe("getComponent / getComponentData / hasComponent", () => {
-  it("按类名取组件与 data", () => {
-    expect(getComponent(entity, COMPONENT.Player)).toEqual({
-      name: COMPONENT.Player,
-      data: { player_name: "webdev" },
-    });
+describe("getComponentData / hasComponent", () => {
+  it("按类名取 data", () => {
     expect(getComponentData(entity, COMPONENT.Player)).toEqual({ player_name: "webdev" });
-    expect(getComponent(entity, "MissingComponent" as ComponentName)).toBeUndefined();
     expect(getComponentData(entity, "MissingComponent" as ComponentName)).toBeUndefined();
   });
 
@@ -77,11 +69,11 @@ describe("readCharacterStats", () => {
   });
 
   it("缺组件或字段类型不对返回 null（不猜）", () => {
-    expect(readCharacterStats({ name: "角色.无名", components: [] })).toBeNull();
+    expect(readCharacterStats({ name: "角色.无名", data: {} })).toBeNull();
     expect(
       readCharacterStats({
         name: "角色.无名",
-        components: [{ name: COMPONENT.CharacterStats, data: { stats: { hp: 12, max_hp: "15" } } }],
+        data: { [COMPONENT.CharacterStats]: { stats: { hp: 12, max_hp: "15" } } },
       }),
     ).toBeNull();
   });

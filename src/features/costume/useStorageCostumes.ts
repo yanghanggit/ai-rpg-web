@@ -7,6 +7,7 @@
  */
 import { $api } from "../../api/query";
 import { COMPONENT } from "../entities/componentNames";
+import { firstEntity, resolveEntities } from "../entities/ecs";
 import { readItems } from "../items/readItems";
 import type { Item } from "../items/types";
 
@@ -24,7 +25,7 @@ export function useStorageCostumes(userName: string, gameName: string, enabled: 
     "get",
     GROUP_PATH,
     { params: { path, query: { all_of: STORAGE_MATCH } } },
-    { enabled, select: (data) => data.entities[0]?.name ?? null },
+    { enabled, select: (data) => firstEntity(data.entities)?.name ?? null },
   );
 
   const storageName = storageEntity.data ?? null;
@@ -36,10 +37,10 @@ export function useStorageCostumes(userName: string, gameName: string, enabled: 
     { enabled: enabled && storageName !== null },
   );
 
-  const components = details.data?.entities.flatMap((entity) => entity.components) ?? [];
-  const costumes: Item[] = readItems(components, COMPONENT.Storage).filter(
-    (item) => item.type === "CostumeItem",
-  );
+  const entities = resolveEntities(details.data?.entities ?? {});
+  const costumes: Item[] = entities
+    .flatMap((entity) => readItems(entity, COMPONENT.Storage))
+    .filter((item) => item.type === "CostumeItem");
 
   return {
     costumes,

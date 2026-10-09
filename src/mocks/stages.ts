@@ -6,6 +6,7 @@
  * 行为对齐后端：玩家只出现在一个场景，`readMockStages` 返回当前快照。
  */
 import type { Schemas } from "../api/types";
+import type { Entity } from "../features/entities/ecs";
 import {
   blueprintFixture,
   dungeonStageEntityFixtures,
@@ -70,7 +71,7 @@ export function resetMockStages(): void {
 }
 
 /** 场景实体快照（深拷贝）；未知场景名返回 `null`。家园与副本场景都在这里。 */
-export function readMockStageEntity(name: string): Schemas["EntitySerialization"] | null {
+export function readMockStageEntity(name: string): Entity | null {
   const fixture = [...stageEntityFixtures, ...dungeonStageEntityFixtures].find(
     (entity) => entity.name === name,
   );

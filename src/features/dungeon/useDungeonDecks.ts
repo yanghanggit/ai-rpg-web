@@ -19,6 +19,7 @@ import type { Schemas } from "../../api/types";
 import { readCards } from "../cards/readCards";
 import type { Card } from "../cards/types";
 import { COMPONENT } from "../entities/componentNames";
+import { resolveEntities } from "../entities/ecs";
 import { useDungeonParty } from "./useDungeonParty";
 
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
@@ -52,12 +53,12 @@ export function useDungeonDecks(userName: string, gameName: string, room: Dungeo
     { enabled: monsterNames.length > 0 },
   );
 
-  const byName = new Map(details.data?.entities.map((entity) => [entity.name, entity]) ?? []);
+  const byName = new Map(
+    resolveEntities(details.data?.entities ?? {}).map((entity) => [entity.name, entity]),
+  );
   const monsters: DungeonMonster[] = monsterNames.flatMap((name) => {
     const entity = byName.get(name);
-    return entity === undefined
-      ? []
-      : [{ name, deck: readCards(entity.components, COMPONENT.Deck) }];
+    return entity === undefined ? [] : [{ name, deck: readCards(entity, COMPONENT.Deck) }];
   });
 
   // 没有本间怪物时 details 是 disabled 的——v5 里 disabled 查询的 `isPending` 恒为 true，

@@ -8,8 +8,9 @@
  */
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";
-import type { ApiBody, Schemas } from "../api/types";
+import type { ApiBody } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { Entity } from "../features/entities/ecs";
 import {
   advanceMockMonsterTurn,
   collectMockLoot,
@@ -36,6 +37,7 @@ import {
 import {
   blueprintFixture,
   blueprintListFixture,
+  entitiesToData,
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
@@ -98,33 +100,33 @@ export const handlers = [
     const conditions = searchParams.getAll("all_of");
     const noneOf = searchParams.getAll("none_of");
     if (conditions.includes(COMPONENT.Player)) {
-      return HttpResponse.json({ entities: [readMockPlayerEntity()] });
+      return HttpResponse.json({ entities: entitiesToData([readMockPlayerEntity()]) });
     }
     if (conditions.includes(COMPONENT.WornCostume)) {
-      return HttpResponse.json({ entities: readMockWornEntities() });
+      return HttpResponse.json({ entities: entitiesToData(readMockWornEntities()) });
     }
     if (conditions.includes(COMPONENT.Storage)) {
-      return HttpResponse.json({ entities: [readMockStorageEntity()] });
+      return HttpResponse.json({ entities: entitiesToData([readMockStorageEntity()]) });
     }
     // 队伍名单挂在玩家实体上（名单为空时该组件不存在，entities 为空）
     if (conditions.includes(COMPONENT.PartyRoster)) {
-      return HttpResponse.json({ entities: readMockRosterEntities() });
+      return HttpResponse.json({ entities: entitiesToData(readMockRosterEntities()) });
     }
     // 副本内的队伍（进副本时固化）：持 PartyMemberComponent 的成员，带牌组 / 奖励（Spoils）
     if (conditions.includes(COMPONENT.PartyMember)) {
-      return HttpResponse.json({ entities: readMockPartyEntities() });
+      return HttpResponse.json({ entities: entitiesToData(readMockPartyEntities()) });
     }
     // 副本队伍候选：持 NPCComponent 的实体；玩家可能也带 NPCComponent，靠 none_of 排除
     if (conditions.includes(COMPONENT.NPC)) {
-      return HttpResponse.json({ entities: readMockNpcEntities(noneOf) });
+      return HttpResponse.json({ entities: entitiesToData(readMockNpcEntities(noneOf)) });
     }
-    return HttpResponse.json({ entities: [] });
+    return HttpResponse.json({ entities: {} });
   }),
 
   // 实体详情：按名字批量查询（玩家 / NPC / 储物箱），角色信息与道具管理浮窗都用它
   http.get(api("/api/entities/v1/:userName/:gameName/details"), ({ request }) => {
     const names = new URL(request.url).searchParams.getAll("entities");
-    const entities: Schemas["EntitySerialization"][] = [];
+    const entities: Entity[] = [];
     for (const name of names) {
       if (name === readMockStorageEntityName()) {
         entities.push(readMockStorageEntity());
@@ -148,7 +150,7 @@ export const handlers = [
         entities.push(stage);
       }
     }
-    return HttpResponse.json({ entities });
+    return HttpResponse.json({ entities: entitiesToData(entities) });
   }),
 
   // 任务：SSE 监听单个任务至终态，与真实后端 /api/tasks/v1/watch/{job_id} 一致。

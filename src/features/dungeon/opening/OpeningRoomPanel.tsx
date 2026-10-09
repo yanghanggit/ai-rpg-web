@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Schemas } from "../../../api/types";
+import { firstEntity } from "../../entities/ecs";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import StageInfoDialog from "../../stage/StageInfoDialog";
@@ -86,8 +87,8 @@ export default function OpeningRoomPanel({
   // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
 
-  const narrative =
-    stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
+  const stageEntity = firstEntity(stage.data?.entities ?? {});
+  const narrative = stageEntity === undefined ? null : readStageInfo(stageEntity).narrative;
 
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 

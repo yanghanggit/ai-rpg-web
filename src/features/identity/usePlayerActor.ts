@@ -18,6 +18,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
+import { firstEntity } from "../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 
@@ -41,15 +42,15 @@ export function usePlayerActor(userName: string, gameName: string) {
   return $api.useQuery("get", GROUP_PATH, playerActorInit(userName, gameName), {
     staleTime: Infinity,
     // group 端点按 PlayerComponent 过滤后只剩玩家实体，取第一个即可。
-    select: (data) => data.entities[0]?.name ?? null,
+    select: (data) => firstEntity(data.entities)?.name ?? null,
   });
 }
 
 /**
  * 把已知的 player_actor 写入缓存。
  *
- * 用 `EntitiesDetailsResponse` 的最小合法形态填充：下游只取 `entities[0].name`，
- * `components` 留空、不参与判断。
+ * 用 `EntitiesDetailsResponse` 的最小合法形态填充：下游只取第一个实体的名字，
+ * 组件留空、不参与判断。
  */
 export function seedPlayerActor(
   queryClient: QueryClient,
@@ -58,7 +59,7 @@ export function seedPlayerActor(
   actorName: string,
 ): void {
   const data: Schemas["EntitiesDetailsResponse"] = {
-    entities: [{ name: actorName, components: [] }],
+    entities: { [actorName]: {} },
   };
 
   queryClient.setQueryData(

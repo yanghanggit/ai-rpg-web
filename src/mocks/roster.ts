@@ -6,27 +6,27 @@
  * add / remove 是**同步**动作，并有校验：成员必须是 NPC、不能重复、不能是玩家自身。
  * 这里照抄同一套语义，让 `pnpm dev:mock` 与真实后端行为一致。
  */
-import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { Entity } from "../features/entities/ecs";
 import { npcEntityFixtures, playerEntityFixture } from "./fixtures";
 
 /** 队伍成员（不含玩家自身）。 */
 let roster: string[] = [];
 
 /** 玩家实体的 `PartyRosterComponent` 快照；名单为空时组件不存在，返回空数组。 */
-export function readMockRosterEntities(): Schemas["EntitySerialization"][] {
+export function readMockRosterEntities(): Entity[] {
   if (roster.length === 0) {
     return [];
   }
   return [
     {
       name: playerEntityFixture.name,
-      components: [
-        {
-          name: COMPONENT.PartyRoster,
-          data: { name: playerEntityFixture.name, members: [...roster] },
+      data: {
+        [COMPONENT.PartyRoster]: {
+          name: playerEntityFixture.name,
+          members: [...roster],
         },
-      ],
+      },
     },
   ];
 }
@@ -38,23 +38,20 @@ export function readMockRosterEntities(): Schemas["EntitySerialization"][] {
  * 所以真实后端会给它加上 `NPCComponent`）——这样调用方一旦忘了传
  * `none_of=PlayerComponent`，玩家就会出现在候选里，测试能当场抓住。
  */
-export function readMockNpcEntities(excludeComponents: string[]): Schemas["EntitySerialization"][] {
-  const withNpcMark: Schemas["EntitySerialization"][] = [
+export function readMockNpcEntities(excludeComponents: string[]): Entity[] {
+  const withNpcMark: Entity[] = [
     {
       name: playerEntityFixture.name,
-      components: [
-        ...playerEntityFixture.components,
-        { name: COMPONENT.NPC, data: { name: playerEntityFixture.name } },
-      ],
+      data: {
+        ...playerEntityFixture.data,
+        [COMPONENT.NPC]: { name: playerEntityFixture.name },
+      },
     },
     ...npcEntityFixtures,
   ];
 
   return structuredClone(withNpcMark).filter(
-    (entity) =>
-      !excludeComponents.some((name) =>
-        entity.components.some((component) => component.name === name),
-      ),
+    (entity) => !excludeComponents.some((name) => entity.data[name] !== undefined),
   );
 }
 

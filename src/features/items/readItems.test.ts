@@ -1,13 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
+import type { Entity } from "../entities/ecs";
 import { readItems } from "./readItems";
 
-type Component = Schemas["ComponentSerialization"];
-
 /** 只带一个储物箱组件的最小输入，方便逐个用例替换 items。 */
-function withStorage(items: unknown[]): Component[] {
-  return [{ name: COMPONENT.Storage, data: { name: "世界.储物箱", items } }];
+function withStorage(items: unknown[]): Entity {
+  return {
+    name: "世界.储物箱",
+    data: { [COMPONENT.Storage]: { name: "世界.储物箱", items } },
+  };
 }
 
 describe("readItems", () => {
@@ -56,9 +57,14 @@ describe("readItems", () => {
 
   it("没有对应组件 / items 缺失或非数组时安全返回空", () => {
     expect(readItems(withStorage([]), COMPONENT.Inventory)).toEqual([]);
-    expect(readItems([{ name: COMPONENT.Storage, data: {} }], COMPONENT.Storage)).toEqual([]);
     expect(
-      readItems([{ name: COMPONENT.Storage, data: { items: "不是数组" } }], COMPONENT.Storage),
+      readItems({ name: "世界.储物箱", data: { [COMPONENT.Storage]: {} } }, COMPONENT.Storage),
+    ).toEqual([]);
+    expect(
+      readItems(
+        { name: "世界.储物箱", data: { [COMPONENT.Storage]: { items: "不是数组" } } },
+        COMPONENT.Storage,
+      ),
     ).toEqual([]);
   });
 });

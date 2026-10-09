@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Schemas } from "../../../api/types";
+import { firstEntity } from "../../entities/ecs";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import StageInfoDialog from "../../stage/StageInfoDialog";
@@ -51,8 +52,8 @@ export default function CombatSetupPanel({
   actions: CombatActions;
 }) {
   const stage = useStageEntity(userName, gameName, stageName);
-  const narrative =
-    stage.data?.entities[0] === undefined ? null : readStageInfo(stage.data.entities[0]).narrative;
+  const stageEntity = firstEntity(stage.data?.entities ?? {});
+  const narrative = stageEntity === undefined ? null : readStageInfo(stageEntity).narrative;
 
   // 正在看场景全文（非空即打开场景信息浮窗）
   const [isStageOpen, setIsStageOpen] = useState(false);

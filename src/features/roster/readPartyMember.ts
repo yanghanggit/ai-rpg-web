@@ -1,8 +1,5 @@
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
-import { hasComponent, readCharacterStats } from "../entities/ecs";
-
-type Entity = Schemas["EntitySerialization"];
+import { type Entity, hasComponent, readCharacterStats } from "../entities/ecs";
 
 /**
  * 从角色实体里读出「出征前点验」需要的信息：是不是玩家本人、是否已死亡、战斗属性。

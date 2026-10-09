@@ -11,8 +11,8 @@
  * 进入下一关」整条链路可走。组件的**拼装**在这里，副本本身的状态在 `./dungeons`，
  * 两者由 handler 接线（真实后端也是 API 层把两边读出来拼成响应）。
  */
-import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { Entity, EntityData } from "../features/entities/ecs";
 import { deckFixtures, defaultDeckFixture, spoilsFixture } from "./fixtures";
 import { readMockActorEntity } from "./items";
 
@@ -81,35 +81,29 @@ export function leaveMockOpening(): void {
  *
  * 不在队伍里的角色原样返回——组件是进副本时才挂上去的。
  */
-export function withMockOpeningComponents(
-  entity: Schemas["EntitySerialization"],
-): Schemas["EntitySerialization"] {
+export function withMockOpeningComponents(entity: Entity): Entity {
   if (!party.includes(entity.name)) {
     return entity;
   }
-  const components = [...entity.components];
-  components.push({ name: COMPONENT.PartyMember, data: { name: entity.name } });
-  components.push({
-    name: COMPONENT.Deck,
-    data: { name: entity.name, cards: clone(decks.get(entity.name) ?? []) },
-  });
+  const data: EntityData = {
+    ...entity.data,
+    [COMPONENT.PartyMember]: { name: entity.name },
+    [COMPONENT.Deck]: { name: entity.name, cards: clone(decks.get(entity.name) ?? []) },
+  };
   const reward = spoils.get(entity.name);
   if (reward !== undefined) {
-    components.push({
-      name: COMPONENT.Spoils,
-      data: {
-        name: entity.name,
-        candidate_cards: clone(reward.candidateCards),
-        claimed_cards: clone(reward.claimedCards),
-      },
-    });
+    data[COMPONENT.Spoils] = {
+      name: entity.name,
+      candidate_cards: clone(reward.candidateCards),
+      claimed_cards: clone(reward.claimedCards),
+    };
   }
-  return { name: entity.name, components };
+  return { name: entity.name, data };
 }
 
 /** 队伍成员实体（`group?all_of=PartyMemberComponent` 的返回体）。 */
-export function readMockPartyEntities(): Schemas["EntitySerialization"][] {
-  const entities: Schemas["EntitySerialization"][] = [];
+export function readMockPartyEntities(): Entity[] {
+  const entities: Entity[] = [];
   for (const name of party) {
     const base = readMockActorEntity(name);
     if (base !== null) {

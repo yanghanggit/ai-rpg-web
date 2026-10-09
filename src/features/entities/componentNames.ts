@@ -3,7 +3,7 @@
  *
  * ## 为什么要有这一层
  *
- * 契约里 `ComponentSerialization.name` 只是 `string`（后端支持 `create_component_type`
+ * 契约里组件 key（类名）只是 `string`（后端支持 `create_component_type`
  * 动态组件类，收窄不成枚举），`ecs.ts` 的读取函数以前也收 `string`。于是类名拼错时
  * TypeScript 不报错，运行时 `hasComponent` 返回 `false`、`getComponentData` 返回
  * `undefined`——各 reader 的设计本就是「读不到就给空值」，结果是界面静默少一块数据、

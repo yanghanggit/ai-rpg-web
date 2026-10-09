@@ -8,6 +8,7 @@
  */
 import { $api } from "../../api/query";
 import { COMPONENT } from "../entities/componentNames";
+import { entityNames } from "../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 
@@ -21,6 +22,6 @@ export function useRosterCandidates(userName: string, gameName: string) {
         query: { all_of: [COMPONENT.NPC], none_of: [COMPONENT.Player] },
       },
     },
-    { select: (data) => data.entities.map((entity) => entity.name) },
+    { select: (data) => entityNames(data.entities) },
   );
 }

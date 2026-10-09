@@ -15,9 +15,13 @@ import type { Schemas } from "../../../api/types";
 import { readCards } from "../../cards/readCards";
 import type { Card } from "../../cards/types";
 import { COMPONENT } from "../../entities/componentNames";
-import { getComponentData, hasComponent, readCharacterStats, readNumber } from "../../entities/ecs";
-
-type Entity = Schemas["EntitySerialization"];
+import {
+  type Entity,
+  getComponentData,
+  hasComponent,
+  readCharacterStats,
+  readNumber,
+} from "../../entities/ecs";
 
 /** 战斗阵营：我方（玩家 + 队友）/ 敌方（怪物）/ 未知。 */
 export type Faction = "party" | "monster" | "unknown";
@@ -80,7 +84,7 @@ export function readEnergy(entity: Entity): number {
 
 /** 手牌（`HandComponent.cards`）；未抓牌时为空数组。 */
 export function readHand(entity: Entity): Card[] {
-  return readCards(entity.components, COMPONENT.Hand);
+  return readCards(entity, COMPONENT.Hand);
 }
 
 /** 手牌提供的总格挡，与后端 `compute_hand_block` 一致。 */
@@ -150,9 +154,9 @@ export function readTargetNames(
 /** 三个牌堆里的牌；未抓牌时都为空数组。 */
 export function readPiles(entity: Entity): CombatPiles {
   return {
-    draw: readCards(entity.components, COMPONENT.DrawPile),
-    discard: readCards(entity.components, COMPONENT.DiscardPile),
-    exhaust: readCards(entity.components, COMPONENT.ExhaustPile),
+    draw: readCards(entity, COMPONENT.DrawPile),
+    discard: readCards(entity, COMPONENT.DiscardPile),
+    exhaust: readCards(entity, COMPONENT.ExhaustPile),
   };
 }
 

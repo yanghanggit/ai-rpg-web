@@ -1,7 +1,7 @@
 /**
  * 卡牌领域的共享类型。
  *
- * 后端没有把 `Card` 暴露进 OpenAPI（`ComponentSerialization.data` 是 `Dict[str, Any]`），
+ * 后端没有把 `Card` 暴露进 OpenAPI（组件 `data` 是 `Dict[str, Any]`），
  * 所以这里写不出契约类型——取值必须与 `ai-rpg` 的 `models/card.py::Card` 与
  * `models/target_type.py::TargetType` 保持一致，靠 `readCard` 的运行时校验兜住。
  */

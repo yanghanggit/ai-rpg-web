@@ -1,8 +1,5 @@
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
-import { getComponentData, readString } from "../entities/ecs";
-
-type Entity = Schemas["EntitySerialization"];
+import { type Entity, getComponentData, readString } from "../entities/ecs";
 
 /**
  * 从场景实体的序列化数据里读出「场景信息浮窗」需要的字段。

@@ -58,9 +58,9 @@ describe("战斗房间接口（mock handlers）", () => {
         params: { path, query: { entities: [PLAYER] } },
       }),
     );
-    const components = details.entities[0]?.components ?? [];
-    expect(components.some((component) => component.name === COMPONENT.Hand)).toBe(true);
-    expect(components.some((component) => component.name === COMPONENT.RoundStats)).toBe(true);
+    const components = details.entities[PLAYER] ?? {};
+    expect(components[COMPONENT.Hand]).toBeDefined();
+    expect(components[COMPONENT.RoundStats]).toBeDefined();
 
     // 怪物实体也持 DeckComponent（战斗双方都有牌库，「牌组一览」要靠它列敌方）
     const monsters = unwrap(
@@ -68,11 +68,7 @@ describe("战斗房间接口（mock handlers）", () => {
         params: { path, query: { entities: ["怪物.纸人"] } },
       }),
     );
-    expect(
-      (monsters.entities[0]?.components ?? []).some(
-        (component) => component.name === COMPONENT.Deck,
-      ),
-    ).toBe(true);
+    expect(monsters.entities["怪物.纸人"]?.[COMPONENT.Deck]).toBeDefined();
 
     // 场景映射里能按玩家定位到战斗场景，且怪物在场
     const stages = unwrap(

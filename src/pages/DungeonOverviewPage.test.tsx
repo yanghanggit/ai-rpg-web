@@ -5,6 +5,7 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { describe, expect, it } from "vitest";
 import { COMPONENT } from "../features/entities/componentNames";
 import { enterMockDungeon, generateMockDungeon } from "../mocks/dungeons";
+import { entitiesToData } from "../mocks/fixtures";
 import { api } from "../mocks/handlers";
 import { readMockActorEntity } from "../mocks/items";
 import { server } from "../mocks/node";
@@ -261,11 +262,11 @@ describe("副本总览 · 进入副本（最终确认）", () => {
             return [];
           }
           if (name === "角色.顾知秋") {
-            entity.components.push({ name: COMPONENT.Death, data: { name } });
+            entity.data[COMPONENT.Death] = { name };
           }
           return [entity];
         });
-        return HttpResponse.json({ entities });
+        return HttpResponse.json({ entities: entitiesToData(entities) });
       }),
     );
     renderDungeon();

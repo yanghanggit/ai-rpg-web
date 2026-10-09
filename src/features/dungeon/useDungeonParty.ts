@@ -21,7 +21,7 @@ import type { Schemas } from "../../api/types";
 import { readCards } from "../cards/readCards";
 import type { Card } from "../cards/types";
 import { COMPONENT } from "../entities/componentNames";
-import { hasComponent, readCharacterStats } from "../entities/ecs";
+import { hasComponent, readCharacterStats, resolveEntities } from "../entities/ecs";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
@@ -49,7 +49,7 @@ export function useDungeonParty(userName: string, gameName: string) {
         query: { all_of: [COMPONENT.PartyMember] },
       },
     },
-    { select: (data) => data.entities.map((entity) => entity.name) },
+    { select: (data) => Object.keys(data.entities) },
   );
 
   // 实体名来自上一步，所以等它成功再发（避免用空名单先发一次无用请求）
@@ -66,7 +66,9 @@ export function useDungeonParty(userName: string, gameName: string) {
   );
 
   // 保持队伍顺序（玩家在前、其余同名单），查不到的实体跳过
-  const byName = new Map(details.data?.entities.map((entity) => [entity.name, entity]) ?? []);
+  const byName = new Map(
+    resolveEntities(details.data?.entities ?? {}).map((entity) => [entity.name, entity]),
+  );
   const party: DungeonPartyMember[] = (members.data ?? []).flatMap((name) => {
     const entity = byName.get(name);
     if (entity === undefined) {
@@ -77,12 +79,12 @@ export function useDungeonParty(userName: string, gameName: string) {
         name,
         player: hasComponent(entity, COMPONENT.Player),
         stats: readCharacterStats(entity),
-        deck: readCards(entity.components, COMPONENT.Deck),
+        deck: readCards(entity, COMPONENT.Deck),
         // `SpoilsComponent` 不存在 = 尚未生成奖励；存在则给出两个队列
         spoils: hasComponent(entity, COMPONENT.Spoils)
           ? {
-              candidateCards: readCards(entity.components, COMPONENT.Spoils, "candidate_cards"),
-              claimedCards: readCards(entity.components, COMPONENT.Spoils, "claimed_cards"),
+              candidateCards: readCards(entity, COMPONENT.Spoils, "candidate_cards"),
+              claimedCards: readCards(entity, COMPONENT.Spoils, "claimed_cards"),
             }
           : null,
       },

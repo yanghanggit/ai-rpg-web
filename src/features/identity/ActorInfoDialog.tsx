@@ -1,5 +1,6 @@
 import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
+import { firstEntity } from "../entities/ecs";
 import { readActorInfo } from "./readActorInfo";
 import { useActorEntity } from "./useActorEntity";
 
@@ -41,7 +42,7 @@ export default function ActorInfoDialog({
   onClose: () => void;
 }) {
   const entity = useActorEntity(userName, gameName, actorName);
-  const actor = entity.data?.entities[0];
+  const actor = firstEntity(entity.data?.entities ?? {});
   const info = actor ? readActorInfo(actor) : null;
   const actionsDisabled = busy || costumeBusy;
 

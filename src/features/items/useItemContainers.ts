@@ -10,6 +10,7 @@
  */
 import { $api } from "../../api/query";
 import { COMPONENT } from "../entities/componentNames";
+import { firstEntity, resolveEntities } from "../entities/ecs";
 import { readItems } from "./readItems";
 import { readWornCostumes } from "./readWornCostumes";
 import type { Item, WornCostume } from "./types";
@@ -29,7 +30,7 @@ export function useItemContainers(userName: string, gameName: string, actorName:
     "get",
     GROUP_PATH,
     { params: { path, query: { all_of: STORAGE_MATCH } } },
-    { enabled, select: (data) => data.entities[0]?.name ?? null },
+    { enabled, select: (data) => firstEntity(data.entities)?.name ?? null },
   );
 
   const wornGroup = $api.useQuery(
@@ -48,10 +49,10 @@ export function useItemContainers(userName: string, gameName: string, actorName:
     { enabled: enabled && storageName !== null },
   );
 
-  const components = details.data?.entities.flatMap((entity) => entity.components) ?? [];
-  const inventory: Item[] = readItems(components, COMPONENT.Inventory);
-  const storage: Item[] = readItems(components, COMPONENT.Storage);
-  const worn: WornCostume[] = readWornCostumes(wornGroup.data?.entities ?? []);
+  const entities = resolveEntities(details.data?.entities ?? {});
+  const inventory: Item[] = entities.flatMap((entity) => readItems(entity, COMPONENT.Inventory));
+  const storage: Item[] = entities.flatMap((entity) => readItems(entity, COMPONENT.Storage));
+  const worn: WornCostume[] = readWornCostumes(resolveEntities(wornGroup.data?.entities ?? {}));
 
   return {
     inventory,

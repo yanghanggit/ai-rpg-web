@@ -1,5 +1,6 @@
 import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
+import { firstEntity } from "../entities/ecs";
 import { readStageInfo } from "./readStageInfo";
 import { useStageEntity } from "./useStageEntity";
 
@@ -28,7 +29,7 @@ export default function StageInfoDialog({
   onClose: () => void;
 }) {
   const entity = useStageEntity(userName, gameName, stageName);
-  const stage = entity.data?.entities[0];
+  const stage = firstEntity(entity.data?.entities ?? {});
   const info = stage ? readStageInfo(stage) : null;
 
   return (

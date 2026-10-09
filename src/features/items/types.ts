@@ -1,7 +1,7 @@
 /**
  * 道具管理领域的共享类型。
  *
- * 后端没有把 `AnyItem` 暴露进 OpenAPI（`ComponentSerialization.data` 是
+ * 后端没有把 `AnyItem` 暴露进 OpenAPI（组件 `data` 是
  * `Dict[str, Any]`），所以这里手写不了契约类型——`ItemType` 的取值必须与
  * `ai-rpg` 的 `models/items.py::ItemType` 保持一致，靠运行时校验兜住。
  */

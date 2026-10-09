@@ -1,6 +1,6 @@
 import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
-import { isRecord } from "../entities/ecs";
+import { type EntityData, isRecord } from "../entities/ecs";
 
 type Blueprint = Schemas["Blueprint"];
 
@@ -9,11 +9,11 @@ type Blueprint = Schemas["Blueprint"];
  *
  * ## 为什么要按 name 分派 + 逐字段校验
  *
- * `ComponentSerialization` 是 ECS 组件的**序列化信封**，不是带类型的领域模型：
- * `name` 是组件类名，`data` 是 `Dict[str, Any]`。后端自己反序列化时走的也是同一套路：
+ * 组件 dump 是 **name-keyed dict**：`{ 组件类名: data }`，不是带类型的领域模型。
+ * 组件类名是 key，`data` 是 `Dict[str, Any]`。后端自己反序列化时走的也是同一套路：
  *
- *     comp_class = resolve_component_type(comp.name, comp.data)   # 按 name 查注册表
- *     component  = comp_class(**comp.data)                        # 再用字典重建
+ *     comp_class = resolve_component_type(comp_name, comp_data)   # 按 name 查注册表
+ *     component  = comp_class(**comp_data)                        # 再用字典重建
  *     （见 src/ai_rpg/game/rpg_entity_manager.py 与 dbg_game.py）
  *
  * 也就是说 `data` 在契约里**本来就没有具体类型**——类型是运行时按 name 解析的。
@@ -63,16 +63,18 @@ function readItems(data: unknown): ContainerItem[] {
 
 /** 蓝图里挂着的道具容器：随身背包、储物箱。两者都为空时返回空数组。 */
 export function collectItemContainers(blueprint: Blueprint) {
-  const allComponents = [
-    ...blueprint.stages.flatMap((stage) => stage.actors.flatMap((actor) => actor.components)),
-    ...blueprint.world_entities.flatMap((entity) => entity.components),
+  const allComponents: EntityData[] = [
+    ...blueprint.stages.flatMap((stage) => stage.actors.map((actor) => actor.components)),
+    ...blueprint.world_entities.map((entity) => entity.components),
   ];
 
   return CONTAINER_COMPONENTS.flatMap(({ component, label }) => {
     // 同类容器只取第一个：当前每种只有一个（背包在玩家身上，储物箱在世界实体上）。
     // 将来真出现多个，再连同持有者一起展示。
-    const source = allComponents.find((candidate) => candidate.name === component);
-    const items = source ? readItems(source.data) : [];
+    const data = allComponents.find((components) => components[component] !== undefined)?.[
+      component
+    ];
+    const items = data ? readItems(data) : [];
 
     return items.length === 0 ? [] : [{ label, items }];
   });

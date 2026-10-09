@@ -1,5 +1,5 @@
-import type { Schemas } from "../../api/types";
 import type { ComponentName } from "../entities/componentNames";
+import { type Entity, getComponentData } from "../entities/ecs";
 import { readItem } from "./readItem";
 import type { Item } from "./types";
 
@@ -9,11 +9,8 @@ import type { Item } from "./types";
  * 同类容器只取第一个：当前背包在玩家身上、储物箱在世界实体上，各只有一个。
  * `data.items` 缺失或不是数组时安全返回空数组（蓝图里挂着一堆空组件是常态）。
  */
-export function readItems(
-  components: Schemas["ComponentSerialization"][],
-  componentName: ComponentName,
-): Item[] {
-  const data = components.find((component) => component.name === componentName)?.data;
+export function readItems(entity: Entity, componentName: ComponentName): Item[] {
+  const data = getComponentData(entity, componentName);
   if (data === undefined || !Array.isArray(data.items)) {
     return [];
   }

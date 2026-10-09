@@ -16,6 +16,7 @@
  */
 import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { Entity, EntityData } from "../features/entities/ecs";
 import {
   blueprintFixture,
   deckFixtures,
@@ -29,7 +30,6 @@ import { addMockInventoryItems } from "./items";
 import { readMockPartyNames } from "./opening";
 
 type RawCard = Record<string, unknown>;
-type Entity = Schemas["EntitySerialization"];
 
 const STATE_NONE = 0;
 const STATE_INITIALIZATION = 1;
@@ -427,25 +427,16 @@ export function readMockCombatActorEntity(name: string): Entity | null {
   }
   return {
     name,
-    components: [
-      { name: COMPONENT.Monster, data: { name } },
-      {
-        name: COMPONENT.Identity,
-        data: { name, creation_order: 0, entity_id: `mock-${name}` },
+    data: {
+      [COMPONENT.Monster]: { name },
+      [COMPONENT.Identity]: { name, creation_order: 0, entity_id: `mock-${name}` },
+      [COMPONENT.Appearance]: { name, base_body: actor.base_body, appearance: actor.base_body },
+      [COMPONENT.CharacterStats]: { name, stats: clone(actor.character_stats) },
+      [COMPONENT.Deck]: {
+        name,
+        cards: clone(monsterDeckFixtures[name] ?? defaultMonsterDeckFixture),
       },
-      {
-        name: COMPONENT.Appearance,
-        data: { name, base_body: actor.base_body, appearance: actor.base_body },
-      },
-      {
-        name: COMPONENT.CharacterStats,
-        data: { name, stats: clone(actor.character_stats) },
-      },
-      {
-        name: COMPONENT.Deck,
-        data: { name, cards: clone(monsterDeckFixtures[name] ?? defaultMonsterDeckFixture) },
-      },
-    ],
+    },
   };
 }
 
@@ -459,29 +450,24 @@ export function withMockCombatComponents(entity: Entity): Entity {
   if (!battle.has(entity.name)) {
     return entity;
   }
-  const components = [...entity.components];
+  const data: EntityData = { ...entity.data };
   const actor = battle.get(entity.name);
   const round = latestRound();
 
   if (round?.draw_completed && actor !== undefined) {
-    components.push(
-      {
-        name: COMPONENT.RoundStats,
-        data: { name: entity.name, energy: actor.energy },
-      },
-      { name: COMPONENT.Hand, data: { name: entity.name, cards: clone(actor.hand) } },
-      { name: COMPONENT.DrawPile, data: { name: entity.name, cards: clone(actor.draw) } },
-      { name: COMPONENT.DiscardPile, data: { name: entity.name, cards: clone(actor.discard) } },
-      { name: COMPONENT.ExhaustPile, data: { name: entity.name, cards: clone(actor.exhaust) } },
-    );
+    data[COMPONENT.RoundStats] = { name: entity.name, energy: actor.energy };
+    data[COMPONENT.Hand] = { name: entity.name, cards: clone(actor.hand) };
+    data[COMPONENT.DrawPile] = { name: entity.name, cards: clone(actor.draw) };
+    data[COMPONENT.DiscardPile] = { name: entity.name, cards: clone(actor.discard) };
+    data[COMPONENT.ExhaustPile] = { name: entity.name, cards: clone(actor.exhaust) };
   }
   if (dead.has(entity.name)) {
-    components.push({ name: COMPONENT.Death, data: { name: entity.name } });
+    data[COMPONENT.Death] = { name: entity.name };
   }
   if (entity.name === blueprintFixture.player_actor && loot.length > 0) {
-    components.push({ name: COMPONENT.Loot, data: { name: entity.name, items: clone(loot) } });
+    data[COMPONENT.Loot] = { name: entity.name, items: clone(loot) };
   }
-  return { name: entity.name, components };
+  return { name: entity.name, data };
 }
 
 /** 复位成「没有战斗」（测试之间隔离）。 */

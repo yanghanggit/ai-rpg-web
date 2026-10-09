@@ -6,6 +6,7 @@
  */
 import { $api } from "../../api/query";
 import { COMPONENT } from "../entities/componentNames";
+import { firstEntity } from "../entities/ecs";
 import { readPartyRoster } from "./readPartyRoster";
 
 const GROUP_PATH = "/api/entities/v1/{user_name}/{game_name}/group";
@@ -22,7 +23,10 @@ export function usePartyRoster(userName: string, gameName: string) {
     },
     {
       // 至多一个实体（只有玩家有该组件）；组件缺失即空名单
-      select: (data) => (data.entities[0] ? readPartyRoster(data.entities[0]) : []),
+      select: (data) => {
+        const entity = firstEntity(data.entities);
+        return entity ? readPartyRoster(entity) : [];
+      },
     },
   );
 }

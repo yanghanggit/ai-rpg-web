@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { Entity } from "../features/entities/ecs";
 import {
   advanceMockMonsterTurn,
   collectMockLoot,
@@ -23,8 +23,6 @@ import { blueprintFixture } from "./fixtures";
 import { readMockActorEntity } from "./items";
 import { withMockOpeningComponents } from "./opening";
 import { readMockStages } from "./stages";
-
-type Entity = Schemas["EntitySerialization"];
 
 const PLAYER = blueprintFixture.player_actor;
 const MONSTER_1 = "怪物.纸人";
@@ -56,7 +54,7 @@ function monsterEntity(name: string): Entity {
 }
 
 function componentData(entity: Entity, name: string): Record<string, unknown> | undefined {
-  return entity.components.find((component) => component.name === name)?.data;
+  return entity.data[name];
 }
 
 describe("进入战斗房间", () => {
@@ -170,8 +168,8 @@ describe("结算 / 战利品", () => {
     expect(readMockCombat().result).toBe(1);
     expect(readMockCombatLoot()).toHaveLength(1);
 
-    expect(monsterEntity(MONSTER_1).components.some((c) => c.name === COMPONENT.Death)).toBe(true);
-    expect(actorEntity(PLAYER).components.some((c) => c.name === COMPONENT.Loot)).toBe(true);
+    expect(monsterEntity(MONSTER_1).data[COMPONENT.Death]).toBeDefined();
+    expect(actorEntity(PLAYER).data[COMPONENT.Loot]).toBeDefined();
   });
 
   it("收取战利品：没有时拒绝，有则清空", () => {

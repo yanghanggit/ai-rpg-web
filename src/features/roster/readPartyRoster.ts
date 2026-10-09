@@ -1,6 +1,5 @@
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
-import { getComponentData } from "../entities/ecs";
+import { type Entity, getComponentData } from "../entities/ecs";
 
 /**
  * 从实体里读出 `PartyRosterComponent.members`。
@@ -9,7 +8,7 @@ import { getComponentData } from "../entities/ecs";
  * TypeScript 拦不住，只能运行时校验）。组件不存在（名单为空时后端会移除它）或形状不对
  * 一律返回空数组——「没有队伍」与「读不出来」在这里是同一个可接受结果。
  */
-export function readPartyRoster(entity: Schemas["EntitySerialization"]): string[] {
+export function readPartyRoster(entity: Entity): string[] {
   const members = getComponentData(entity, COMPONENT.PartyRoster)?.members;
   if (!Array.isArray(members)) {
     return [];

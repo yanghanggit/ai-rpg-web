@@ -1,6 +1,5 @@
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
-import { getComponentData } from "../entities/ecs";
+import { type Entity, getComponentData } from "../entities/ecs";
 import { readItem } from "./readItem";
 import type { WornCostume } from "./types";
 
@@ -11,7 +10,7 @@ import type { WornCostume } from "./types";
  * 时装一旦穿上就会从储物箱移除（见后端 `wear_costume_action_system.py`），
  * 所以这份列表与储物箱里的时装不重叠，界面上作为独立的只读子区展示。
  */
-export function readWornCostumes(entities: Schemas["EntitySerialization"][]): WornCostume[] {
+export function readWornCostumes(entities: Entity[]): WornCostume[] {
   const worn: WornCostume[] = [];
   for (const entity of entities) {
     const data = getComponentData(entity, COMPONENT.WornCostume);

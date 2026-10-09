@@ -9,6 +9,12 @@
  */
 import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
+import type { EntitiesData, Entity, EntityData } from "../features/entities/ecs";
+
+/** 把「带名字的实体」列表转成契约形状：`{ 实体名: 组件数据 }`。 */
+export function entitiesToData(entities: Entity[]): EntitiesData {
+  return Object.fromEntries(entities.map((entity) => [entity.name, entity.data]));
+}
 
 /** 后端根路由 `/` 的响应；字段由 ServerInfoResponse 契约保证，无需手写收窄。 */
 export const serverInfoFixture: Schemas["ServerInfoResponse"] = {
@@ -25,7 +31,7 @@ export const serverInfoFixture: Schemas["ServerInfoResponse"] = {
 function actor(
   name: string,
   type: Schemas["ActorType"],
-  components: Schemas["ComponentSerialization"][] = [],
+  components: EntityData = {},
 ): Schemas["Actor"] {
   return {
     name,
@@ -55,36 +61,33 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       actors: [
         actor("角色.顾知秋", "NPC"),
         // 玩家角色的随身背包：字段形状照抄真实后端的 Item（含 uuid / count / 逐类型的额外字段）
-        actor("角色.无名", "NPC", [
-          {
-            name: COMPONENT.Inventory,
-            data: {
-              name: "角色.无名",
-              items: [
-                {
-                  name: "装备.缠麻短刃",
-                  uuid: "00000000-0000-0000-0000-000000000001",
-                  type: "GearItem",
-                  description: "（mock）由旧铁剪反复磨砺而成的短刃。",
-                  count: 1,
-                  resources: [],
-                  cards: [],
-                },
-                {
-                  name: "消耗品.吗啡针剂",
-                  uuid: "00000000-0000-0000-0000-000000000002",
-                  type: "ConsumableItem",
-                  description: "（mock）淡琥珀色的玻璃针剂。",
-                  count: 2,
-                  on_use_prompt: ["（mock）恢复 4 点 HP。"],
-                  resources: [],
-                },
-              ],
-            },
+        actor("角色.无名", "NPC", {
+          [COMPONENT.Inventory]: {
+            name: "角色.无名",
+            items: [
+              {
+                name: "装备.缠麻短刃",
+                uuid: "00000000-0000-0000-0000-000000000001",
+                type: "GearItem",
+                description: "（mock）由旧铁剪反复磨砺而成的短刃。",
+                count: 1,
+                resources: [],
+                cards: [],
+              },
+              {
+                name: "消耗品.吗啡针剂",
+                uuid: "00000000-0000-0000-0000-000000000002",
+                type: "ConsumableItem",
+                description: "（mock）淡琥珀色的玻璃针剂。",
+                count: 2,
+                on_use_prompt: ["（mock）恢复 4 点 HP。"],
+                resources: [],
+              },
+            ],
           },
-        ]),
+        }),
       ],
-      components: [],
+      components: {},
       assets: {},
     },
     {
@@ -93,7 +96,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       profile: "（mock）一楼客房",
       system_message: "（mock）",
       actors: [actor("角色.小厮", "NPC")],
-      components: [],
+      components: {},
       assets: {},
     },
     {
@@ -102,35 +105,32 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       profile: "（mock）二楼卧室",
       system_message: "（mock）",
       actors: [],
-      components: [],
+      components: {},
       assets: {},
     },
   ],
   world_entities: [
-    { name: "世界.玩家行动审计系统", system_message: "（mock）", components: [] },
-    { name: "世界.副本生成系统", system_message: "（mock）", components: [] },
-    { name: "世界.插图提示词", system_message: "（mock）", components: [] },
+    { name: "世界.玩家行动审计系统", system_message: "（mock）", components: {} },
+    { name: "世界.副本生成系统", system_message: "（mock）", components: {} },
+    { name: "世界.插图提示词", system_message: "（mock）", components: {} },
     {
       name: "世界.储物箱",
       system_message: "（mock）",
-      components: [
-        {
-          name: COMPONENT.Storage,
-          data: {
-            name: "世界.储物箱",
-            items: [
-              {
-                name: "材料.旧麻绳",
-                uuid: "00000000-0000-0000-0000-000000000003",
-                type: "MaterialItem",
-                description: "（mock）已泛黄，但韧劲仍在。",
-                count: 3,
-                resources: [],
-              },
-            ],
-          },
+      components: {
+        [COMPONENT.Storage]: {
+          name: "世界.储物箱",
+          items: [
+            {
+              name: "材料.旧麻绳",
+              uuid: "00000000-0000-0000-0000-000000000003",
+              type: "MaterialItem",
+              description: "（mock）已泛黄，但韧劲仍在。",
+              count: 3,
+              resources: [],
+            },
+          ],
         },
-      ],
+      },
     },
   ],
 };
@@ -153,21 +153,16 @@ export const homeStagesFixture: Schemas["StagesStateResponse"] = {
  * 场景实体（家园运行期）：StageComponent + EnvironmentComponent。
  * 环境叙述在真实后端由 `EnvironmentInitializationSystem` 用 LLM 生成；mock 里给固定文本。
  */
-export const stageEntityFixtures: Schemas["EntitySerialization"][] = blueprintFixture.stages.map(
-  (stage) => ({
-    name: stage.name,
-    components: [
-      { name: COMPONENT.Stage, data: { name: stage.name } },
-      {
-        name: COMPONENT.Environment,
-        data: {
-          name: stage.name,
-          narrative: `（mock）${stage.name} 的环境叙述：梁柱森然，灯火幽微。`,
-        },
-      },
-    ],
-  }),
-);
+export const stageEntityFixtures: Entity[] = blueprintFixture.stages.map((stage) => ({
+  name: stage.name,
+  data: {
+    [COMPONENT.Stage]: { name: stage.name },
+    [COMPONENT.Environment]: {
+      name: stage.name,
+      narrative: `（mock）${stage.name} 的环境叙述：梁柱森然，灯火幽微。`,
+    },
+  },
+}));
 
 /**
  * 玩家实体的序列化数据（家园运行期）。
@@ -179,34 +174,25 @@ export const stageEntityFixtures: Schemas["EntitySerialization"][] = blueprintFi
  * **只序列化客户端会读的组件**：后端的 `SystemMessage`（客户端不允许读）与 `ActorComponent`
  * （只有 `name` / `current_stage`，暂无用途）不列入——mock 不是后端响应的完整镜像。
  */
-export const playerEntityFixture: Schemas["EntitySerialization"] = {
+export const playerEntityFixture: Entity = {
   name: blueprintFixture.player_actor,
-  components: [
-    { name: COMPONENT.Player, data: { player_name: "webdev" } },
-    {
-      name: COMPONENT.Identity,
-      data: {
-        name: blueprintFixture.player_actor,
-        creation_order: 2,
-        entity_id: "00000000-0000-0000-0000-0000000000aa",
-      },
+  data: {
+    [COMPONENT.Player]: { player_name: "webdev" },
+    [COMPONENT.Identity]: {
+      name: blueprintFixture.player_actor,
+      creation_order: 2,
+      entity_id: "00000000-0000-0000-0000-0000000000aa",
     },
-    {
-      name: COMPONENT.Appearance,
-      data: {
-        name: blueprintFixture.player_actor,
-        base_body: "（mock）清瘦的青年，着一身洗得发白的青布长衫。",
-        appearance: "（mock）清瘦的青年，着青布长衫，腰间悬着一柄缠麻短刃。",
-      },
+    [COMPONENT.Appearance]: {
+      name: blueprintFixture.player_actor,
+      base_body: "（mock）清瘦的青年，着一身洗得发白的青布长衫。",
+      appearance: "（mock）清瘦的青年，着青布长衫，腰间悬着一柄缠麻短刃。",
     },
-    {
-      name: COMPONENT.CharacterStats,
-      data: {
-        name: blueprintFixture.player_actor,
-        stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
-      },
+    [COMPONENT.CharacterStats]: {
+      name: blueprintFixture.player_actor,
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
     },
-  ],
+  },
 };
 
 /**
@@ -215,58 +201,46 @@ export const playerEntityFixture: Schemas["EntitySerialization"] = {
  * 带 `NPCComponent` 才能成为队伍候选（后端 `add_party_member` 会校验，契约见
  * `game/dbg_game.py`：NPC → NPCComponent，Monster → MonsterComponent，玩家 → PlayerComponent）。
  */
-export const npcEntityFixtures: Schemas["EntitySerialization"][] = [
+export const npcEntityFixtures: Entity[] = [
   {
     name: "角色.顾知秋",
-    components: [
-      { name: COMPONENT.NPC, data: { name: "角色.顾知秋" } },
-      {
-        name: COMPONENT.Identity,
-        data: {
-          name: "角色.顾知秋",
-          creation_order: 1,
-          entity_id: "00000000-0000-0000-0000-0000000000bb",
-        },
+    data: {
+      [COMPONENT.NPC]: { name: "角色.顾知秋" },
+      [COMPONENT.Identity]: {
+        name: "角色.顾知秋",
+        creation_order: 1,
+        entity_id: "00000000-0000-0000-0000-0000000000bb",
       },
-      {
-        name: COMPONENT.Appearance,
-        data: {
-          name: "角色.顾知秋",
-          base_body: "（mock）身量高挑的女子。",
-          appearance: "（mock）着朱砂暗纹道袍的女子。",
-        },
+      [COMPONENT.Appearance]: {
+        name: "角色.顾知秋",
+        base_body: "（mock）身量高挑的女子。",
+        appearance: "（mock）着朱砂暗纹道袍的女子。",
       },
-      {
-        name: COMPONENT.CharacterStats,
-        data: { name: "角色.顾知秋", stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 } },
+      [COMPONENT.CharacterStats]: {
+        name: "角色.顾知秋",
+        stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 },
       },
-    ],
+    },
   },
   {
     name: "角色.小厮",
-    components: [
-      { name: COMPONENT.NPC, data: { name: "角色.小厮" } },
-      {
-        name: COMPONENT.Identity,
-        data: {
-          name: "角色.小厮",
-          creation_order: 3,
-          entity_id: "00000000-0000-0000-0000-0000000000cc",
-        },
+    data: {
+      [COMPONENT.NPC]: { name: "角色.小厮" },
+      [COMPONENT.Identity]: {
+        name: "角色.小厮",
+        creation_order: 3,
+        entity_id: "00000000-0000-0000-0000-0000000000cc",
       },
-      {
-        name: COMPONENT.Appearance,
-        data: {
-          name: "角色.小厮",
-          base_body: "（mock）瘦小的少年。",
-          appearance: "（mock）一身短打的小厮。",
-        },
+      [COMPONENT.Appearance]: {
+        name: "角色.小厮",
+        base_body: "（mock）瘦小的少年。",
+        appearance: "（mock）一身短打的小厮。",
       },
-      {
-        name: COMPONENT.CharacterStats,
-        data: { name: "角色.小厮", stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 } },
+      [COMPONENT.CharacterStats]: {
+        name: "角色.小厮",
+        stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 },
       },
-    ],
+    },
   },
 ];
 
@@ -434,7 +408,7 @@ function dungeonActor(
     base_body: baseBody,
     system_message: "（mock）角色系统提示",
     character_stats: stats,
-    components: [],
+    components: {},
     assets: {},
   };
 }
@@ -446,7 +420,7 @@ function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"
     profile: `（mock）${name} 的场景简介。`,
     system_message: "（mock）场景系统提示",
     actors,
-    components: [],
+    components: {},
     assets: {},
   };
 }
@@ -853,17 +827,13 @@ export const spoilsFixture: Record<string, unknown>[] = [
  * 从 `dungeonFixture` 的房间派生，场景名与副本数据天然一致；环境叙述在真实后端由
  * `EnvironmentInitializationSystem` 用 LLM 生成（副本初始化时），mock 里给固定文本。
  */
-export const dungeonStageEntityFixtures: Schemas["EntitySerialization"][] =
-  dungeonFixture.rooms.map((room) => ({
-    name: room.stage.name,
-    components: [
-      { name: COMPONENT.Stage, data: { name: room.stage.name } },
-      {
-        name: COMPONENT.Environment,
-        data: {
-          name: room.stage.name,
-          narrative: `（mock）${room.stage.name} 的环境叙述：门轴涩住，风从棺缝里过。`,
-        },
-      },
-    ],
-  }));
+export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((room) => ({
+  name: room.stage.name,
+  data: {
+    [COMPONENT.Stage]: { name: room.stage.name },
+    [COMPONENT.Environment]: {
+      name: room.stage.name,
+      narrative: `（mock）${room.stage.name} 的环境叙述：门轴涩住，风从棺缝里过。`,
+    },
+  },
+}));

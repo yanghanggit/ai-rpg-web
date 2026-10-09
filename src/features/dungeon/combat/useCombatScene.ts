@@ -14,7 +14,7 @@
 import { $api } from "../../../api/query";
 import type { Schemas } from "../../../api/types";
 import { COMPONENT } from "../../entities/componentNames";
-import { hasComponent } from "../../entities/ecs";
+import { hasComponent, resolveEntities } from "../../entities/ecs";
 import { readItems } from "../../items/readItems";
 import type { Item } from "../../items/types";
 import { type Combatant, readCombatant } from "./readCombat";
@@ -32,7 +32,7 @@ export function useCombatScene(userName: string, gameName: string, room: Schemas
         query: { all_of: [COMPONENT.PartyMember] },
       },
     },
-    { select: (data) => data.entities.map((entity) => entity.name) },
+    { select: (data) => Object.keys(data.entities) },
   );
 
   // 战斗房间的 stage.actors 可能同时含队伍与怪物（后端会把参战者都挂到场景上），
@@ -54,18 +54,19 @@ export function useCombatScene(userName: string, gameName: string, room: Schemas
     { enabled: participantNames.length > 0 },
   );
 
-  const byName = new Map(details.data?.entities.map((entity) => [entity.name, entity]) ?? []);
+  const byName = new Map(
+    resolveEntities(details.data?.entities ?? {}).map((entity) => [entity.name, entity]),
+  );
   const combatants: Combatant[] = participantNames.flatMap((name) => {
     const entity = byName.get(name);
     return entity === undefined ? [] : [readCombatant(entity)];
   });
 
   // 结算页要看的玩家战利品（`LootComponent`）挂在玩家实体上，顺手从同一份 details 里读出来。
-  const playerEntity = details.data?.entities.find((entity) =>
+  const playerEntity = resolveEntities(details.data?.entities ?? {}).find((entity) =>
     hasComponent(entity, COMPONENT.Player),
   );
-  const loot: Item[] =
-    playerEntity === undefined ? [] : readItems(playerEntity.components, COMPONENT.Loot);
+  const loot: Item[] = playerEntity === undefined ? [] : readItems(playerEntity, COMPONENT.Loot);
 
   return {
     combatants,

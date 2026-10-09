@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { Schemas } from "../../api/types";
 import { COMPONENT } from "../entities/componentNames";
+import type { Entity } from "../entities/ecs";
 import { readWornCostumes } from "./readWornCostumes";
 
 /** 构造一个穿戴者实体；`item` 省略时表示该角色没有 WornCostumeComponent。 */
-function entity(name: string, item?: unknown): Schemas["EntitySerialization"] {
+function entity(name: string, item?: unknown): Entity {
   return {
     name,
-    components: item === undefined ? [] : [{ name: COMPONENT.WornCostume, data: { name, item } }],
+    data: item === undefined ? {} : { [COMPONENT.WornCostume]: { name, item } },
   };
 }
 
