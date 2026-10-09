@@ -8,7 +8,8 @@ import Modal from "../../components/Modal";
  * 点场景名 → 场景信息浮窗；点角色名 → 角色信息浮窗。
  *
  * 只做展示与回调，具体打开哪个浮窗由页面负责（`features/` 之间不互相依赖）。
- * actorsByStage 直接来自 stages state，顺序沿用后端返回顺序，不排序、不重排。
+ * `actorsByStage` 由页面按 `creation_order` 排好序后传入（见 `home/orderActorsByStage`），
+ * 本组件不再排序。
  */
 export default function EntityBrowserDialog({
   actorsByStage,

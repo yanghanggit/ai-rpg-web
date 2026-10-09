@@ -288,6 +288,41 @@ describe("家园概览页", () => {
     expect(cardOf("一楼客房")).not.toHaveClass("card--current");
   });
 
+  it("场景与角色按 IdentityComponent.creation_order 排序，而不是沿用后端返回顺序", async () => {
+    server.use(
+      // 故意打乱：后端集合迭代顺序本就不保证，前端要自行拉回稳定顺序
+      http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>
+        HttpResponse.json({
+          actors_by_stage: {
+            "场景.二楼卧室": ["角色.小厮"],
+            "场景.门厅": ["角色.无名", "角色.顾知秋"],
+            "场景.一楼客房": [],
+          },
+        }),
+      ),
+    );
+
+    renderHome();
+
+    const stagesRegion = await screen.findByRole("region", { name: "场景" });
+    await waitFor(() => {
+      const names = within(stagesRegion)
+        .getAllByRole("heading", { level: 2 })
+        .map((heading) => heading.textContent)
+        .filter((name) => name !== "场景");
+      expect(names).toEqual(["门厅", "一楼客房", "二楼卧室"]);
+    });
+
+    // 同一场景内的角色也按 creation_order：顾知秋(1) 在 无名(2) 之前
+    await waitFor(() =>
+      expect(
+        within(cardOf("门厅"))
+          .getAllByRole("listitem")
+          .map((item) => item.textContent),
+      ).toEqual(["顾知秋", "无名"]),
+    );
+  });
+
   it("切换场景：等任务完成后刷新状态与叙事，并把「当前所在」移过去", async () => {
     // 默认 switch_stage handler 会改 mock 场景表并追一条叙事；
     // 只把任务监听替换成立即成功，避免测试等 2 秒。

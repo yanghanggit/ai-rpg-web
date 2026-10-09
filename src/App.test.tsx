@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { API_BASE_URL } from "./api/client";
 import type { Schemas } from "./api/types";
+import { COMPONENT } from "./features/entities/componentNames";
 import { blueprintFixture, serverInfoFixture } from "./mocks/fixtures";
 import { api } from "./mocks/handlers";
 import { server } from "./mocks/node";
@@ -170,7 +171,7 @@ describe("玩家入口页 /lobby", () => {
 
   it("选中另一个蓝图提交后，跳到家园页，且两个请求都使用所选游戏名", async () => {
     const bodies: Array<{ path: string; body: unknown }> = [];
-    let groupCalls = 0;
+    let playerGroupCalls = 0;
     server.use(
       http.get(api("/api/game/blueprint-list/v1/"), () =>
         HttpResponse.json({
@@ -194,9 +195,12 @@ describe("玩家入口页 /lobby", () => {
           },
         });
       }),
-      // 开局已缓存 player_actor；家园页若把它用上，就不该再查 group
-      http.get(api("/api/entities/v1/:userName/:gameName/group"), () => {
-        groupCalls += 1;
+      // 开局已缓存 player_actor；家园页若把它用上，就不该再查「玩家」这条 group。
+      // （家园页另有一条 `all_of=IdentityComponent` 的排序查询，与玩家身份无关，不计入。）
+      http.get(api("/api/entities/v1/:userName/:gameName/group"), ({ request }) => {
+        if (new URL(request.url).searchParams.getAll("all_of").includes(COMPONENT.Player)) {
+          playerGroupCalls += 1;
+        }
         return HttpResponse.json({ entities: [] });
       }),
     );
@@ -209,7 +213,7 @@ describe("玩家入口页 /lobby", () => {
 
     // 开局成功后自动进入家园概览页
     expect(await screen.findByRole("heading", { name: "家园概览" })).toBeInTheDocument();
-    expect(groupCalls).toBe(0);
+    expect(playerGroupCalls).toBe(0);
 
     const expectedBody = expect.objectContaining({
       user_name: expect.stringMatching(/^player-\d{8}-\d{6}-[0-9a-f]{8}$/),

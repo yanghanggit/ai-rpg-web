@@ -6,9 +6,11 @@ import Modal from "../components/Modal";
 import BlueprintInfoDialog from "../features/blueprint/BlueprintInfoDialog";
 import StorageCostumeDialog from "../features/costume/StorageCostumeDialog";
 import { useCostumeAction } from "../features/costume/useCostumeAction";
+import { useCreationOrder } from "../features/entities/useCreationOrder";
 import { collectActors } from "../features/home/collectActors";
 import EntityBrowserDialog from "../features/home/EntityBrowserDialog";
 import { findStageOfActor } from "../features/home/findStageOfActor";
+import { orderActorsByStage } from "../features/home/orderActorsByStage";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
 import { useLogout } from "../features/home/useLogout";
 import { useSwitchStage } from "../features/home/useSwitchStage";
@@ -26,7 +28,8 @@ import StageInfoDialog from "../features/stage/StageInfoDialog";
  * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 实体浏览器 / 道具管理 / 副本 / 叙事未读 / 返回上一级
  * - 下方卡片：每个 stage 一张，列出其中的 actor（每个 actor 是一个按钮，点开
  *   该角色的信息浮窗），右上角有个小按钮打开场景信息，并带「切换到此场景」按钮；
- *   玩家当前所在卡片高亮标记
+ *   玩家当前所在卡片高亮标记。卡片与角色按 `IdentityComponent.creation_order` 排序，
+ *   位置稳定、不随刷新跳动（见 `features/entities/creationOrder.ts`）
  *
  * 「角色信息」打开 `ActorInfoDialog`，玩家与 NPC 共用：点工具栏按钮等同于点玩家 chip。
  * 浮窗内可穿/脱时装，穿时装时叠出 `StorageCostumeDialog` 选储物箱里的时装。
@@ -68,10 +71,13 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   });
 
   const actorsByStage = state.data?.actors_by_stage ?? {};
-  // 顺序固定：直接沿用后端返回的 actors_by_stage key 顺序，客户端不排序、不重排。
+  // 显示顺序：后端 actors_by_stage 的 key / 列表顺序来自集合迭代，会随增删变化，
+  // 所以再按 IdentityComponent.creation_order 钉死一遍（见 useCreationOrder / creationOrder.ts）。
   // 卡片位置是玩家的「空间记忆」，切换场景时卡片不能跳；当前场景靠高亮 + 角标表达，
-  // 而不是把它移到最前。要改顺序请改后端（客户端不自行决定）。
-  const stages = Object.entries(actorsByStage);
+  // 而不是把它移到最前。请求与判定仍用原始映射（顺序不改变语义）。
+  const creationOrder = useCreationOrder(userName, gameName);
+  const orderedActorsByStage = orderActorsByStage(actorsByStage, creationOrder);
+  const stages = Object.entries(orderedActorsByStage);
   // 后端要求显式传入"要推进的角色"；口径与 TUI 一致：全部场景的全部角色
   const actors = collectActors(actorsByStage);
   const advance = useHomeAdvance(userName, gameName, actors);
@@ -270,7 +276,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           userName={userName}
           gameName={gameName}
           stageName={infoStage}
-          actorNames={actorsByStage[infoStage] ?? []}
+          actorNames={orderedActorsByStage[infoStage] ?? []}
           // 点场景里的角色：关掉场景浮窗，换成角色浮窗
           onSelectActor={(actorName) => {
             setInfoStage(null);
@@ -282,7 +288,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
 
       {isEntityBrowserOpen ? (
         <EntityBrowserDialog
-          actorsByStage={actorsByStage}
+          actorsByStage={orderedActorsByStage}
           // 点名字：关掉浏览器，换成对应的信息浮窗（与场景卡片点击等价）
           onSelectStage={(stage) => {
             setIsEntityBrowserOpen(false);

@@ -153,9 +153,14 @@ export const homeStagesFixture: Schemas["StagesStateResponse"] = {
  * 场景实体（家园运行期）：StageComponent + EnvironmentComponent。
  * 环境叙述在真实后端由 `EnvironmentInitializationSystem` 用 LLM 生成；mock 里给固定文本。
  */
-export const stageEntityFixtures: Entity[] = blueprintFixture.stages.map((stage) => ({
+export const stageEntityFixtures: Entity[] = blueprintFixture.stages.map((stage, index) => ({
   name: stage.name,
   data: {
+    [COMPONENT.Identity]: {
+      name: stage.name,
+      creation_order: index + 1,
+      entity_id: `mock-${stage.name}`,
+    },
     [COMPONENT.Stage]: { name: stage.name },
     [COMPONENT.Environment]: {
       name: stage.name,
@@ -827,9 +832,14 @@ export const spoilsFixture: Record<string, unknown>[] = [
  * 从 `dungeonFixture` 的房间派生，场景名与副本数据天然一致；环境叙述在真实后端由
  * `EnvironmentInitializationSystem` 用 LLM 生成（副本初始化时），mock 里给固定文本。
  */
-export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((room) => ({
+export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((room, index) => ({
   name: room.stage.name,
   data: {
+    [COMPONENT.Identity]: {
+      name: room.stage.name,
+      creation_order: index + 100,
+      entity_id: `mock-${room.stage.name}`,
+    },
     [COMPONENT.Stage]: { name: room.stage.name },
     [COMPONENT.Environment]: {
       name: room.stage.name,
@@ -837,3 +847,20 @@ export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((ro
     },
   },
 }));
+
+/**
+ * 挂了 `IdentityComponent` 的实体（世界 / 场景 / 角色）。
+ *
+ * `group?all_of=IdentityComponent` 的 mock 返回体，供前端读 `creation_order` 排显示顺序
+ * （见 `features/entities/creationOrder.ts`）。只列 mock 里会出现在家园 / 副本视图中的
+ * 场景与角色；储物箱等未挂 Identity 的世界实体不入列。
+ *
+ * `playerEntityFixture` 不带运行期背包，但排序只读 Identity，已足够；
+ * 需要完整玩家实体（含背包）的调用方请用 `items.ts` 的 `readMockPlayerEntity`。
+ */
+export const identityEntityFixtures: Entity[] = [
+  playerEntityFixture,
+  ...npcEntityFixtures,
+  ...stageEntityFixtures,
+  ...dungeonStageEntityFixtures,
+];

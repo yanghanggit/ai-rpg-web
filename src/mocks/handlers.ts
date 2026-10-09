@@ -38,6 +38,7 @@ import {
   blueprintFixture,
   blueprintListFixture,
   entitiesToData,
+  identityEntityFixtures,
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
@@ -99,6 +100,12 @@ export const handlers = [
     const searchParams = new URL(request.url).searchParams;
     const conditions = searchParams.getAll("all_of");
     const noneOf = searchParams.getAll("none_of");
+    // 所有挂 IdentityComponent 的实体，供前端按 creation_order 排显示顺序
+    if (conditions.includes(COMPONENT.Identity)) {
+      return HttpResponse.json({
+        entities: entitiesToData(structuredClone(identityEntityFixtures)),
+      });
+    }
     if (conditions.includes(COMPONENT.Player)) {
       return HttpResponse.json({ entities: entitiesToData([readMockPlayerEntity()]) });
     }
