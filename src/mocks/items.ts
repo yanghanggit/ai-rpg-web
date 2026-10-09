@@ -5,7 +5,8 @@
  * 角色 `WornCostumeComponent`），由 move / craft 动作改写；mock 里直接改这几份数组，
  * 让 `pnpm dev:mock` 下「移动 / 合成后列表变化」可见。行为对齐后端：
  * - 移动按名字逐个搬；
- * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物放回储物箱。
+ * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 效果提示词，装备/时装不堆叠；
+ * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物按同一规则并入储物箱。
  */
 import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
@@ -60,6 +61,39 @@ const CRAFT_LABELS: Record<Workshop, string> = {
 
 function clone<T>(value: T): T {
   return structuredClone(value);
+}
+
+/**
+ * 堆叠身份键：对齐后端 `models/utils.py::_item_stack_key`。
+ * 材料按名称，消耗品按名称 + 效果提示词；其余（装备 / 时装）不堆叠，返回 `undefined`。
+ */
+function stackKey(item: RawItem): string | undefined {
+  if (item.type === "MaterialItem") {
+    return JSON.stringify(["MaterialItem", item.name]);
+  }
+  if (item.type === "ConsumableItem") {
+    const prompt = Array.isArray(item.on_use_prompt) ? item.on_use_prompt : [];
+    return JSON.stringify(["ConsumableItem", item.name, prompt]);
+  }
+  return undefined;
+}
+
+/**
+ * 把一件道具并入容器：可堆叠且已有同身份条目时累加数量，否则追加。
+ * 对齐后端 `models/utils.py::append_item_with_stacking`（保留已有条目的 uuid 等字段）。
+ */
+function addItem(target: RawItem[], item: RawItem): void {
+  const key = stackKey(item);
+  if (key !== undefined) {
+    const existing = target.find((candidate) => stackKey(candidate) === key);
+    if (existing !== undefined) {
+      const base = typeof existing.count === "number" ? existing.count : 1;
+      const incoming = typeof item.count === "number" ? item.count : 1;
+      existing.count = base + incoming;
+      return;
+    }
+  }
+  target.push(item);
 }
 
 let inventory: RawItem[] = clone(runtimeInventoryFixture);
@@ -136,9 +170,16 @@ export function moveMockItem(name: string, to: "inventory" | "storage"): boolean
   }
   const [moved] = from.splice(index, 1);
   if (moved !== undefined) {
-    target.push(moved);
+    addItem(target, moved);
   }
   return true;
+}
+
+/** 把一批道具并入随身背包（对齐后端 `collect_loot` 的合并语义，供战利品收取使用）。 */
+export function addMockInventoryItems(items: RawItem[]): void {
+  for (const item of items) {
+    addItem(inventory, item);
+  }
 }
 
 /** 按名字逐个消耗储物箱材料（每个名字扣 1），并把产物放回储物箱。 */
@@ -161,7 +202,7 @@ export function craftMockItem(workshop: Workshop, materials: string[]): void {
   }
 
   const crafted = clone(CRAFTED_ITEMS[workshop]);
-  storage.push(crafted);
+  addItem(storage, crafted);
   appendMockSessionMessage({
     type: "announce",
     message: `（mock）工坊完成一件${CRAFT_LABELS[workshop]}：${String(crafted.name)}。`,
@@ -198,7 +239,7 @@ export function wearMockCostume(target: string, costumeName: string): boolean {
   if (existing !== -1) {
     const old = worn[existing];
     if (old !== undefined) {
-      storage.push(old.item);
+      addItem(storage, old.item);
     }
     worn.splice(existing, 1);
   }
@@ -215,7 +256,7 @@ export function removeMockCostume(target: string): boolean {
   }
   const [entry] = worn.splice(index, 1);
   if (entry !== undefined) {
-    storage.push(entry.item);
+    addItem(storage, entry.item);
   }
   return true;
 }

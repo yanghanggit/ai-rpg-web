@@ -25,6 +25,7 @@ import {
   monsterDeckFixtures,
   roundFixture,
 } from "./fixtures";
+import { addMockInventoryItems } from "./items";
 import { readMockPartyNames } from "./opening";
 
 type RawCard = Record<string, unknown>;
@@ -372,6 +373,7 @@ export function collectMockLoot(): { ok: boolean; message: string } {
     return { ok: false, message: "当前没有可收取的战利品" };
   }
   const count = loot.length;
+  addMockInventoryItems(loot);
   loot = [];
   return { ok: true, message: `已收取 ${count} 件战利品到背包` };
 }
