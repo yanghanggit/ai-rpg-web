@@ -9,8 +9,9 @@
  *
  * 「表达状态」用**阶段名**（`combat:turn`）而不是原始字段（`state=2`）：前者是意图，后者是实现细节。
  */
-import { drawMockCards, initMockCombat, prepareMockPostCombat } from "./combat";
+import { drawMockCards, initMockCombat, prepareMockPostCombat, setMockDrawPile } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
+import { blueprintFixture, multiHitHandFixture } from "./fixtures";
 import {
   claimFirstMockSpoilsCard,
   failNextMockOpeningInit,
@@ -21,6 +22,7 @@ import { addMockRosterMember } from "./roster";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
 const DUNGEON = "副本.荒村义庄";
+const PLAYER = blueprintFixture.player_actor;
 
 /** 演示用：进副本前把队伍补满（队伍在进入那一刻固化，必须在 enter 之前调用）。 */
 function fillParty(): void {
@@ -83,6 +85,15 @@ const SEEDS: Record<string, () => void> = {
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     initMockCombat();
+    drawMockCards();
+  },
+  // ONGOING 且回合已抓牌：**玩家手牌全是多段命中**——专门看数值行里的 `段数 ×N`
+  "combat:multihit": () => {
+    fillParty();
+    enterMockDungeon(DUNGEON);
+    advanceMockDungeon();
+    initMockCombat();
+    setMockDrawPile(PLAYER, multiHitHandFixture);
     drawMockCards();
   },
   // POST_COMBAT：结算态（胜利 + 战利品 + 怪物战死）

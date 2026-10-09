@@ -703,6 +703,22 @@ export const cardFixtures = {
     damage: 3,
     target_type: "spread",
   }),
+  // 多段命中示例（看数值行末尾的「段数 ×N」）：
+  // 双锋带「被命中时」词缀（逐段触发）、乱刀是散射三段
+  twinFang: mockCard("双锋", {
+    description: "（mock）两刃并进，一前一后咬住同一处。",
+    cost: 1,
+    damage: 2,
+    hit_count: 2,
+    on_hit_affixes: ["[裂甲]:每一段命中都削去一层护体"],
+  }),
+  flurry: mockCard("乱刀", {
+    description: "（mock）刀势不成章法，四下里都是刀风。",
+    cost: 2,
+    damage: 1,
+    hit_count: 3,
+    target_type: "spread",
+  }),
 };
 
 /** 队伍成员的初始牌组（按角色名）。未列出的角色用默认牌组。 */
@@ -739,6 +755,21 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
 };
 
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
+
+/**
+ * dev 种子 `combat:multihit` 的手牌：**整把都是多段命中**，一眼看数值行末尾的 `段数 ×N`。
+ * 覆盖四种形态：
+ * 带「被命中时」词缀（钉棺）/ 带「打出时」词缀（撬棍横击）/ 散射多段（撒纸钱、乱刀）/ 无词缀（双锋）。
+ *
+ * 只被这个种子用；正常牌组（`deckFixtures`）不动，避免影响既有断言。
+ */
+export const multiHitHandFixture: Record<string, unknown>[] = [
+  cardFixtures.nail,
+  cardFixtures.sweep,
+  cardFixtures.paper,
+  cardFixtures.twinFang,
+  cardFixtures.flurry,
+];
 
 /**
  * `棺中殭尸` 多出来的那一段牌组（加在它原本的 5 张后面）。

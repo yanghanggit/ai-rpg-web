@@ -70,6 +70,7 @@ const sections: DevSection[] = [
       { to: `${ROOM}?seed=combat:init`, label: "战斗房间 · 初始化中（还没开始）" },
       { to: `${ROOM}?seed=combat:round_start`, label: "战斗房间 · 初始化完成（等待抓牌）" },
       { to: `${ROOM}?seed=combat:turn`, label: "战斗房间 · 玩家出牌" },
+      { to: `${ROOM}?seed=combat:multihit`, label: "战斗房间 · 多段命中（段数 ×N）展示" },
       { to: `${ROOM}?seed=combat:post`, label: "战斗房间 · 结算" },
     ],
   },

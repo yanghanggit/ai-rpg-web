@@ -133,6 +133,25 @@ export function readMockCombatLoot(): RawCard[] {
   return clone(loot);
 }
 
+/** 某个参战者当前手牌（供测试 / dev 种子断言；正式读手牌走实体组件）。 */
+export function readMockHand(name: string): RawCard[] {
+  const actor = battle.get(name);
+  return actor === undefined ? [] : clone(actor.hand);
+}
+
+/**
+ * dev 种子专用：直接把某个角色的**抽牌堆**换成给定牌（必须在 `drawMockCards` 之前调用）。
+ *
+ * 只服务 `?seed=combat:multihit`——把一批多段命中卡一次性摆进手牌，方便看数值行里的 `段数 ×N`。
+ * 正常流程与测试都走 `deckFixtures`，不经过这里（所以既有牌组断言不受影响）。
+ */
+export function setMockDrawPile(name: string, cards: RawCard[]): void {
+  const actor = battle.get(name);
+  if (actor !== undefined) {
+    actor.draw = clone(cards);
+  }
+}
+
 /**
  * 复位为「刚进入战斗房间」：state = INITIALIZATION、清空回合与战斗组件，并按
  * `monsterNames` 建立参战者（队伍从 `./opening` 取）。

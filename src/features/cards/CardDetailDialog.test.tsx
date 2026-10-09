@@ -68,6 +68,14 @@ describe("CardDetailDialog", () => {
     expect(within(row("被命中时", 0)).getByText(/命中的段数越多/)).toBeInTheDocument();
   });
 
+  it("命中段数只写在左栏卡面数值行（目标之后），不占右栏标记那几节", () => {
+    render(<CardDetailDialog card={CARD} onClose={() => {}} />);
+
+    expect(within(face()).getByText(/目标 单体 · 段数 ×2$/)).toBeInTheDocument();
+    // 右栏是「每一枚标记」的地盘，段数不在这里
+    expect(screen.queryByRole("region", { name: "命中段数" })).not.toBeInTheDocument();
+  });
+
   it("点左栏某枚标记 → 右栏对应那条被选中（不弹 tooltip）；再点一次取消", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 

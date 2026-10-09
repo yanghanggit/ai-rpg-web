@@ -50,6 +50,29 @@ describe("CardItem", () => {
     expect(screen.getByText("[余音]")).toHaveClass("affix-chip--turn-end");
   });
 
+  it("命中段数写在数值行「目标」之后，不进词缀 / 布尔那排标记", () => {
+    render(
+      <ul>
+        <CardItem card={CARD} />
+      </ul>,
+    );
+
+    // 数值行以「段数 ×N」结尾（在「目标」之后）
+    expect(screen.getByText(/目标 单体 · 段数 ×2$/)).toBeInTheDocument();
+    // 且不以 chip 形式出现在标记行
+    expect(screen.queryByRole("button", { name: /段数/ })).not.toBeInTheDocument();
+  });
+
+  it("单段也写出「段数 ×1」，不用「不显示 = 单段」去猜", () => {
+    render(
+      <ul>
+        <CardItem card={{ ...CARD, hit_count: 1 }} />
+      </ul>,
+    );
+
+    expect(screen.getByText(/段数 ×1$/)).toBeInTheDocument();
+  });
+
   it("playable === false 才标「不可出牌」，卡面永远不出现【塞牌】", () => {
     render(
       <ul>

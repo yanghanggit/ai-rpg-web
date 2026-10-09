@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readMockCombat } from "./combat";
+import { readMockCombat, readMockHand } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
 import {
   consumeFailNextOpeningInit,
@@ -85,6 +85,17 @@ describe("seedMockFromUrl", () => {
     const combat = readMockCombat();
     expect(combat.state).toBe(4);
     expect(combat.result).toBe(1);
+  });
+
+  it("combat:multihit → 玩家手牌全是多段命中卡（方便看 `连击 ×N`）", () => {
+    seedMockFromUrl(`${BASE}?seed=combat:multihit`);
+    expect(readMockCombat().state).toBe(2);
+
+    const hand = readMockHand("角色.无名");
+    expect(hand.map((card) => card.name)).toEqual(["钉棺", "撬棍横击", "撒纸钱", "双锋", "乱刀"]);
+    expect(hand.every((card) => typeof card.hit_count === "number" && card.hit_count > 1)).toBe(
+      true,
+    );
   });
 
   // 放最后：它会改队伍名单（module 级状态），后面的用例都靠前面的空名单

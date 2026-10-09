@@ -73,6 +73,9 @@ const FLAG_SPECS: {
  *
  * 布尔标记与时机词缀合成同一个形状，这样卡面、tooltip、卡牌详情右栏三处**用的是同一份列表**
  * ——哪一处漏了、两处叫法不同，都会在类型上直接暴露，而不是靠肉眼比对。
+ *
+ * **命中段数（`hit_count`）不是标记**：它是数值，写在卡面数值行（`CardItem::statsText`）的
+ * `目标` 之后，不占词缀 / 布尔那排 chip（那是"某时机触发"与"要留意的属性"的地盘）。
  */
 export interface CardMark {
   /** 稳定标识：卡面与详情右栏算出来必须一致，详情据此定位高亮。 */
@@ -91,6 +94,7 @@ export interface CardMark {
  * 这张卡身上**全部**要显示的标记：布尔在前、三种时机词缀在后（顺序就是卡面的顺序）。
  *
  * 布尔只列**"开了"的那些**——它们是"要留意的事"，不是收益，没开就不该占位置。
+ * （命中段数不在这个列表里，它属于数值行。）
  */
 export function readCardMarks(card: Card): CardMark[] {
   const flags: CardMark[] = FLAG_SPECS.filter((spec) => spec.shown(card)).map((spec) => ({

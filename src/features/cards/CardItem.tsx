@@ -11,7 +11,10 @@ import type { Card, CardTargetType } from "./types";
  * - **身份**：`name`（卡名）/ `uuid`；`source` 单独一行。
  *   **叙述 `description` 不进卡面**：卡面上留给数值与标记，全文在卡牌详情（`CardDetailDialog`）
  *   的「说明」一节里读——牌面上那句话只够塞下两行，读起来又占掉半张卡。
- * - **数值**：`cost` / `damage` / `hit_count` / `block` / `target_type` / `self_target` → 一行 `statsText`。
+ * - **数值**：`cost` / `damage` / `hit_count` / `block` / `target_type` / `self_target` → 一行 `statsText`，
+ *   `hit_count` 写在 `目标` 之后（`段数 ×N`）。它是**显式数值**，不占标记行——标记行只放
+ *   "某时机触发的词缀"与"要留意的布尔属性"。段数直接改变决策（总量 `damage × hit_count`，
+ *   逐段结算的词缀触发多次），所以单段也写出来，不靠"不显示 = 单段"去猜。
  * - **标记（词缀）** → 一律是 chip（`.affix-chip`），排在同一行 `.card-tile-marks`：
  *   三种时机的自由文本词缀（绿 / 红 / 黄）与五个布尔属性（橙 / 蓝 / 紫 / 灰 / 青）。
  *   两者在 `cardMarks.ts` 里合成同一个 `CardMark` 形状，所以**卡面、tooltip、详情右栏
@@ -31,13 +34,19 @@ const TARGET_LABELS: Record<CardTargetType, string> = {
   spread: "阵营散射",
 };
 
-/** 数值行：`费用 1 · 伤害 3 ×2 · 格挡 0 · 目标 单体`（连击只在多段时出现）。 */
+/**
+ * 数值行：`费用 1 · 伤害 2 · 格挡 0 · 目标 单体 · 段数 ×2`。
+ *
+ * `段数`（`hit_count`）放在最后、`目标` 之后：它是数值，和 `费用 / 伤害 / 格挡` 同属一行，
+ * **不**去和词缀 / 布尔争标记行（`.card-tile-marks`）的位置。单段也写 `×1`，避免歧义。
+ */
 function statsText(card: Card): string {
   const parts = [
     `费用 ${card.cost}`,
-    card.hit_count > 1 ? `伤害 ${card.damage} ×${card.hit_count}` : `伤害 ${card.damage}`,
+    `伤害 ${card.damage}`,
     `格挡 ${card.block}`,
     `目标 ${card.self_target ? "自身" : TARGET_LABELS[card.target_type]}`,
+    `段数 ×${card.hit_count}`,
   ];
   return parts.join(" · ");
 }
