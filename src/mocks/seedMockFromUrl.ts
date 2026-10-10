@@ -12,6 +12,7 @@
 import { drawMockCards, initMockCombat, prepareMockPostCombat, setMockDrawPile } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
 import { blueprintFixture, multiHitHandFixture } from "./fixtures";
+import { markMockIncapacitated } from "./incapacitation";
 import {
   claimFirstMockSpoilsCard,
   failNextMockOpeningInit,
@@ -32,6 +33,10 @@ function fillParty(): void {
 
 /** token → 「造出该阶段」的一串 mock 调用（每个 token 覆盖一个 `deriveCombatPhase` 分支）。 */
 const SEEDS: Record<string, () => void> = {
+  // HOME：把「角色.麻雀」标为永久失能——看场景 chip 的失能徽标 / 置灰，以及候选列表里被过滤
+  "home:incapacitated": () => {
+    markMockIncapacitated("角色.麻雀");
+  },
   // OPENING：刚进入副本的开场房间，**未初始化**（进入房间那一刻才自动跑初始化）
   "opening:fresh": () => {
     enterMockDungeon(DUNGEON);

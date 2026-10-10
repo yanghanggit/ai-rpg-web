@@ -33,7 +33,7 @@ export default function ActorCard({
   badge?: string;
   /** 角色属性（原始 `CharacterStats`，文案由 `characterStatsText` 统一生成）。 */
   stats: Schemas["CharacterStats"] | null;
-  /** 属性行连攻 / 防一起给（**开局准备那一屏**：那时对方的硬属性会影响决策）。不给就只写 `HP x/y`。 */
+  /** 属性行连 attack / defense 一起给（**开局准备那一屏**：那时对方的硬属性会影响决策）。不给就只写 `hp x/y`。 */
   showAttackDefense?: boolean;
   /** 属性下的第二行（如「卡组 9」）；不给就不占行。 */
   extra?: string;

@@ -51,7 +51,7 @@ describe("副本地图 · 状态与前进", () => {
     // 房间表就是「地图」浮窗那一份（同一个 readDungeonInfo），敌人也一并列出
     expect(screen.getByText("坟场网关")).toBeInTheDocument();
     expect(screen.getByText("残骸核心")).toBeInTheDocument();
-    expect(screen.getByText(/HP 9/)).toBeInTheDocument();
+    expect(screen.getByText(/hp 9/)).toBeInTheDocument();
 
     // 动作长在目标那一行：还没进过本间 → 本间那一行带「进入房间」，别的行什么都不带
     const first = roomRow("坟场网关");

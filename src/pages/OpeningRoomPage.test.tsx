@@ -158,7 +158,7 @@ describe("副本房间 · 共同框架", () => {
     expect(within(dialog).getByText("当前所在")).toBeInTheDocument();
     // 房间列表仍然照旧（类型 + 敌人）
     expect(within(dialog).getByText("残骸核心")).toBeInTheDocument();
-    expect(within(dialog).getByText(/HP 16/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/hp 16/)).toBeInTheDocument();
     // 当前是开场房，没有战斗数据：「战斗信息」按钮不出现
     expect(within(dialog).queryByRole("button", { name: /战斗信息/ })).not.toBeInTheDocument();
   });
@@ -495,9 +495,9 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.数据坟场");
     renderOpening();
 
-    // 属性行只有 HP（攻 / 防 在角色信息浮窗里看）；卡组张数另起一行
-    expect(await screen.findByText("HP 12/15")).toBeInTheDocument();
-    expect(screen.queryByText(/攻 3/)).not.toBeInTheDocument();
+    // 属性行只有 hp（attack / defense 在角色信息浮窗里看）；卡组张数另起一行
+    expect(await screen.findByText("hp 12/15")).toBeInTheDocument();
+    expect(screen.queryByText(/attack 3/)).not.toBeInTheDocument();
     // 卡上只留「卡组 N」这行状态，卡底那颗按钮就是奖励入口
     expect(await screen.findByText("卡组 9")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "查看牌组" })).not.toBeInTheDocument();

@@ -17,6 +17,7 @@ import {
   runtimeStorageFixture,
   wornCostumesFixture,
 } from "./fixtures";
+import { withMockIncapacitation } from "./incapacitation";
 import { appendMockSessionMessage } from "./sessionMessages";
 
 type RawItem = Record<string, unknown>;
@@ -141,10 +142,10 @@ export function readMockActorEntity(name: string): Entity | null {
   const entity = clone(base);
   const wornEntry = worn.find((entry) => entry.wearer === name);
   if (wornEntry === undefined) {
-    return entity;
+    return withMockIncapacitation(entity);
   }
   entity.data[COMPONENT.WornCostume] = { name, item: clone(wornEntry.item) };
-  return entity;
+  return withMockIncapacitation(entity);
 }
 
 /** 穿戴中时装实体（group `WornCostumeComponent` 用）。 */

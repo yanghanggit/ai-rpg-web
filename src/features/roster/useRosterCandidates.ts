@@ -5,6 +5,9 @@
  * `ActorType` 只有 NPC / Monster 两种，玩家角色的蓝图类型往往也是 NPC，
  * 于是玩家实体会同时带 `NPCComponent` 与 `PlayerComponent`，必须再用
  * `none_of=PlayerComponent` 把它排除（group 端点支持三组条件）。
+ *
+ * 同理，已永久失能（`IncapacitatedComponent`）的角色后端会拒绝入队，候选里也必须排除，
+ * 否则会出现「能点加入、一点就报错」的假按钮。
  */
 import { $api } from "../../api/query";
 import { COMPONENT } from "../entities/componentNames";
@@ -19,7 +22,7 @@ export function useRosterCandidates(userName: string, gameName: string) {
     {
       params: {
         path: { user_name: userName, game_name: gameName },
-        query: { all_of: [COMPONENT.NPC], none_of: [COMPONENT.Player] },
+        query: { all_of: [COMPONENT.NPC], none_of: [COMPONENT.Player, COMPONENT.Incapacitated] },
       },
     },
     { select: (data) => entityNames(data.entities) },

@@ -42,13 +42,13 @@ function currentCombatant(): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
-  it("角色卡两屏一致：第一行都是 HP · 攻 · 防；turn 多一行 能量 / 手牌 / 总格挡", async () => {
+  it("角色卡两屏一致：第一行都是 hp · attack · defense；turn 多一行 能量 / 手牌 / 总格挡", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
     // 准备屏：敌人与队伍都写全（还没开打，要看清双方多硬）
-    expect(await screen.findByText("HP 9/9 · 攻 3 · 防 1")).toBeInTheDocument();
-    expect(screen.getByText("HP 12/15 · 攻 3 · 防 1")).toBeInTheDocument();
+    expect(await screen.findByText("hp 9/9 · attack 3 · defense 1")).toBeInTheDocument();
+    expect(screen.getByText("hp 12/15 · attack 3 · defense 1")).toBeInTheDocument();
 
     // 开打后：第一行还是那一份，第二行换成 能量 / 手牌 / 总格挡
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -58,7 +58,7 @@ describe("副本房间 · 战斗房间", () => {
     if (!(youCard instanceof HTMLElement)) {
       throw new Error("名单里没有玩家那张卡");
     }
-    expect(youCard).toHaveTextContent("HP 12/15 · 攻 3 · 防 1");
+    expect(youCard).toHaveTextContent("hp 12/15 · attack 3 · defense 1");
     expect(youCard).toHaveTextContent("能量 3 · 手牌 5 · 总格挡 6");
 
     // 手牌数上了第二行，卡底那颗按钮就只剩词缀槽——它们就是按钮的"图标"
@@ -127,7 +127,10 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "查看角色：门神" }));
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     await within(dialog).findByText("属性");
-    expect(within(dialog).getByText("9 / 9")).toBeInTheDocument();
+    expect(within(dialog).getByText("hp")).toBeInTheDocument();
+    expect(within(dialog).getByText("max_hp")).toBeInTheDocument();
+    expect(within(dialog).getByText("lives")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("9")).toHaveLength(2);
     // 外观来自 AppearanceComponent：初始「当前」=「基础」（怪物不穿时装，真实后端也如此）
     expect(within(dialog).getAllByText(/赤红扫描眼/)).toHaveLength(2);
   });
@@ -193,7 +196,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(combatInfo).getByRole("heading", { name: "敌方" })).toBeInTheDocument();
     // 宏观名单只要名字 + 生死：不铺血量 / 能量 / 牌堆那套（那是行动面板的事）
     expect(within(combatInfo).getByText("腐化进程")).toBeInTheDocument();
-    expect(within(combatInfo).queryByText(/HP /)).not.toBeInTheDocument();
+    expect(within(combatInfo).queryByText(/hp /)).not.toBeInTheDocument();
     // 还没打：一个「已战死」都没有
     expect(within(combatInfo).queryByText("已战死")).not.toBeInTheDocument();
     // 当前谁在行动不在名单上标——下面「全部回合」里那条 `当前行动` 就是唯一一处（一样的信息不说两遍）

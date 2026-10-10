@@ -9,6 +9,7 @@
 import { COMPONENT } from "../features/entities/componentNames";
 import type { Entity } from "../features/entities/ecs";
 import { npcEntityFixtures, playerEntityFixture } from "./fixtures";
+import { withMockIncapacitation } from "./incapacitation";
 
 /** 队伍成员（不含玩家自身）。 */
 let roster: string[] = [];
@@ -50,9 +51,9 @@ export function readMockNpcEntities(excludeComponents: string[]): Entity[] {
     ...npcEntityFixtures,
   ];
 
-  return structuredClone(withNpcMark).filter(
-    (entity) => !excludeComponents.some((name) => entity.data[name] !== undefined),
-  );
+  return structuredClone(withNpcMark)
+    .map(withMockIncapacitation)
+    .filter((entity) => !excludeComponents.some((name) => entity.data[name] !== undefined));
 }
 
 function isNpc(name: string): boolean {

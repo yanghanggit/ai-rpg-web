@@ -17,7 +17,7 @@ const entity: Entity = {
     [COMPONENT.Player]: { player_name: "webdev" },
     [COMPONENT.CharacterStats]: {
       name: "角色.零号",
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, lives: 3 },
     },
   },
 };
@@ -65,7 +65,13 @@ describe("readString / readNumber / readBoolean", () => {
 
 describe("readCharacterStats", () => {
   it("读出 CharacterStatsComponent.stats", () => {
-    expect(readCharacterStats(entity)).toEqual({ hp: 12, max_hp: 15, attack: 3, defense: 1 });
+    expect(readCharacterStats(entity)).toEqual({
+      hp: 12,
+      max_hp: 15,
+      attack: 3,
+      defense: 1,
+      lives: 3,
+    });
   });
 
   it("缺组件或字段类型不对返回 null（不猜）", () => {

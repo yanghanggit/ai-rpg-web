@@ -5,7 +5,7 @@ import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } f
 /**
  * **行动面板（turn）的**参战者一览（横向滚动）：一格里放身份 / 名字 + 两行数字 + 卡底一个入口。
  * 数字两行与**开局准备屏**（`CombatSetupPanel`）刻意读成同一张卡：
- * 1. `HP x/y · 攻 n · 防 m`（`characterStatsText(stats, true)`，与准备屏同一个出口）；
+ * 1. `hp x/y · attack n · defense m`（`characterStatsText(stats, true)`，与准备屏同一个出口）；
  * 2. `能量 n · 手牌 n · 总格挡 n`（第二行只有这一屏有——准备屏时这三个都是 0，不值得占行）。
  * 卡底那颗按钮 = `[被动] N`（敌方再加 `[塞牌] M`）：手牌数已经上了第二行，所以词缀槽就是这颗
  * 按钮的"图标"，点它看这个角色的手牌明细。

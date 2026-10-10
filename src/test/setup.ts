@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll } from "vitest";
 import { resetUnreadBaselines } from "../features/session/unreadBaselines";
 import { resetMockCombatState } from "../mocks/combat";
 import { resetMockDungeons } from "../mocks/dungeons";
+import { resetMockIncapacitation } from "../mocks/incapacitation";
 import { resetMockItems } from "../mocks/items";
 import { server } from "../mocks/node";
 import { resetMockOpening } from "../mocks/opening";
@@ -26,6 +27,7 @@ afterEach(() => {
   resetMockStages();
   resetMockItems();
   resetMockRoster();
+  resetMockIncapacitation();
   resetMockDungeons();
   resetMockOpening();
   resetMockCombatState();

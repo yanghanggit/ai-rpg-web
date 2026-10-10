@@ -59,7 +59,7 @@ describe("collectItemContainers", () => {
               profile: "",
               base_body: "",
               system_message: "",
-              character_stats: { hp: 1, max_hp: 1, attack: 1, defense: 1 },
+              character_stats: { hp: 1, max_hp: 1, attack: 1, defense: 1, lives: 3 },
               components: {
                 [COMPONENT.Inventory]: { items: [{ name: "b", type: "MaterialItem" }] },
               },

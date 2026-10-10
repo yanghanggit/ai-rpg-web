@@ -1746,6 +1746,18 @@ ul.combat-action-roster {
   color: var(--err);
 }
 
+/* 已永久失能：仍是世界里可见的角色，只是不再行动。用暗色而非报错红——
+   它是既定状态，不是出错；红留给出错 / 战死。 */
+.badge--incapacitated {
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+.chip--incapacitated {
+  border-style: dashed;
+  color: var(--muted);
+}
+
 /* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆。
    中间列顶部空出 `--card-short`（= 一张**横置场景卡**的高度），所以左右两列用 `center`
    相对这整列的重心对齐——不是各自贴顶，否则中间被抬高后两列会显得沉在下面。 */

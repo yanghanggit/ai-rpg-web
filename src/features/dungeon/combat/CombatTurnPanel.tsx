@@ -200,12 +200,12 @@ export default function CombatTurnPanel({
           <ul className="combat-resources" aria-label="行动者资源">
             <li className="res res--hp">
               <span className="res-value">
-                HP {current.stats === null ? "—" : `${current.stats.hp}/${current.stats.max_hp}`}
+                hp {current.stats === null ? "—" : `${current.stats.hp}/${current.stats.max_hp}`}
               </span>
               <span className="res-sub">
                 {current.stats === null
                   ? ""
-                  : `攻 ${current.stats.attack} · 防 ${current.stats.defense}`}
+                  : `attack ${current.stats.attack} · defense ${current.stats.defense}`}
               </span>
             </li>
             <li className="res res--energy">

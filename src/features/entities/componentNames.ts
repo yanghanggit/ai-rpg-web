@@ -34,6 +34,7 @@ export const COMPONENT = {
   ExhaustPile: name("ExhaustPileComponent"),
   Hand: name("HandComponent"),
   Identity: name("IdentityComponent"),
+  Incapacitated: name("IncapacitatedComponent"),
   Inventory: name("InventoryComponent"),
   Loot: name("LootComponent"),
   Monster: name("MonsterComponent"),

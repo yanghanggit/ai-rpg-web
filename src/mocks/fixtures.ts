@@ -39,7 +39,7 @@ function actor(
     profile: "（mock）角色简介",
     base_body: "（mock）基础身体",
     system_message: "（mock）角色系统提示",
-    character_stats: { hp: 15, max_hp: 15, attack: 3, defense: 1 },
+    character_stats: { hp: 15, max_hp: 15, attack: 3, defense: 1, lives: 3 },
     components,
     assets: {},
   };
@@ -201,7 +201,7 @@ export const playerEntityFixture: Entity = {
     },
     [COMPONENT.CharacterStats]: {
       name: blueprintFixture.player_actor,
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, lives: 3 },
     },
   },
 };
@@ -229,7 +229,7 @@ export const npcEntityFixtures: Entity[] = [
       },
       [COMPONENT.CharacterStats]: {
         name: "角色.螳螂",
-        stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 },
+        stats: { hp: 18, max_hp: 18, attack: 5, defense: 2, lives: 3 },
       },
     },
   },
@@ -249,7 +249,7 @@ export const npcEntityFixtures: Entity[] = [
       },
       [COMPONENT.CharacterStats]: {
         name: "角色.麻雀",
-        stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 },
+        stats: { hp: 8, max_hp: 8, attack: 1, defense: 0, lives: 3 },
       },
     },
   },
@@ -463,7 +463,7 @@ export const dungeonFixture: Schemas["Dungeon"] = {
         dungeonActor(
           "怪物.门神",
           "Monster",
-          { hp: 9, max_hp: 9, attack: 3, defense: 1 },
+          { hp: 9, max_hp: 9, attack: 3, defense: 1, lives: 3 },
           "（mock）门板般僵直的门神程序，一对赤红扫描眼在数据流里忽明忽暗。",
         ),
         dungeonActor(
@@ -474,19 +474,20 @@ export const dungeonFixture: Schemas["Dungeon"] = {
             max_hp: 16,
             attack: 5,
             defense: 2,
+            lives: 3,
           },
           "（mock）从崩溃节点里爬出的腐化进程，浑身缠着霉烂的数据残片，指节渗出青黑的错误码。",
         ),
         dungeonActor(
           "怪物.傀儡义体",
           "Monster",
-          { hp: 7, max_hp: 7, attack: 2, defense: 0 },
+          { hp: 7, max_hp: 7, attack: 2, defense: 0, lives: 3 },
           "（mock）一具提线傀儡义体，关节用线缆系着，走起来哔哒作响。",
         ),
         dungeonActor(
           "怪物.吊线幽灵",
           "Monster",
-          { hp: 12, max_hp: 12, attack: 4, defense: 1 },
+          { hp: 12, max_hp: 12, attack: 4, defense: 1, lives: 3 },
           "（mock）悬在线缆上的吊线幽灵，脚不沾地，脖颈勒出一道乌痕。",
         ),
       ]),

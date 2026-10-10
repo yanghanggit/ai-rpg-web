@@ -42,6 +42,7 @@ import {
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
+import { readMockIncapacitatedNames } from "./incapacitation";
 import {
   craftMockItem,
   moveMockItem,
@@ -105,6 +106,13 @@ export const handlers = [
       return HttpResponse.json({
         entities: entitiesToData(structuredClone(identityEntityFixtures)),
       });
+    }
+    // 已永久失能的角色：`stages state` 只返回名字，前端靠这条查询知道谁失能
+    if (conditions.includes(COMPONENT.Incapacitated)) {
+      const entities = readMockIncapacitatedNames()
+        .map((name) => readMockActorEntity(name))
+        .filter((entity): entity is Entity => entity !== null);
+      return HttpResponse.json({ entities: entitiesToData(entities) });
     }
     if (conditions.includes(COMPONENT.Player)) {
       return HttpResponse.json({ entities: entitiesToData([readMockPlayerEntity()]) });

@@ -49,6 +49,8 @@ export default function EnterDungeonDialog({
   const entryRoom = dungeon ? readDungeonInfo(dungeon).rooms[0] : undefined;
 
   const deadMembers = preview.party.filter((member) => member.dead);
+  const incapacitatedMembers = preview.party.filter((member) => member.incapacitated);
+  const blockedMembers = [...deadMembers, ...incapacitatedMembers];
 
   return (
     <Modal title="进入副本" meta={displayName(dungeonName)} onClose={onClose}>
@@ -74,10 +76,12 @@ export default function EnterDungeonDialog({
               </span>
               {member.dead ? (
                 <span className="error">已死亡，无法参战</span>
+              ) : member.incapacitated ? (
+                <span className="error">已失能，无法参战</span>
               ) : member.stats ? (
                 <span className="muted">
-                  HP {member.stats.hp}/{member.stats.max_hp} · ATK {member.stats.attack} · DEF{" "}
-                  {member.stats.defense}
+                  hp {member.stats.hp}/{member.stats.max_hp} · attack {member.stats.attack} ·
+                  defense {member.stats.defense}
                 </span>
               ) : (
                 <span className="muted">属性未知</span>
@@ -102,10 +106,13 @@ export default function EnterDungeonDialog({
       {deadMembers.length > 0 ? (
         <p className="error">队伍里有已死亡的角色，请先在队伍名单里移出他们。</p>
       ) : null}
+      {incapacitatedMembers.length > 0 ? (
+        <p className="error">队伍里有已失能的角色，请先在队伍名单里移出他们。</p>
+      ) : null}
       {error ? <p className="error">进入副本失败：{error}</p> : null}
 
       <div className="modal-actions">
-        <button type="button" disabled={busy || deadMembers.length > 0} onClick={onConfirm}>
+        <button type="button" disabled={busy || blockedMembers.length > 0} onClick={onConfirm}>
           {busy ? "进入中…" : "确认进入"}
         </button>
         <button type="button" disabled={busy} onClick={onClose}>

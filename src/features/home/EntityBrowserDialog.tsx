@@ -13,12 +13,15 @@ import Modal from "../../components/Modal";
  */
 export default function EntityBrowserDialog({
   actorsByStage,
+  incapacitated = new Set(),
   onSelectStage,
   onSelectActor,
   onClose,
 }: {
   /** 场景原始名 → 该场景内角色原始名列表。 */
   actorsByStage: Record<string, string[]>;
+  /** 已永久失能的角色原始名集合；命中的 chip 加标记。 */
+  incapacitated?: ReadonlySet<string>;
   onSelectStage: (stageName: string) => void;
   onSelectActor: (actorName: string) => void;
   onClose: () => void;
@@ -46,17 +49,28 @@ export default function EntityBrowserDialog({
                 <p className="muted entity-empty">（无角色）</p>
               ) : (
                 <ul className="chips">
-                  {actorNames.map((actorName) => (
-                    <li key={actorName}>
-                      <button
-                        type="button"
-                        className="chip chip-button mono"
-                        onClick={() => onSelectActor(actorName)}
-                      >
-                        {displayName(actorName)}
-                      </button>
-                    </li>
-                  ))}
+                  {actorNames.map((actorName) => {
+                    const isIncapacitated = incapacitated.has(actorName);
+                    return (
+                      <li key={actorName}>
+                        <button
+                          type="button"
+                          className={
+                            isIncapacitated
+                              ? "chip chip-button mono chip--incapacitated"
+                              : "chip chip-button mono"
+                          }
+                          title={isIncapacitated ? "已永久失能" : undefined}
+                          onClick={() => onSelectActor(actorName)}
+                        >
+                          {displayName(actorName)}
+                          {isIncapacitated ? (
+                            <span className="badge badge--incapacitated">失能</span>
+                          ) : null}
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </li>

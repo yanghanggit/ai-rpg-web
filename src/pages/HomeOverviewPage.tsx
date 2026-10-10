@@ -12,6 +12,7 @@ import EntityBrowserDialog from "../features/home/EntityBrowserDialog";
 import { findStageOfActor } from "../features/home/findStageOfActor";
 import { orderActorsByStage } from "../features/home/orderActorsByStage";
 import { useHomeAdvance } from "../features/home/useHomeAdvance";
+import { useIncapacitatedActors } from "../features/home/useIncapacitatedActors";
 import { useLogout } from "../features/home/useLogout";
 import { useSwitchStage } from "../features/home/useSwitchStage";
 import ActorInfoDialog from "../features/identity/ActorInfoDialog";
@@ -78,8 +79,13 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   const creationOrder = useCreationOrder(userName, gameName);
   const orderedActorsByStage = orderActorsByStage(actorsByStage, creationOrder);
   const stages = Object.entries(orderedActorsByStage);
-  // 后端要求显式传入"要推进的角色"；口径与 TUI 一致：全部场景的全部角色
-  const actors = collectActors(actorsByStage);
+  // 已永久失能的角色：仍在场景里（后端保留实体），但不会行动，也不再收集信息 / 入队。
+  // `stages state` 只给名字，所以单独按组件名查一次，供场景卡与浮窗打标。
+  const incapacitatedActors = useIncapacitatedActors(userName, gameName);
+  const incapacitated = new Set(incapacitatedActors.data ?? []);
+  // 后端要求显式传入"要推进的角色"；口径与 TUI 一致：全部场景的全部角色。
+  // 但后端 `activate_plan_action` 只要列表含失能者就整单拒绝，所以先剔除失能者。
+  const actors = collectActors(actorsByStage, incapacitated);
   const advance = useHomeAdvance(userName, gameName, actors);
   const switchStage = useSwitchStage(userName, gameName);
   // 玩家角色名用于判断「当前在哪个场景」；缓存未命中时回退查询 group 端点
@@ -116,7 +122,11 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
       <h1>家园概览</h1>
 
       <div className="toolbar">
-        <button type="button" disabled={!hasActors || isBusy} onClick={advance.start}>
+        <button
+          type="button"
+          disabled={!hasActors || isBusy || incapacitatedActors.isPending}
+          onClick={advance.start}
+        >
           {buttonLabel}
         </button>
 
@@ -209,17 +219,28 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
                     <p className="muted">无角色</p>
                   ) : (
                     <ul className="chips">
-                      {stageActors.map((actorName) => (
-                        <li key={actorName}>
-                          <button
-                            type="button"
-                            className="chip chip-button mono"
-                            onClick={() => setInfoActor(actorName)}
-                          >
-                            {displayName(actorName)}
-                          </button>
-                        </li>
-                      ))}
+                      {stageActors.map((actorName) => {
+                        const isIncapacitated = incapacitated.has(actorName);
+                        return (
+                          <li key={actorName}>
+                            <button
+                              type="button"
+                              className={
+                                isIncapacitated
+                                  ? "chip chip-button mono chip--incapacitated"
+                                  : "chip chip-button mono"
+                              }
+                              title={isIncapacitated ? "已永久失能" : undefined}
+                              onClick={() => setInfoActor(actorName)}
+                            >
+                              {displayName(actorName)}
+                              {isIncapacitated ? (
+                                <span className="badge badge--incapacitated">失能</span>
+                              ) : null}
+                            </button>
+                          </li>
+                        );
+                      })}
                     </ul>
                   )}
                   <div className="card-actions">
@@ -277,6 +298,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           gameName={gameName}
           stageName={infoStage}
           actorNames={orderedActorsByStage[infoStage] ?? []}
+          incapacitated={incapacitated}
           // 点场景里的角色：关掉场景浮窗，换成角色浮窗
           onSelectActor={(actorName) => {
             setInfoStage(null);
@@ -289,6 +311,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
       {isEntityBrowserOpen ? (
         <EntityBrowserDialog
           actorsByStage={orderedActorsByStage}
+          incapacitated={incapacitated}
           // 点名字：关掉浏览器，换成对应的信息浮窗（与场景卡片点击等价）
           onSelectStage={(stage) => {
             setIsEntityBrowserOpen(false);

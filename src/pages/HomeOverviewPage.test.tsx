@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import type { Schemas } from "../api/types";
 import { homeStagesFixture, sessionMessagesFixture } from "../mocks/fixtures";
 import { api } from "../mocks/handlers";
+import { markMockIncapacitated } from "../mocks/incapacitation";
 import { server } from "../mocks/node";
 import { sseResponse } from "../mocks/sseResponse";
 import HomeOverviewPage from "./HomeOverviewPage";
@@ -86,6 +87,27 @@ describe("家园概览页", () => {
 
     // 任务完成后家园状态被重新拉取（首屏 1 次 + 失效后至少 1 次）
     await waitFor(() => expect(stagesCalls).toBeGreaterThanOrEqual(2));
+  });
+
+  it("推进时剔除已失能的角色（后端只要含失能者就整单拒绝）", async () => {
+    markMockIncapacitated("角色.麻雀");
+    const bodies: unknown[] = [];
+    server.use(
+      http.post(api("/api/home/advance/v1/"), async ({ request }) => {
+        bodies.push(await request.json());
+        return HttpResponse.json({ job_id: 9, message: "ok" });
+      }),
+      taskWith(9, "succeeded"),
+    );
+
+    renderHome();
+    fireEvent.click(await findReadyAdvanceButton());
+    await waitFor(() => expect(screen.getByRole("button", { name: /^推进一步/ })).toBeEnabled());
+
+    // 麻雀已失能，不进入 actors；顺序仍保持首次出现
+    expect(bodies).toEqual([
+      { user_name: "webdev", game_name: "Game1", actors: ["角色.螳螂", "角色.零号"] },
+    ]);
   });
 
   it("人数直接写在推进按钮上，页面上没有额外的解释文案", async () => {
@@ -433,7 +455,11 @@ describe("家园概览页", () => {
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     expect(await within(dialog).findByText("webdev")).toBeInTheDocument();
     expect(within(dialog).getByText("00000000-0000-0000-0000-0000000000aa")).toBeInTheDocument();
-    expect(within(dialog).getByText("12 / 15")).toBeInTheDocument();
+    expect(within(dialog).getByText("hp")).toBeInTheDocument();
+    expect(within(dialog).getByText("max_hp")).toBeInTheDocument();
+    expect(within(dialog).getByText("lives")).toBeInTheDocument();
+    expect(within(dialog).getByText("12")).toBeInTheDocument();
+    expect(within(dialog).getByText("15")).toBeInTheDocument();
     expect(within(dialog).getByText(/幽灵短刃/)).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
@@ -464,7 +490,9 @@ describe("家园概览页", () => {
     expect(
       await within(dialog).findByText("00000000-0000-0000-0000-0000000000bb"),
     ).toBeInTheDocument();
-    expect(within(dialog).getByText("18 / 18")).toBeInTheDocument();
+    expect(within(dialog).getByText("hp")).toBeInTheDocument();
+    expect(within(dialog).getByText("max_hp")).toBeInTheDocument();
+    expect(within(dialog).getAllByText("18")).toHaveLength(2);
     // NPC 没有 PlayerComponent，不显示玩家名这一行
     expect(within(dialog).queryByText("玩家名")).not.toBeInTheDocument();
     expect(within(dialog).getAllByText("螳螂").length).toBeGreaterThan(0);
@@ -647,6 +675,25 @@ describe("家园概览页", () => {
         "count-button--unread",
       ),
     );
+  });
+
+  it("已永久失能的角色：场景 chip 带「失能」标记，信息浮窗说明且不可换装", async () => {
+    markMockIncapacitated("角色.螳螂");
+    renderHome();
+
+    const chip = await screen.findByRole("button", { name: /螳螂/ });
+    expect(within(chip).getByText("失能")).toBeInTheDocument();
+
+    fireEvent.click(chip);
+    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
+    expect(await within(dialog).findByText(/该角色已永久失能/)).toBeInTheDocument();
+    // 属性区用 CharacterStats 原字段名，明确给出 lives（mock 里失能即 lives 0）
+    expect(within(dialog).getByText("lives")).toBeInTheDocument();
+    expect(within(dialog).getByText("0")).toBeInTheDocument();
+    // 换装入口禁用，并有说明
+    expect(within(dialog).getByRole("button", { name: "换一件时装" })).toBeDisabled();
+    expect(within(dialog).getByRole("button", { name: "脱下时装" })).toBeDisabled();
+    expect(within(dialog).getByText("已失能角色无法更换时装。")).toBeInTheDocument();
   });
 });
 
