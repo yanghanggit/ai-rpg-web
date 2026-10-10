@@ -80,7 +80,7 @@ describe("家园概览页", () => {
         user_name: "webdev",
         game_name: "Game1",
         // 全部场景的全部角色，跨场景去重且保序（与 TUI cmd_advance 口径一致）
-        actors: ["角色.顾知秋", "角色.无名", "角色.小厮"],
+        actors: ["角色.螳螂", "角色.零号", "角色.麻雀"],
       },
     ]);
 
@@ -152,7 +152,7 @@ describe("家园概览页", () => {
     const items = within(dialog).getAllByRole("listitem");
 
     expect(items).toHaveLength(sessionMessagesFixture.length);
-    expect(items[1]?.textContent ?? "").toContain("对 无名 说：");
+    expect(items[1]?.textContent ?? "").toContain("对 零号 说：");
     expect(within(dialog).getByText(`共 ${sessionMessagesFixture.length} 条`)).toBeInTheDocument();
   });
 
@@ -183,10 +183,10 @@ describe("家园概览页", () => {
       sequence_id: 1,
       agent_event: {
         type: "speak",
-        message: "角色.顾知秋 忽然开口。",
-        actor: "角色.顾知秋",
-        stage: "场景.门厅",
-        target: "角色.无名",
+        message: "角色.螳螂 忽然开口。",
+        actor: "角色.螳螂",
+        stage: "场景.酒吧大厅",
+        target: "角色.零号",
         content: "忽然开口。",
       },
     };
@@ -272,12 +272,12 @@ describe("家园概览页", () => {
   it("标出玩家当前所在场景，并禁止切换到当前场景", async () => {
     renderHome();
 
-    // 默认玩家角色「角色.无名」在「场景.门厅」
-    await screen.findByRole("heading", { name: "门厅" });
+    // 默认玩家角色「角色.零号」在「场景.酒吧大厅」
+    await screen.findByRole("heading", { name: "酒吧大厅" });
     await waitFor(() =>
-      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+      expect(within(cardOf("酒吧大厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
     );
-    expect(cardOf("门厅")).toHaveClass("card--current");
+    expect(cardOf("酒吧大厅")).toHaveClass("card--current");
 
     // 其它场景没有高亮，按钮可点
     const otherSwitches = screen.getAllByRole("button", { name: "切换到此场景" });
@@ -285,7 +285,7 @@ describe("家园概览页", () => {
     for (const button of otherSwitches) {
       expect(button).toBeEnabled();
     }
-    expect(cardOf("一楼客房")).not.toHaveClass("card--current");
+    expect(cardOf("后巷工位")).not.toHaveClass("card--current");
   });
 
   it("场景与角色按 IdentityComponent.creation_order 排序，而不是沿用后端返回顺序", async () => {
@@ -294,9 +294,9 @@ describe("家园概览页", () => {
       http.get(api("/api/stages/v1/:userName/:gameName/state"), () =>
         HttpResponse.json({
           actors_by_stage: {
-            "场景.二楼卧室": ["角色.小厮"],
-            "场景.门厅": ["角色.无名", "角色.顾知秋"],
-            "场景.一楼客房": [],
+            "场景.阁楼隔间": ["角色.麻雀"],
+            "场景.酒吧大厅": ["角色.零号", "角色.螳螂"],
+            "场景.后巷工位": [],
           },
         }),
       ),
@@ -310,16 +310,16 @@ describe("家园概览页", () => {
         .getAllByRole("heading", { level: 2 })
         .map((heading) => heading.textContent)
         .filter((name) => name !== "场景");
-      expect(names).toEqual(["门厅", "一楼客房", "二楼卧室"]);
+      expect(names).toEqual(["酒吧大厅", "后巷工位", "阁楼隔间"]);
     });
 
-    // 同一场景内的角色也按 creation_order：顾知秋(1) 在 无名(2) 之前
+    // 同一场景内的角色也按 creation_order：螳螂(1) 在 零号(2) 之前
     await waitFor(() =>
       expect(
-        within(cardOf("门厅"))
+        within(cardOf("酒吧大厅"))
           .getAllByRole("listitem")
           .map((item) => item.textContent),
-      ).toEqual(["顾知秋", "无名"]),
+      ).toEqual(["螳螂", "零号"]),
     );
   });
 
@@ -330,19 +330,19 @@ describe("家园概览页", () => {
 
     renderHome();
 
-    await screen.findByRole("heading", { name: "门厅" });
+    await screen.findByRole("heading", { name: "酒吧大厅" });
     await waitFor(() =>
-      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+      expect(within(cardOf("酒吧大厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
     );
 
-    fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
+    fireEvent.click(within(cardOf("后巷工位")).getByRole("button", { name: "切换到此场景" }));
 
-    // 切换完成后：高亮与「当前所在」移到一楼客房
+    // 切换完成后：高亮与「当前所在」移到后巷工位
     await waitFor(() =>
-      expect(within(cardOf("一楼客房")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+      expect(within(cardOf("后巷工位")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
     );
-    expect(cardOf("一楼客房")).toHaveClass("card--current");
-    expect(cardOf("门厅")).not.toHaveClass("card--current");
+    expect(cardOf("后巷工位")).toHaveClass("card--current");
+    expect(cardOf("酒吧大厅")).not.toHaveClass("card--current");
 
     // 切换产生 trans_stage 叙事 → 叙事按钮出现未读
     await waitFor(() =>
@@ -364,12 +364,12 @@ describe("家园概览页", () => {
 
     renderHome();
 
-    await screen.findByRole("heading", { name: "二楼卧室" });
-    fireEvent.click(within(cardOf("二楼卧室")).getByRole("button", { name: "切换到此场景" }));
+    await screen.findByRole("heading", { name: "阁楼隔间" });
+    fireEvent.click(within(cardOf("阁楼隔间")).getByRole("button", { name: "切换到此场景" }));
 
     await waitFor(() =>
       expect(bodies).toEqual([
-        { user_name: "webdev", game_name: "Game1", stage_name: "场景.二楼卧室" },
+        { user_name: "webdev", game_name: "Game1", stage_name: "场景.阁楼隔间" },
       ]),
     );
   });
@@ -383,31 +383,31 @@ describe("家园概览页", () => {
 
     renderHome();
 
-    await screen.findByRole("heading", { name: "一楼客房" });
+    await screen.findByRole("heading", { name: "后巷工位" });
     await waitFor(() =>
-      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+      expect(within(cardOf("酒吧大厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
     );
 
-    fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
+    fireEvent.click(within(cardOf("后巷工位")).getByRole("button", { name: "切换到此场景" }));
 
     expect(await screen.findByText(/切换失败：目标场景不存在/)).toBeInTheDocument();
-    expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled();
+    expect(within(cardOf("酒吧大厅")).getByRole("button", { name: "当前所在" })).toBeDisabled();
   });
 
   it("切换进行中时，推进与其它切换按钮一起禁用", async () => {
     // 不覆盖 watch：mock 任务约 2 秒后完成，足够观察进行中状态
     renderHome();
 
-    await screen.findByRole("heading", { name: "一楼客房" });
+    await screen.findByRole("heading", { name: "后巷工位" });
     await waitFor(() =>
-      expect(within(cardOf("门厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
+      expect(within(cardOf("酒吧大厅")).getByRole("button", { name: "当前所在" })).toBeDisabled(),
     );
 
-    fireEvent.click(within(cardOf("一楼客房")).getByRole("button", { name: "切换到此场景" }));
+    fireEvent.click(within(cardOf("后巷工位")).getByRole("button", { name: "切换到此场景" }));
 
     expect(await screen.findByRole("button", { name: "切换中…" })).toBeDisabled();
     expect(screen.getByRole("button", { name: /^推进一步/ })).toBeDisabled();
-    expect(within(cardOf("二楼卧室")).getByRole("button", { name: "切换到此场景" })).toBeDisabled();
+    expect(within(cardOf("阁楼隔间")).getByRole("button", { name: "切换到此场景" })).toBeDisabled();
   });
 
   it("无法解析玩家角色时给出提示，且不误标当前场景", async () => {
@@ -434,7 +434,7 @@ describe("家园概览页", () => {
     expect(await within(dialog).findByText("webdev")).toBeInTheDocument();
     expect(within(dialog).getByText("00000000-0000-0000-0000-0000000000aa")).toBeInTheDocument();
     expect(within(dialog).getByText("12 / 15")).toBeInTheDocument();
-    expect(within(dialog).getByText(/缠麻短刃/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/幽灵短刃/)).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
     expect(screen.queryByRole("dialog", { name: "角色信息" })).not.toBeInTheDocument();
@@ -447,18 +447,18 @@ describe("家园概览页", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "蓝图信息" });
     expect(await within(dialog).findByText("Game1")).toBeInTheDocument();
-    expect(within(dialog).getByText(/架空的、融合狩猎玩法/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/融合黑客狩猎玩法/)).toBeInTheDocument();
     expect(within(dialog).getByText("玩家行动审计系统")).toBeInTheDocument();
     expect(within(dialog).getByText("副本生成系统")).toBeInTheDocument();
 
     // 进入游戏后再看无意义的场景/角色、背包与仓库物品都不展示
-    expect(within(dialog).queryByText(/旧麻绳|缠麻短刃|吗啡针剂/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/数据线缆|幽灵短刃|急救纳米剂/)).not.toBeInTheDocument();
   });
 
   it("点场景卡片里的 NPC chip：打开该 NPC 的角色信息，且不显示「玩家名」", async () => {
     renderHome();
 
-    fireEvent.click(await screen.findByRole("button", { name: "顾知秋" }));
+    fireEvent.click(await screen.findByRole("button", { name: "螳螂" }));
 
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     expect(
@@ -467,13 +467,13 @@ describe("家园概览页", () => {
     expect(within(dialog).getByText("18 / 18")).toBeInTheDocument();
     // NPC 没有 PlayerComponent，不显示玩家名这一行
     expect(within(dialog).queryByText("玩家名")).not.toBeInTheDocument();
-    expect(within(dialog).getAllByText("顾知秋").length).toBeGreaterThan(0);
+    expect(within(dialog).getAllByText("螳螂").length).toBeGreaterThan(0);
   });
 
   it("点玩家 chip 与点工具栏「角色信息」等价（都显示玩家名）", async () => {
     renderHome();
 
-    fireEvent.click(await screen.findByRole("button", { name: "无名" }));
+    fireEvent.click(await screen.findByRole("button", { name: "零号" }));
 
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     expect(await within(dialog).findByText("webdev")).toBeInTheDocument();
@@ -484,48 +484,48 @@ describe("家园概览页", () => {
     server.use(taskWith(1, "succeeded"));
 
     renderHome();
-    fireEvent.click(await screen.findByRole("button", { name: "顾知秋" }));
+    fireEvent.click(await screen.findByRole("button", { name: "螳螂" }));
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
 
-    expect(await within(dialog).findByText(/朱砂袍/)).toBeInTheDocument();
+    expect(await within(dialog).findByText(/机能风衣/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "脱下时装" }));
 
     await waitFor(() => expect(within(dialog).getByText("（未穿戴时装）")).toBeInTheDocument());
     expect(within(dialog).getByRole("button", { name: "穿时装" })).toBeInTheDocument();
-    expect(within(dialog).queryByText(/朱砂袍/)).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/机能风衣/)).not.toBeInTheDocument();
   });
 
   it("穿时装：二级浮窗列出储物箱时装，点一件即穿上", async () => {
     server.use(taskWith(1, "succeeded"));
 
     renderHome();
-    // 小厮未穿时装
-    fireEvent.click(await screen.findByRole("button", { name: "小厮" }));
+    // 麻雀未穿时装
+    fireEvent.click(await screen.findByRole("button", { name: "麻雀" }));
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     expect(await within(dialog).findByText("（未穿戴时装）")).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole("button", { name: "穿时装" }));
 
     const picker = await screen.findByRole("dialog", { name: "选择时装" });
-    fireEvent.click(await within(picker).findByRole("button", { name: /青衫/ }));
+    fireEvent.click(await within(picker).findByRole("button", { name: /旧夹克/ }));
 
     // 二级浮窗关闭，角色信息里出现新时装
     await waitFor(() =>
       expect(screen.queryByRole("dialog", { name: "选择时装" })).not.toBeInTheDocument(),
     );
-    expect(await within(dialog).findByText(/青衫/)).toBeInTheDocument();
+    expect(await within(dialog).findByText(/旧夹克/)).toBeInTheDocument();
   });
 
   it("点卡片右上角的场景详情：展示环境叙述与角色按钮，点角色进入其信息", async () => {
     renderHome();
 
-    fireEvent.click(await screen.findByRole("button", { name: "查看场景详情：门厅" }));
+    fireEvent.click(await screen.findByRole("button", { name: "查看场景详情：酒吧大厅" }));
 
     const dialog = await screen.findByRole("dialog", { name: "场景信息" });
     // StageComponent / EnvironmentComponent
     expect(await within(dialog).findByText(/的环境叙述/)).toBeInTheDocument();
     // 场景内角色作为按钮；点一个即换成该角色的信息浮窗
-    fireEvent.click(within(dialog).getByRole("button", { name: "顾知秋" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "螳螂" }));
 
     const actorDialog = await screen.findByRole("dialog", { name: "角色信息" });
     expect(
@@ -543,15 +543,15 @@ describe("家园概览页", () => {
 
     const browser = await screen.findByRole("dialog", { name: "实体浏览器" });
     // 三个场景与它们的角色都在（含无角色的场景）
-    expect(within(browser).getByRole("button", { name: "门厅" })).toBeInTheDocument();
-    expect(within(browser).getByRole("button", { name: "一楼客房" })).toBeInTheDocument();
-    expect(within(browser).getByRole("button", { name: "二楼卧室" })).toBeInTheDocument();
-    expect(within(browser).getByRole("button", { name: "顾知秋" })).toBeInTheDocument();
-    expect(within(browser).getByRole("button", { name: "小厮" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "酒吧大厅" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "后巷工位" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "阁楼隔间" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "螳螂" })).toBeInTheDocument();
+    expect(within(browser).getByRole("button", { name: "麻雀" })).toBeInTheDocument();
     expect(within(browser).getByText("（无角色）")).toBeInTheDocument();
 
     // 点场景名 → 换成场景信息浮窗
-    fireEvent.click(within(browser).getByRole("button", { name: "一楼客房" }));
+    fireEvent.click(within(browser).getByRole("button", { name: "后巷工位" }));
     const stageDialog = await screen.findByRole("dialog", { name: "场景信息" });
     expect(await within(stageDialog).findByText(/的环境叙述/)).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "实体浏览器" })).not.toBeInTheDocument();
@@ -565,7 +565,7 @@ describe("家园概览页", () => {
     fireEvent.click(button);
 
     const browser = await screen.findByRole("dialog", { name: "实体浏览器" });
-    fireEvent.click(within(browser).getByRole("button", { name: "小厮" }));
+    fireEvent.click(within(browser).getByRole("button", { name: "麻雀" }));
 
     const actorDialog = await screen.findByRole("dialog", { name: "角色信息" });
     expect(
@@ -580,34 +580,34 @@ describe("家园概览页", () => {
     const dialog = await openItemsDialog();
 
     // 背包：装备 + 消耗品
-    expect(await within(dialog).findByText("缠麻短刃")).toBeInTheDocument();
-    expect(within(dialog).getByText("吗啡针剂 ×2")).toBeInTheDocument();
+    expect(await within(dialog).findByText("幽灵短刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("急救纳米剂 ×2")).toBeInTheDocument();
     // 储物箱：材料（×2）、装备、时装各一
-    expect(within(dialog).getAllByText("旧麻绳 ×3").length).toBeGreaterThan(0);
-    expect(within(dialog).getByText("铁刀")).toBeInTheDocument();
-    expect(within(dialog).getByText("青衫")).toBeInTheDocument();
-    // 穿戴中的时装合入储物箱顶部，只读展示（顾知秋 · 朱砂袍）
+    expect(within(dialog).getAllByText("数据线缆 ×3").length).toBeGreaterThan(0);
+    expect(within(dialog).getByText("电磁刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("旧夹克")).toBeInTheDocument();
+    // 穿戴中的时装合入储物箱顶部，只读展示（螳螂 · 机能风衣）
     expect(within(dialog).getByText("穿戴中（只读）")).toBeInTheDocument();
-    expect(within(dialog).getByText("顾知秋 · 朱砂袍")).toBeInTheDocument();
-    expect(within(dialog).getByText(/绯色暗纹的道袍/)).toBeInTheDocument();
+    expect(within(dialog).getByText("螳螂 · 机能风衣")).toBeInTheDocument();
+    expect(within(dialog).getByText(/深灰色的工装/)).toBeInTheDocument();
 
     // 时装不可移入背包：储物箱里的时装没勾选框，背包里的每件都有
-    expect(within(dialog).queryByLabelText("选择 时装.青衫")).not.toBeInTheDocument();
-    expect(within(dialog).getByLabelText("选择 装备.缠麻短刃")).toBeInTheDocument();
+    expect(within(dialog).queryByLabelText("选择 时装.旧夹克")).not.toBeInTheDocument();
+    expect(within(dialog).getByLabelText("选择 装备.幽灵短刃")).toBeInTheDocument();
   });
 
   it("勾选背包道具后可批量移入储物箱", async () => {
     renderHome();
     const dialog = await openItemsDialog();
 
-    fireEvent.click(await within(dialog).findByLabelText("选择 装备.缠麻短刃"));
-    fireEvent.click(within(dialog).getByLabelText("选择 消耗品.吗啡针剂"));
+    fireEvent.click(await within(dialog).findByLabelText("选择 装备.幽灵短刃"));
+    fireEvent.click(within(dialog).getByLabelText("选择 消耗品.急救纳米剂"));
     fireEvent.click(within(dialog).getByRole("button", { name: "移入储物箱（2）" }));
 
     // 移动后：背包清空，两件道具出现在储物箱
     await waitFor(() => expect(within(dialog).getByText("（空）")).toBeInTheDocument());
-    expect(within(dialog).getByText("缠麻短刃")).toBeInTheDocument();
-    expect(within(dialog).getByText("吗啡针剂 ×2")).toBeInTheDocument();
+    expect(within(dialog).getByText("幽灵短刃")).toBeInTheDocument();
+    expect(within(dialog).getByText("急救纳米剂 ×2")).toBeInTheDocument();
   });
 
   it("勾选材料后经二次确认合成消耗品：默认填满用量，确认后刷新道具与叙事", async () => {
@@ -617,27 +617,27 @@ describe("家园概览页", () => {
     renderHome();
     const dialog = await openItemsDialog();
 
-    // 勾选两种材料（旧麻绳 ×3、符纸残片 ×2）
-    fireEvent.click(await within(dialog).findByLabelText("选择 材料.旧麻绳"));
-    fireEvent.click(within(dialog).getByLabelText("选择 材料.符纸残片"));
+    // 勾选两种材料（数据线缆 ×3、旧网数据包 ×2）
+    fireEvent.click(await within(dialog).findByLabelText("选择 材料.数据线缆"));
+    fireEvent.click(within(dialog).getByLabelText("选择 材料.旧网数据包"));
 
     // 点工坊按钮：叠出第二层确认浮窗，用量默认填满库存
     fireEvent.click(within(dialog).getByRole("button", { name: "合成消耗品" }));
     const confirm = await screen.findByRole("dialog", { name: "合成消耗品" });
-    expect(within(confirm).getByLabelText("材料.旧麻绳 用量")).toHaveValue(3);
-    expect(within(confirm).getByLabelText("材料.符纸残片 用量")).toHaveValue(2);
+    expect(within(confirm).getByLabelText("材料.数据线缆 用量")).toHaveValue(3);
+    expect(within(confirm).getByLabelText("材料.旧网数据包 用量")).toHaveValue(2);
 
-    // 改低旧麻绳用量后确认
-    fireEvent.change(within(confirm).getByLabelText("材料.旧麻绳 用量"), {
+    // 改低数据线缆用量后确认
+    fireEvent.change(within(confirm).getByLabelText("材料.数据线缆 用量"), {
       target: { value: "2" },
     });
     fireEvent.click(within(confirm).getByRole("button", { name: "确认" }));
 
-    // 确认后回到道具管理；任务完成后：产物入箱，旧麻绳 3→1（显为「旧麻绳」），符纸残片用尽
-    expect(await within(dialog).findByText("回气散")).toBeInTheDocument();
-    expect(within(dialog).getByText("旧麻绳")).toBeInTheDocument();
-    expect(within(dialog).queryByText("旧麻绳 ×3")).not.toBeInTheDocument();
-    expect(within(dialog).queryByText(/符纸残片/)).not.toBeInTheDocument();
+    // 确认后回到道具管理；任务完成后：产物入箱，数据线缆 3→1（显为「数据线缆」），旧网数据包用尽
+    expect(await within(dialog).findByText("充能剂")).toBeInTheDocument();
+    expect(within(dialog).getByText("数据线缆")).toBeInTheDocument();
+    expect(within(dialog).queryByText("数据线缆 ×3")).not.toBeInTheDocument();
+    expect(within(dialog).queryByText(/旧网数据包/)).not.toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "合成消耗品" })).not.toBeInTheDocument();
 
     // 合成产物通过叙事通知：关闭浮窗后叙事按钮出现未读

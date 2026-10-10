@@ -18,7 +18,7 @@ const renderCombat = () => renderRoom(<DungeonRoomRoute />);
 
 /** 进入副本并直接推进到战斗房间（跳过开场流程），再渲染房间页。 */
 function renderCombatRoom() {
-  enterMockDungeon("副本.荒村义庄");
+  enterMockDungeon("副本.数据坟场");
   advanceMockDungeon();
   renderCombat();
 }
@@ -54,7 +54,7 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
     const roster = screen.getByRole("list", { name: "参战者" });
-    const youCard = within(roster).getByText("无名").closest("li");
+    const youCard = within(roster).getByText("零号").closest("li");
     if (!(youCard instanceof HTMLElement)) {
       throw new Error("名单里没有玩家那张卡");
     }
@@ -62,7 +62,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(youCard).toHaveTextContent("能量 3 · 手牌 5 · 总格挡 6");
 
     // 手牌数上了第二行，卡底那颗按钮就只剩词缀槽——它们就是按钮的"图标"
-    const handButton = within(youCard).getByRole("button", { name: "查看手牌：无名" });
+    const handButton = within(youCard).getByRole("button", { name: "查看手牌：零号" });
     expect(handButton).toHaveTextContent("[被动] 0");
     expect(handButton).not.toHaveTextContent("手牌 5");
   });
@@ -94,14 +94,14 @@ describe("副本房间 · 战斗房间", () => {
 
     // 标题换成战斗房间
     expect(
-      await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" }),
+      await screen.findByRole("heading", { name: "数据坟场 (2/2) 残骸核心" }),
     ).toBeInTheDocument();
     // 进入战斗房间自动初始化；成功后开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByText(/抓牌以开启第一回合/)).not.toBeInTheDocument();
     // 参战者：队友不入队时只有玩家 + 四个怪物
-    expect(await screen.findByText("纸人")).toBeInTheDocument();
-    expect(screen.getByText("棺中殭尸")).toBeInTheDocument();
+    expect(await screen.findByText("门神")).toBeInTheDocument();
+    expect(screen.getByText("腐化进程")).toBeInTheDocument();
     expect(screen.getAllByText("怪物")).toHaveLength(4);
 
     // 开始 = 抓牌：直接落到玩家回合（第一回合有了；初始化是自动跑的）
@@ -113,7 +113,7 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    fireEvent.click(await screen.findByRole("button", { name: "查看角色：无名" }));
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：零号" }));
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     await within(dialog).findByText("属性");
     // 副本进行中家园接口会被拒，所以隐藏时装区
@@ -124,12 +124,12 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    fireEvent.click(await screen.findByRole("button", { name: "查看角色：纸人" }));
+    fireEvent.click(await screen.findByRole("button", { name: "查看角色：门神" }));
     const dialog = await screen.findByRole("dialog", { name: "角色信息" });
     await within(dialog).findByText("属性");
     expect(within(dialog).getByText("9 / 9")).toBeInTheDocument();
     // 外观来自 AppearanceComponent：初始「当前」=「基础」（怪物不穿时装，真实后端也如此）
-    expect(within(dialog).getAllByText(/朱砂笑眼/)).toHaveLength(2);
+    expect(within(dialog).getAllByText(/赤红扫描眼/)).toHaveLength(2);
   });
 
   it("开局准备：场景卡可点开「场景信息」全文（与开场房同一交互）", async () => {
@@ -137,7 +137,7 @@ describe("副本房间 · 战斗房间", () => {
     renderCombatRoom();
 
     const scene = await screen.findByRole("region", { name: "场景描述" });
-    fireEvent.click(within(scene).getByRole("button", { name: "查看场景：停柩房" }));
+    fireEvent.click(within(scene).getByRole("button", { name: "查看场景：残骸核心" }));
 
     const dialog = await screen.findByRole("dialog", { name: "场景信息" });
     expect(within(dialog).getByRole("heading", { name: "环境叙述" })).toBeInTheDocument();
@@ -147,7 +147,7 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" });
+    await screen.findByRole("heading", { name: "数据坟场 (2/2) 残骸核心" });
     expect(screen.getByRole("button", { name: /副本操作/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "地图" })).toBeInTheDocument();
 
@@ -155,18 +155,18 @@ describe("副本房间 · 战斗房间", () => {
     const list = await screen.findByRole("dialog", { name: "牌组一览" });
     // 我方：队友没入队时名单里只有玩家（牌组是点开才拉的，所以要等）
     expect(await within(list).findByRole("heading", { name: "我方" })).toBeInTheDocument();
-    expect(await within(list).findByRole("button", { name: /无名/ })).toHaveTextContent("玩家");
+    expect(await within(list).findByRole("button", { name: /零号/ })).toHaveTextContent("玩家");
 
-    // 敌方：本间（停柩房）的怪物与我方同列，且持有牌组
+    // 敌方：本间（残骸核心）的怪物与我方同列，且持有牌组
     expect(await within(list).findByRole("heading", { name: "敌方" })).toBeInTheDocument();
-    const paper = await within(list).findByRole("button", { name: /纸人/ });
+    const paper = await within(list).findByRole("button", { name: /门神/ });
     expect(paper).toHaveTextContent("怪物");
-    expect(within(list).getByRole("button", { name: /棺中殭尸/ })).toHaveTextContent("怪物");
+    expect(within(list).getByRole("button", { name: /腐化进程/ })).toHaveTextContent("怪物");
 
     // 怪物也能点进二级看牌组（怪物同样持 DeckComponent）
     fireEvent.click(paper);
     const deck = await screen.findByRole("dialog", { name: "牌组" });
-    expect(within(deck).getByText("纸人 · 共 5 张")).toBeInTheDocument();
+    expect(within(deck).getByText("门神 · 共 5 张")).toBeInTheDocument();
     // 牌组一律不显示来源（牌必属持有者），即使 mock 里混了别家的牌
     expect(within(deck).queryByText(/来源：/)).not.toBeInTheDocument();
   });
@@ -177,7 +177,7 @@ describe("副本房间 · 战斗房间", () => {
 
     // 自动初始化后点开始抓牌，开第一回合，让「战斗信息」有真正的回合数据
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
-    await screen.findByText("剖棺");
+    await screen.findByText("破译");
 
     fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
     const menu = await screen.findByRole("dialog", { name: "副本操作" });
@@ -192,7 +192,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(await within(combatInfo).findByRole("heading", { name: "我方" })).toBeInTheDocument();
     expect(within(combatInfo).getByRole("heading", { name: "敌方" })).toBeInTheDocument();
     // 宏观名单只要名字 + 生死：不铺血量 / 能量 / 牌堆那套（那是行动面板的事）
-    expect(within(combatInfo).getByText("棺中殭尸")).toBeInTheDocument();
+    expect(within(combatInfo).getByText("腐化进程")).toBeInTheDocument();
     expect(within(combatInfo).queryByText(/HP /)).not.toBeInTheDocument();
     // 还没打：一个「已战死」都没有
     expect(within(combatInfo).queryByText("已战死")).not.toBeInTheDocument();
@@ -209,7 +209,7 @@ describe("副本房间 · 战斗房间", () => {
   });
 
   it("战斗信息：结算后名单还在，战死的怪物挂「已战死」（宏观看的是「谁还活着」，不筛掉死者）", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
@@ -262,8 +262,8 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     const hand = await screen.findByRole("list", { name: "手牌" });
-    expect(within(hand).getByText("剖棺")).toBeInTheDocument();
-    expect(within(hand).getByText("屏息")).toBeInTheDocument();
+    expect(within(hand).getByText("破译")).toBeInTheDocument();
+    expect(within(hand).getByText("静默")).toBeInTheDocument();
     // 行动者资源（能量 / 总格挡）与过牌按钮
     expect(screen.getByRole("list", { name: "行动者资源" })).toHaveTextContent("能量");
     expect(screen.getByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
@@ -275,17 +275,17 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     // 卡底常驻按钮只给数量；怪物才多一项「[塞牌]」
-    const paperHand = await screen.findByRole("button", { name: "查看手牌：纸人" });
+    const paperHand = await screen.findByRole("button", { name: "查看手牌：门神" });
     expect(paperHand).toHaveTextContent("[被动] 1");
     expect(paperHand).toHaveTextContent("[塞牌] 1");
-    const corpseHand = screen.getByRole("button", { name: "查看手牌：棺中殭尸" });
+    const corpseHand = screen.getByRole("button", { name: "查看手牌：腐化进程" });
     expect(corpseHand).toHaveTextContent("[被动] 1");
     expect(corpseHand).toHaveTextContent("[塞牌] 2");
     // 我方自己那格不出现「[塞牌]」
-    expect(screen.getByRole("button", { name: "查看手牌：无名" })).not.toHaveTextContent("[塞牌]");
+    expect(screen.getByRole("button", { name: "查看手牌：零号" })).not.toHaveTextContent("[塞牌]");
 
     // 整卡可点 → 角色信息
-    fireEvent.click(screen.getByRole("button", { name: "查看角色：纸人" }));
+    fireEvent.click(screen.getByRole("button", { name: "查看角色：门神" }));
     const info = await screen.findByRole("dialog", { name: "角色信息" });
     await within(info).findByText("属性");
     fireEvent.click(within(info).getByRole("button", { name: "关闭" }));
@@ -293,14 +293,14 @@ describe("副本房间 · 战斗房间", () => {
     // 卡底按钮 → 该角色手牌：不再在卡面上标「塞牌」（那是持有关系），卡面只标「可传递」属性；再点卡进三级详情
     fireEvent.click(corpseHand);
     const handDialog = await screen.findByRole("dialog", { name: "手牌" });
-    expect(within(handDialog).getByText("棺中殭尸 · 共 5 张")).toBeInTheDocument();
+    expect(within(handDialog).getByText("腐化进程 · 共 5 张")).toBeInTheDocument();
     expect(within(handDialog).queryByText("[塞牌]")).not.toBeInTheDocument();
     expect(within(handDialog).getAllByText("可传递")).toHaveLength(2);
-    // 手牌只显示"不是自己的"来源（剖棺 / 钉棺 来自我方），自己的 / 空来源不显示
-    expect(within(handDialog).getAllByText("来源：角色.无名")).toHaveLength(2);
-    // 卡面词缀是一枚标记（`[入木]`），点开才看全文
-    expect(within(handDialog).getByRole("button", { name: "[入木]" })).toBeInTheDocument();
-    fireEvent.click(within(handDialog).getByRole("button", { name: "查看卡牌：钉棺" }));
+    // 手牌只显示"不是自己的"来源（破译 / 钉入 来自我方），自己的 / 空来源不显示
+    expect(within(handDialog).getAllByText("来源：角色.零号")).toHaveLength(2);
+    // 卡面词缀是一枚标记（`[楔入]`），点开才看全文
+    expect(within(handDialog).getByRole("button", { name: "[楔入]" })).toBeInTheDocument();
+    fireEvent.click(within(handDialog).getByRole("button", { name: "查看卡牌：钉入" }));
     expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
   });
 
@@ -310,21 +310,21 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     const hand = await screen.findByRole("list", { name: "手牌" });
-    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
+    fireEvent.click(within(cardTileOf("破译")).getByRole("button", { name: "选中手牌：破译" }));
     // 选中后名单进入「选目标」态：整卡可点；点一张 = **只选目标**（不直接出牌）
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
     // 两次选择都齐了，才长出「出牌」确认钮
     fireEvent.click(screen.getByRole("button", { name: "出牌" }));
 
     // 出牌成功 → 该卡离开手牌
-    await waitFor(() => expect(within(hand).queryByText("剖棺")).not.toBeInTheDocument());
+    await waitFor(() => expect(within(hand).queryByText("破译")).not.toBeInTheDocument());
 
     // 本次出牌的 log 仍可从 ⚙「战斗信息」查看（页面上不再常驻回合记录）
     fireEvent.click(screen.getByRole("button", { name: /副本操作/ }));
     const menu = await screen.findByRole("dialog", { name: "副本操作" });
     fireEvent.click(within(menu).getByRole("button", { name: "战斗信息" }));
     const info = await screen.findByRole("dialog", { name: "战斗信息" });
-    expect(within(info).getByText(/使用『剖棺』对 怪物.纸人/)).toBeInTheDocument();
+    expect(within(info).getByText(/使用『破译』对 怪物.门神/)).toBeInTheDocument();
   });
 
   it("选牌/选目标都要两次：手牌上移、目标下移，再点各自缩回去；两次都齐才出现「出牌」", async () => {
@@ -333,25 +333,25 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     await screen.findByRole("list", { name: "手牌" });
-    const cardTile = cardTileOf("剖棺");
+    const cardTile = cardTileOf("破译");
     // 只选了牌（上移）还没选目标：只给提示，没有「出牌」
-    fireEvent.click(within(cardTile).getByRole("button", { name: "选中手牌：剖棺" }));
+    fireEvent.click(within(cardTile).getByRole("button", { name: "选中手牌：破译" }));
     expect(cardTile).toHaveClass("card-tile--selected");
     expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
 
     // 选目标（下移）→ 才长出「出牌」
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
-    const paper = screen.getByRole("button", { name: "选择目标：纸人" }).closest("li");
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
+    const paper = screen.getByRole("button", { name: "选择目标：门神" }).closest("li");
     expect(paper).toHaveClass("combatant-card--target");
     expect(screen.getByRole("button", { name: "出牌" })).toBeInTheDocument();
 
     // 再点同一张目标 → 缩回去，「出牌」也收回
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
     expect(paper).not.toHaveClass("combatant-card--target");
     expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
 
     // 再点手牌 → 取消选中
-    fireEvent.click(within(cardTile).getByRole("button", { name: "取消选中：剖棺" }));
+    fireEvent.click(within(cardTile).getByRole("button", { name: "取消选中：破译" }));
     expect(cardTile).not.toHaveClass("card-tile--selected");
   });
 
@@ -361,14 +361,14 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     const hand = await screen.findByRole("list", { name: "手牌" });
-    fireEvent.click(within(cardTileOf("屏息")).getByRole("button", { name: "选中手牌：屏息" }));
+    fireEvent.click(within(cardTileOf("静默")).getByRole("button", { name: "选中手牌：静默" }));
 
     // 自己那张（当前行动者）自动下移，不需要去名单里点
     expect(currentCombatant()).toHaveClass("combatant-card--target");
     expect(screen.getByRole("button", { name: "出牌" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "出牌" }));
-    await waitFor(() => expect(within(hand).queryByText("屏息")).not.toBeInTheDocument());
+    await waitFor(() => expect(within(hand).queryByText("静默")).not.toBeInTheDocument());
   });
 
   it("能量不够的卡：「出牌」同样灰掉（扣能量后剩余不够，与不可出牌同一副待遇）", async () => {
@@ -377,22 +377,26 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
 
-    // 照妖镜费用 2（本回合能量 3）→ 打掉它，能量就只剩 1
-    fireEvent.click(within(cardTileOf("照妖镜")).getByRole("button", { name: "选中手牌：照妖镜" }));
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    // 棱镜反射费用 2（本回合能量 3）→ 打掉它，能量就只剩 1
+    fireEvent.click(
+      within(cardTileOf("棱镜反射")).getByRole("button", { name: "选中手牌：棱镜反射" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
     fireEvent.click(screen.getByRole("button", { name: "出牌" }));
 
-    // 等快照刷新：照妖镜离手（同一份快照里的能量也变成 1 了）
+    // 等快照刷新：棱镜反射离手（同一份快照里的能量也变成 1 了）
     const hand = screen.getByRole("list", { name: "手牌" });
-    await waitFor(() => expect(within(hand).queryByText("照妖镜")).not.toBeInTheDocument());
+    await waitFor(() => expect(within(hand).queryByText("棱镜反射")).not.toBeInTheDocument());
     expect(
       within(screen.getByRole("list", { name: "行动者资源" })).getByText("能量"),
     ).toBeInTheDocument();
     expect(document.querySelector(".res--energy .res-gem")).toHaveTextContent("1");
 
-    // 摇铃费用 2 > 剩余 1：两次选择照旧能选，但「出牌」按不下去、图标换禁行
-    fireEvent.click(within(cardTileOf("摇铃")).getByRole("button", { name: "选中手牌：摇铃" }));
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    // 干扰广播费用 2 > 剩余 1：两次选择照旧能选，但「出牌」按不下去、图标换禁行
+    fireEvent.click(
+      within(cardTileOf("干扰广播")).getByRole("button", { name: "选中手牌：干扰广播" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
     const play = screen.getByRole("button", { name: "出牌" });
     expect(play).toBeDisabled();
     expect(play).toHaveClass("combat-hand-btn--off");
@@ -410,7 +414,7 @@ describe("副本房间 · 战斗房间", () => {
     // 还没选牌：只有一句说明，不给卡状按钮
     expect(screen.getByText("点一张手牌开始出牌。")).toHaveClass("combat-hand-note");
 
-    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
+    fireEvent.click(within(cardTileOf("破译")).getByRole("button", { name: "选中手牌：破译" }));
     // 只选了牌、还没选目标：有「查看」与「取消」，但「出牌」还没长出
     expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "查看" })).toHaveClass(
@@ -422,13 +426,13 @@ describe("副本房间 · 战斗房间", () => {
       "combat-hand-btn--cancel",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
     const play = screen.getByRole("button", { name: "出牌" });
     // 卡状按钮 = 图标（装饰，不进无障碍名字）+ 词；「出牌」是主行动（绿）
     expect(play).toHaveClass("combat-hand-btn", "combat-hand-btn--play");
     expect(within(play).getByText("出牌")).toHaveClass("combat-hand-btn-caption");
     // 「已选 / 目标」那段话折行收在同一个矩形块里
-    expect(screen.getByText(/目标：纸人/)).toHaveClass("combat-hand-hint");
+    expect(screen.getByText(/目标：门神/)).toHaveClass("combat-hand-hint");
   });
 
   it("不可出牌的卡：两次选择照旧，但「出牌」灰掉 + 换禁行图标（取消 / 查看还在）", async () => {
@@ -437,11 +441,11 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
 
-    // 常驻厌胜在 mock 里就是 `playable: false`（卡面挂着灰标记「不可出牌」）
+    // 常驻协议在 mock 里就是 `playable: false`（卡面挂着灰标记「不可出牌」）
     fireEvent.click(
-      within(cardTileOf("常驻厌胜")).getByRole("button", { name: "选中手牌：常驻厌胜" }),
+      within(cardTileOf("常驻协议")).getByRole("button", { name: "选中手牌：常驻协议" }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
 
     // 「出牌」还在原位、形状与文案不变，只是按不下去、图标换成禁行
     const play = screen.getByRole("button", { name: "出牌" });
@@ -465,13 +469,13 @@ describe("副本房间 · 战斗房间", () => {
 
     // 点词缀 chip = 问“这是什么”：弹一枚小浮层，不开详情（与牌组里整卡直开详情不同，
     // 因为手牌里整卡点击有别的含义——选中待出）
-    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "[开棺]" }));
+    fireEvent.click(within(cardTileOf("破译")).getByRole("button", { name: "[破壳]" }));
     expect(screen.getByRole("tooltip")).toHaveTextContent("命中后可以再摸一张");
     expect(screen.queryByRole("dialog", { name: "卡牌" })).not.toBeInTheDocument();
     fireEvent.mouseDown(document.body);
 
     // 整卡点击 = 选中：中间那条长出按钮，同样不开详情
-    fireEvent.click(within(cardTileOf("剖棺")).getByRole("button", { name: "选中手牌：剖棺" }));
+    fireEvent.click(within(cardTileOf("破译")).getByRole("button", { name: "选中手牌：破译" }));
     expect(screen.queryByRole("dialog", { name: "卡牌" })).not.toBeInTheDocument();
 
     // 「查看」是手牌里进详情的唯一入口；详情两栏：左卡面 / 右全文
@@ -485,13 +489,13 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 棺中殭尸的牌组在 mock 里被加到 15 张（5 行），专门用来碰「固定三行」那条线
+    // 腐化进程的牌组在 mock 里被加到 15 张（5 行），专门用来碰「固定三行」那条线
     fireEvent.click(await screen.findByRole("button", { name: "牌组" }));
     const list = await screen.findByRole("dialog", { name: "牌组一览" });
-    fireEvent.click(await within(list).findByRole("button", { name: /棺中殭尸/ }));
+    fireEvent.click(await within(list).findByRole("button", { name: /腐化进程/ }));
 
     const deck = await screen.findByRole("dialog", { name: "牌组" });
-    expect(within(deck).getByText("棺中殭尸 · 共 15 张")).toBeInTheDocument();
+    expect(within(deck).getByText("腐化进程 · 共 15 张")).toBeInTheDocument();
     // 关键：**全部 15 张都在 DOM 里**——三行高是「视口」而不是截断（jsdom 量不到滚动条，
     // 所以这一层能验的就是「没把超出的卡丢掉」，滚动的观感靠 `dev:mock` 手看）
     expect(within(deck).getAllByRole("listitem")).toHaveLength(15);
@@ -504,18 +508,18 @@ describe("副本房间 · 战斗房间", () => {
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    // 队伍里只有玩家：过牌 → 纸人 → 棺中殭尸（等行动者真的换了再点下一颗）
+    // 队伍里只有玩家：过牌 → 门神 → 腐化进程（等行动者真的换了再点下一颗）
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
-    await waitFor(() => expect(within(currentCombatant()).getByText("纸人")).toBeInTheDocument());
+    await waitFor(() => expect(within(currentCombatant()).getByText("门神")).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
     await waitFor(() =>
-      expect(within(currentCombatant()).getByText("棺中殭尸")).toBeInTheDocument(),
+      expect(within(currentCombatant()).getByText("腐化进程")).toBeInTheDocument(),
     );
 
     // 15 张抓走 5 张（`MOCK_DRAW_PER_TURN`）→ 抽牌堆剩 10 张，四行
     fireEvent.click(screen.getByRole("button", { name: "查看抽牌堆（10 张）" }));
     const draw = await screen.findByRole("dialog", { name: "抽牌堆" });
-    expect(within(draw).getByText("棺中殭尸 · 共 10 张")).toBeInTheDocument();
+    expect(within(draw).getByText("腐化进程 · 共 10 张")).toBeInTheDocument();
     expect(within(draw).getAllByRole("listitem")).toHaveLength(10);
     expect(within(draw).getByRole("list")).toHaveClass("card-tiles--deck");
   });
@@ -531,15 +535,15 @@ describe("副本房间 · 战斗房间", () => {
     expect(drawButton).toHaveClass("res", "res--pile");
     expect(drawButton.closest("li")).toHaveClass("combat-pile");
 
-    // 无名 9 张牌抓走 5 张（`MOCK_DRAW_PER_TURN`），抽牌堆剩 4 张
+    // 零号 9 张牌抓走 5 张（`MOCK_DRAW_PER_TURN`），抽牌堆剩 4 张
     fireEvent.click(drawButton);
     const draw = await screen.findByRole("dialog", { name: "抽牌堆" });
-    expect(within(draw).getByText("无名 · 共 4 张")).toBeInTheDocument();
+    expect(within(draw).getByText("零号 · 共 4 张")).toBeInTheDocument();
     expect(within(draw).getAllByRole("listitem")).toHaveLength(4);
     // 与牌组 / 手牌共用一套卡面（行数封顶写在样式里，jsdom 量不到）
     expect(within(draw).getByRole("list")).toHaveClass("card-tiles--deck");
     // 牌堆也是「整卡点开三级详情」那一套
-    fireEvent.click(within(draw).getByRole("button", { name: "查看卡牌：钉棺" }));
+    fireEvent.click(within(draw).getByRole("button", { name: "查看卡牌：钉入" }));
     expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
     fireEvent.keyDown(document, { key: "Escape" });
     fireEvent.keyDown(document, { key: "Escape" });
@@ -556,27 +560,31 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
 
-    const monsters = ["纸人", "棺中殭尸", "纸傀儡", "吊死鬼"];
+    const monsters = ["门神", "腐化进程", "傀儡义体", "吊线幽灵"];
     const targetTiles = () =>
       monsters.map((name) =>
         screen.getByRole("button", { name: `选择目标：${name}` }).closest("li"),
       );
 
-    // all（摇铃）：点一个锚点 → 敌方**整阵营**都压下
-    fireEvent.click(within(cardTileOf("摇铃")).getByRole("button", { name: "选中手牌：摇铃" }));
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：纸人" }));
+    // all（干扰广播）：点一个锚点 → 敌方**整阵营**都压下
+    fireEvent.click(
+      within(cardTileOf("干扰广播")).getByRole("button", { name: "选中手牌：干扰广播" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：门神" }));
     for (const tile of targetTiles()) {
       expect(tile).toHaveClass("combatant-card--target");
     }
     // 我方不被选中；提示把整个阵营列出来
     expect(currentCombatant()).not.toHaveClass("combatant-card--target");
-    expect(screen.getByText(/目标：纸人、棺中殭尸、纸傀儡、吊死鬼/)).toBeInTheDocument();
+    expect(screen.getByText(/目标：门神、腐化进程、傀儡义体、吊线幽灵/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
 
-    // spread（照妖镜）：选中集合与 all 相同，只在提示里多一句随机
-    fireEvent.click(within(cardTileOf("照妖镜")).getByRole("button", { name: "选中手牌：照妖镜" }));
-    fireEvent.click(screen.getByRole("button", { name: "选择目标：棺中殭尸" }));
+    // spread（棱镜反射）：选中集合与 all 相同，只在提示里多一句随机
+    fireEvent.click(
+      within(cardTileOf("棱镜反射")).getByRole("button", { name: "选中手牌：棱镜反射" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：腐化进程" }));
     for (const tile of targetTiles()) {
       expect(tile).toHaveClass("combatant-card--target");
     }
@@ -588,12 +596,12 @@ describe("副本房间 · 战斗房间", () => {
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    // 我方过牌 → 轮到第一个怪物（名单的「当前行动」标记从无名换到纸人）
+    // 我方过牌 → 轮到第一个怪物（名单的「当前行动」标记从零号换到门神）
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
-    await waitFor(() => expect(within(currentCombatant()).getByText("纸人")).toBeInTheDocument());
+    await waitFor(() => expect(within(currentCombatant()).getByText("门神")).toBeInTheDocument());
 
     // 依次推完四只怪物：等行动者真的换了再点下一颗，避免点到忙碌中的按钮
-    for (const name of ["棺中殭尸", "纸傀儡", "吊死鬼"]) {
+    for (const name of ["腐化进程", "傀儡义体", "吊线幽灵"]) {
       fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
       await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
     }
@@ -605,7 +613,7 @@ describe("副本房间 · 战斗房间", () => {
 
   it("结算：显示胜负、战利品与收取按钮，怪物标记战死", async () => {
     // 直接预置结算态，不必把整场战斗打一遍
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
@@ -614,14 +622,14 @@ describe("副本房间 · 战斗房间", () => {
     // 参战者快照要等 details 回来，战利品才会出现；用 find 等它
     expect(await screen.findByRole("button", { name: "收取战利品（1）" })).toBeEnabled();
     // 战利品走 ItemRow：显示名 + 数量后缀 + 中文类型
-    expect(screen.getByText("腐骨 ×2")).toBeInTheDocument();
+    expect(screen.getByText("腐化芯片 ×2")).toBeInTheDocument();
     expect(screen.getByText("材料")).toBeInTheDocument();
     // 四只怪物都已战死
     expect(screen.getAllByText("已战死")).toHaveLength(4);
   });
 
   it("结算：收取战利品后列表清空、按钮禁用", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
@@ -634,13 +642,13 @@ describe("副本房间 · 战斗房间", () => {
 
   it("结算：这是最后一间，结束本间 = 直接离开副本回家园（不再绕一次地图）", async () => {
     server.use(instantTasks());
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
 
     // 落点要看 `/state`（有没有下一间），所以等标题把进度显出来（标题与判据用的是同一个查询）
-    await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" });
+    await screen.findByRole("heading", { name: "数据坟场 (2/2) 残骸核心" });
     fireEvent.click(await screen.findByRole("button", { name: "结束本次战斗" }));
 
     // 本间之后没有房间了：服务端推进必然拒绝（"副本已全部通关"），所以直接走退出那条路。
@@ -650,7 +658,7 @@ describe("副本房间 · 战斗房间", () => {
   });
 
   it("结算：未收的战利品只提示不阻止（「!」长在收取按钮上，后果在 title 里）", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
@@ -669,7 +677,7 @@ describe("副本房间 · 战斗房间", () => {
   });
 
   it("战利品收完之后：标题行那颗「结束本间」的提醒色消失", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();

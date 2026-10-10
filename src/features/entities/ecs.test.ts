@@ -12,11 +12,11 @@ import {
 } from "./ecs";
 
 const entity: Entity = {
-  name: "角色.无名",
+  name: "角色.零号",
   data: {
     [COMPONENT.Player]: { player_name: "webdev" },
     [COMPONENT.CharacterStats]: {
-      name: "角色.无名",
+      name: "角色.零号",
       stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
     },
   },
@@ -45,10 +45,10 @@ describe("getComponentData / hasComponent", () => {
 });
 
 describe("readString / readNumber / readBoolean", () => {
-  const data = { name: "角色.无名", count: 3, flag: true, empty: "", bad: "x" };
+  const data = { name: "角色.零号", count: 3, flag: true, empty: "", bad: "x" };
 
   it("读出对应类型的字段", () => {
-    expect(readString(data, "name")).toBe("角色.无名");
+    expect(readString(data, "name")).toBe("角色.零号");
     expect(readNumber(data, "count")).toBe(3);
     expect(readBoolean(data, "flag")).toBe(true);
   });
@@ -69,10 +69,10 @@ describe("readCharacterStats", () => {
   });
 
   it("缺组件或字段类型不对返回 null（不猜）", () => {
-    expect(readCharacterStats({ name: "角色.无名", data: {} })).toBeNull();
+    expect(readCharacterStats({ name: "角色.零号", data: {} })).toBeNull();
     expect(
       readCharacterStats({
-        name: "角色.无名",
+        name: "角色.零号",
         data: { [COMPONENT.CharacterStats]: { stats: { hp: 12, max_hp: "15" } } },
       }),
     ).toBeNull();

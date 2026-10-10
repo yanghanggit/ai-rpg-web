@@ -30,10 +30,10 @@ function renderGate() {
 
 describe("DungeonRunGate", () => {
   it("取到房间就把 room 交给调用方渲染", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     renderGate();
 
-    expect(await screen.findByText("房间：场景.义庄前院")).toBeInTheDocument();
+    expect(await screen.findByText("房间：场景.坟场网关")).toBeInTheDocument();
   });
 
   it("没有进行中的房间（404）：原样显示原因，并给回家园的出口", async () => {
@@ -46,9 +46,9 @@ describe("DungeonRunGate", () => {
   it("已经有 data 时后台重取失败：不把已经拿到的房间屏换成错误页", async () => {
     // 真实场景：退出副本时 /room 会在房间屏仍挂载时被判 404（副本已被拆），
     // 于是缓存里留下「旧房间 + error」；下次再进副本时不该先看到错误页。
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     const queryClient = renderGate();
-    expect(await screen.findByText("房间：场景.义庄前院")).toBeInTheDocument();
+    expect(await screen.findByText("房间：场景.坟场网关")).toBeInTheDocument();
 
     server.use(
       http.get(api(ROOM_PATH), () =>
@@ -57,7 +57,7 @@ describe("DungeonRunGate", () => {
     );
     await queryClient.invalidateQueries({ queryKey: ["get", ROOM_PATH] });
 
-    expect(screen.getByText("房间：场景.义庄前院")).toBeInTheDocument();
+    expect(screen.getByText("房间：场景.坟场网关")).toBeInTheDocument();
     expect(screen.queryByText(/无法获取当前房间/)).not.toBeInTheDocument();
   });
 });

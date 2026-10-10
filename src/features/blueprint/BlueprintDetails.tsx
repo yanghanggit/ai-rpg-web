@@ -21,7 +21,7 @@ const ITEM_TYPE_LABELS: Record<string, string> = {
  * （它通常只是个名单，先收起来能让面板短一半）。
  * 这里刻意不显示 Stage.profile / Actor.profile 等长描述——需要的是"Stage 里有谁"的宏观映射。
  *
- * 实体名一律经 `displayName` 只显示最后一段（`角色.无名` → `无名`）；
+ * 实体名一律经 `displayName` 只显示最后一段（`角色.零号` → `零号`）；
  * key 与"是否玩家角色"的比较仍然用**原始名字**，显示名不能当身份。
  */
 export default function BlueprintDetails({ blueprint }: { blueprint: Schemas["Blueprint"] }) {

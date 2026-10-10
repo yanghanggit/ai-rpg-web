@@ -25,15 +25,15 @@ import { withMockOpeningComponents } from "./opening";
 import { readMockStages } from "./stages";
 
 const PLAYER = blueprintFixture.player_actor;
-const MONSTER_1 = "怪物.纸人";
-const MONSTER_2 = "怪物.棺中殭尸";
-const MONSTER_3 = "怪物.纸傀儡";
-const MONSTER_4 = "怪物.吊死鬼";
-const COMBAT_STAGE = "场景.停柩房";
+const MONSTER_1 = "怪物.门神";
+const MONSTER_2 = "怪物.腐化进程";
+const MONSTER_3 = "怪物.傀儡义体";
+const MONSTER_4 = "怪物.吊线幽灵";
+const COMBAT_STAGE = "场景.残骸核心";
 
 /** 进入副本并推进到战斗房间：队伍固化 + 战斗复位为 INITIALIZATION。 */
 function enterCombat(): void {
-  enterMockDungeon("副本.荒村义庄");
+  enterMockDungeon("副本.数据坟场");
   advanceMockDungeon();
 }
 
@@ -81,7 +81,7 @@ describe("进入战斗房间", () => {
       MONSTER_3,
       MONSTER_4,
     ]);
-    expect(actorsByStage["场景.门厅"]).not.toContain(PLAYER);
+    expect(actorsByStage["场景.酒吧大厅"]).not.toContain(PLAYER);
   });
 });
 
@@ -119,7 +119,7 @@ describe("回合行动", () => {
     startRound();
     expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(5);
 
-    expect(playMockCards(PLAYER, "剖棺", [MONSTER_1])).toMatchObject({ ok: true });
+    expect(playMockCards(PLAYER, "破译", [MONSTER_1])).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
     expect(round?.cards_log).toHaveLength(1);
     expect(round?.cards_narrative).toHaveLength(1);
@@ -136,8 +136,8 @@ describe("回合行动", () => {
 
   it("消耗品 / 装备记日志并累加次数", () => {
     startRound();
-    expect(useMockConsumable("消耗品.回气散", [PLAYER])).toMatchObject({ ok: true });
-    expect(equipMockGear("装备.符纹刀")).toMatchObject({ ok: true });
+    expect(useMockConsumable("消耗品.充能剂", [PLAYER])).toMatchObject({ ok: true });
+    expect(equipMockGear("装备.协议刀")).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
     expect(round?.consumable_use_count).toBe(1);
     expect(round?.gear_equip_count).toBe(1);

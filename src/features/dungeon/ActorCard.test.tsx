@@ -9,9 +9,9 @@ import ActorCard from "./ActorCard";
 describe("ActorCard", () => {
   it("给 onOpenInfo：整卡是一个可点按钮（名字不再是独立按钮）", () => {
     const onOpenInfo = vi.fn();
-    render(<ActorCard name="无名" badge="玩家" stats={null} onOpenInfo={onOpenInfo} />);
+    render(<ActorCard name="零号" badge="玩家" stats={null} onOpenInfo={onOpenInfo} />);
 
-    const open = screen.getByRole("button", { name: "查看角色：无名" });
+    const open = screen.getByRole("button", { name: "查看角色：零号" });
     expect(open).toHaveClass("actor-card-open");
     expect(screen.getByText("玩家")).toBeInTheDocument();
 
@@ -20,29 +20,29 @@ describe("ActorCard", () => {
   });
 
   it("不给 onOpenInfo：整卡不可点，名字是静态文本", () => {
-    render(<ActorCard name="纸人" badge="怪物" stats={null} />);
+    render(<ActorCard name="门神" badge="怪物" stats={null} />);
 
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
-    expect(screen.getByText("纸人")).toBeInTheDocument();
+    expect(screen.getByText("门神")).toBeInTheDocument();
   });
 
   it("extra 是属性下的第二行；不给就不占行", () => {
-    const { rerender } = render(<ActorCard name="无名" stats={null} extra="卡组 9" />);
+    const { rerender } = render(<ActorCard name="零号" stats={null} extra="卡组 9" />);
     expect(screen.getByText("卡组 9")).toBeInTheDocument();
 
-    rerender(<ActorCard name="无名" stats={null} />);
+    rerender(<ActorCard name="零号" stats={null} />);
     expect(screen.queryByText("卡组 9")).not.toBeInTheDocument();
   });
 
   it("children 进卡底动作区；不给就不渲染动作区", () => {
     const { rerender } = render(
-      <ActorCard name="无名" stats={null}>
+      <ActorCard name="零号" stats={null}>
         <button type="button">生成奖励</button>
       </ActorCard>,
     );
     expect(screen.getByRole("button", { name: "生成奖励" })).toBeInTheDocument();
 
-    rerender(<ActorCard name="无名" stats={null} />);
+    rerender(<ActorCard name="零号" stats={null} />);
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
 
@@ -50,7 +50,7 @@ describe("ActorCard", () => {
     const onOpenInfo = vi.fn();
     const onReward = vi.fn();
     render(
-      <ActorCard name="无名" stats={null} onOpenInfo={onOpenInfo}>
+      <ActorCard name="零号" stats={null} onOpenInfo={onOpenInfo}>
         <button type="button" onClick={onReward}>
           生成奖励
         </button>

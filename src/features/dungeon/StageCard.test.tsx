@@ -9,9 +9,9 @@ import StageCard from "./StageCard";
  */
 describe("StageCard", () => {
   it("初始化中：显示「进行中…」，不可点（此刻没什么可做的）", () => {
-    render(<StageCard state="running" name="场景.义庄前院" body="进行中…" onActivate={() => {}} />);
+    render(<StageCard state="running" name="场景.坟场网关" body="进行中…" onActivate={() => {}} />);
 
-    const card = screen.getByRole("button", { name: "初始化中：义庄前院" });
+    const card = screen.getByRole("button", { name: "初始化中：坟场网关" });
     expect(card).toBeDisabled();
     expect(card).toHaveTextContent("进行中…");
   });
@@ -21,13 +21,13 @@ describe("StageCard", () => {
     render(
       <StageCard
         state="failed"
-        name="场景.义庄前院"
+        name="场景.坟场网关"
         body="初始化失败：后端 500"
         onActivate={onActivate}
       />,
     );
 
-    const card = screen.getByRole("button", { name: "重试初始化：义庄前院" });
+    const card = screen.getByRole("button", { name: "重试初始化：坟场网关" });
     expect(card).toBeEnabled();
     expect(card).toHaveTextContent("初始化失败：后端 500");
     expect(card).toHaveClass("stage-card--failed");
@@ -41,14 +41,14 @@ describe("StageCard", () => {
     render(
       <StageCard
         state="ready"
-        name="场景.义庄前院"
-        body="门轴涩住，风从棺缝里过。"
+        name="场景.坟场网关"
+        body="接线完成，数据从裂缝里渗出。"
         onActivate={onActivate}
       />,
     );
 
-    const card = screen.getByRole("button", { name: "查看场景：义庄前院" });
-    expect(card).toHaveTextContent("门轴涩住，风从棺缝里过。");
+    const card = screen.getByRole("button", { name: "查看场景：坟场网关" });
+    expect(card).toHaveTextContent("接线完成，数据从裂缝里渗出。");
     expect(card).toHaveClass("stage-card--ready");
 
     fireEvent.click(card);

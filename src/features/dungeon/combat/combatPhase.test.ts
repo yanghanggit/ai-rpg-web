@@ -20,7 +20,7 @@ describe("deriveCombatPhase", () => {
   it("ONGOING 且最新回合尚未抓牌 → round_start", () => {
     const combat = combatFixture({
       state: COMBAT_STATE.ONGOING,
-      rounds: [roundFixture({ draw_completed: false, current_actor: "角色.无名" })],
+      rounds: [roundFixture({ draw_completed: false, current_actor: "角色.零号" })],
     });
     expect(deriveCombatPhase(combat)).toBe("round_start");
   });
@@ -29,7 +29,7 @@ describe("deriveCombatPhase", () => {
     const combat = combatFixture({
       state: COMBAT_STATE.ONGOING,
       rounds: [
-        roundFixture({ draw_completed: true, is_completed: true, current_actor: "角色.无名" }),
+        roundFixture({ draw_completed: true, is_completed: true, current_actor: "角色.零号" }),
       ],
     });
     expect(deriveCombatPhase(combat)).toBe("round_start");
@@ -46,7 +46,7 @@ describe("deriveCombatPhase", () => {
   it("ONGOING 且有可行动角色 → turn", () => {
     const combat = combatFixture({
       state: COMBAT_STATE.ONGOING,
-      rounds: [roundFixture({ draw_completed: true, current_actor: "角色.无名" })],
+      rounds: [roundFixture({ draw_completed: true, current_actor: "角色.零号" })],
     });
     expect(deriveCombatPhase(combat)).toBe("turn");
   });
@@ -56,7 +56,7 @@ describe("deriveCombatPhase", () => {
       state: COMBAT_STATE.ONGOING,
       rounds: [
         roundFixture({ draw_completed: true, is_completed: true, current_actor: null }),
-        roundFixture({ draw_completed: true, current_actor: "怪物.纸人" }),
+        roundFixture({ draw_completed: true, current_actor: "怪物.门神" }),
       ],
     });
     expect(deriveCombatPhase(combat)).toBe("turn");

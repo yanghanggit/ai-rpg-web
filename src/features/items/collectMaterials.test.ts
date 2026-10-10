@@ -10,14 +10,14 @@ describe("collectMaterials", () => {
   it("只保留材料，同名跨行按数量汇总", () => {
     expect(
       collectMaterials([
-        item("材料.旧麻绳", "MaterialItem", 3),
-        item("装备.铁刀", "GearItem", 1),
-        item("材料.旧麻绳", "MaterialItem", 2),
+        item("材料.数据线缆", "MaterialItem", 3),
+        item("装备.电磁刃", "GearItem", 1),
+        item("材料.数据线缆", "MaterialItem", 2),
       ]),
-    ).toEqual([{ name: "材料.旧麻绳", count: 5 }]);
+    ).toEqual([{ name: "材料.数据线缆", count: 5 }]);
   });
 
   it("没有材料时返回空数组", () => {
-    expect(collectMaterials([item("时装.青衫", "CostumeItem", 1)])).toEqual([]);
+    expect(collectMaterials([item("时装.旧夹克", "CostumeItem", 1)])).toEqual([]);
   });
 });

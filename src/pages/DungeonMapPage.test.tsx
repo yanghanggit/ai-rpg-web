@@ -35,13 +35,13 @@ function roomRow(stageName: string): HTMLElement {
 describe("副本地图 · 状态与前进", () => {
   it("刚进入副本：标题只留副本名、没有「地图」入口，只有本间那一行带「进入房间」", async () => {
     // 进入但不初始化：开场房间还没进过（刚进入副本）
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     renderMapPage();
 
     expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
     // 标题只留副本名：不带进度、不带房间名（这一屏不在某一间房里）。
     // 标题里的副本名来自 /state，所以要等它回来（地图与房间共用同一个 `/state` 查询）
-    expect(await screen.findByRole("heading", { name: "荒村义庄" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "数据坟场" })).toBeInTheDocument();
     // 地图自己就是房间清单，所以不再给「地图」；「副本操作」「牌组」照旧
     expect(screen.getByRole("button", { name: "副本操作" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
@@ -49,13 +49,13 @@ describe("副本地图 · 状态与前进", () => {
 
     expect(screen.getByText("第 1 / 2 间")).toBeInTheDocument();
     // 房间表就是「地图」浮窗那一份（同一个 readDungeonInfo），敌人也一并列出
-    expect(screen.getByText("义庄前院")).toBeInTheDocument();
-    expect(screen.getByText("停柩房")).toBeInTheDocument();
+    expect(screen.getByText("坟场网关")).toBeInTheDocument();
+    expect(screen.getByText("残骸核心")).toBeInTheDocument();
     expect(screen.getByText(/HP 9/)).toBeInTheDocument();
 
     // 动作长在目标那一行：还没进过本间 → 本间那一行带「进入房间」，别的行什么都不带
-    const first = roomRow("义庄前院");
-    const second = roomRow("停柩房");
+    const first = roomRow("坟场网关");
+    const second = roomRow("残骸核心");
     expect(first).toHaveTextContent("你在这里");
     expect(within(first).getByRole("button", { name: "进入房间" })).toBeEnabled();
     expect(within(second).queryByRole("button")).not.toBeInTheDocument();
@@ -67,7 +67,7 @@ describe("副本地图 · 状态与前进", () => {
 
   it("「进入房间」：进入本间（开场房间整页），并自动开始初始化", async () => {
     server.use(instantTasks());
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     renderMapPage();
 
     fireEvent.click(await screen.findByRole("button", { name: "进入房间" }));
@@ -75,24 +75,24 @@ describe("副本地图 · 状态与前进", () => {
     // 落到房间页：正文是队伍块（只有房间页有）；自动初始化跑完 → 卡上的「生成奖励」可点
     expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: "生成奖励" })).toBeEnabled());
-    expect(screen.getByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "数据坟场 (1/2) 坟场网关" })).toBeInTheDocument();
   });
 
   it("两间之间：已结束那一行标「已完成」，按钮搬到下一间那一行，一步推进并进入下一间", async () => {
     server.use(instantTasks());
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     initMockOpening();
     renderMapPage();
 
     // 本间已结束 → 本行是「已完成」，动作整行搬到下一间（不再另开工具栏、也没有确认框）
     await screen.findByText("已完成");
-    const first = roomRow("义庄前院");
-    const second = roomRow("停柩房");
+    const first = roomRow("坟场网关");
+    const second = roomRow("残骸核心");
     expect(first).toHaveTextContent("已完成");
     expect(within(first).queryByRole("button")).not.toBeInTheDocument();
     // 按钮把"去哪一间"写在 title 里（推进不可逆，事后回不了本间）
     const go = within(second).getByRole("button", { name: "前往下一间" });
-    expect(go).toHaveAttribute("title", "前往下一间：停柩房（推进后回不了本间）");
+    expect(go).toHaveAttribute("title", "前往下一间：残骸核心（推进后回不了本间）");
 
     fireEvent.click(go);
 
@@ -109,7 +109,7 @@ describe("副本地图 · 状态与前进", () => {
         HttpResponse.json({ detail: "副本已全部通关，请返回营地" }, { status: 409 }),
       ),
     );
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     initMockOpening();
     renderMapPage();
 
@@ -120,13 +120,13 @@ describe("副本地图 · 状态与前进", () => {
   });
 
   it("最后一间已结束：没有任何行可去，只留一句话指向「离开副本」", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderMapPage();
 
     // 最后一间也结束了 → 两行都「已完成」，没有任何一行带动作
-    await waitFor(() => expect(roomRow("停柩房")).toHaveTextContent("已完成"));
+    await waitFor(() => expect(roomRow("残骸核心")).toHaveTextContent("已完成"));
     expect(screen.queryByRole("button", { name: "前往下一间" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
     expect(
@@ -135,7 +135,7 @@ describe("副本地图 · 状态与前进", () => {
   });
 
   it("战斗未结束就落到地图：被转发回房间（那里才是队伍待着的地方）", async () => {
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     renderMapPage();
 

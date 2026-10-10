@@ -48,37 +48,43 @@ function actor(
 /** 单个蓝图，结构与后端 blueprint-list 返回的 Blueprint 一致。 */
 export const blueprintFixture: Schemas["Blueprint"] = {
   name: "Game1",
-  player_actor: "角色.无名",
-  campaign_setting: "（mock）这是一个架空的、融合狩猎玩法的中式民俗志怪游戏世界。",
+  player_actor: "角色.零号",
+  campaign_setting:
+    "（mock）这是一个架空的、融合黑客狩猎玩法的赛博朋克游戏世界，以意象化的港口都市「新香港」为背景。",
   system_rules: "（mock）系统规则",
-  knowledge_base: {},
+  knowledge_base: {
+    城寨: [
+      "（mock）城寨是新香港贫民窟最深处的一片无主之地，巷道逼仄、管线横生，霓虹灯牌与晾衣绳纠缠在一起。",
+    ],
+  },
   stages: [
     {
-      name: "场景.门厅",
+      name: "场景.酒吧大厅",
       type: "Home",
-      profile: "（mock）门厅",
+      profile: "（mock）酒吧大厅",
       system_message: "（mock）",
       actors: [
-        actor("角色.顾知秋", "NPC"),
+        actor("角色.螳螂", "NPC"),
         // 玩家角色的随身背包：字段形状照抄真实后端的 Item（含 uuid / count / 逐类型的额外字段）
-        actor("角色.无名", "NPC", {
+        actor("角色.零号", "NPC", {
           [COMPONENT.Inventory]: {
-            name: "角色.无名",
+            name: "角色.零号",
             items: [
               {
-                name: "装备.缠麻短刃",
+                name: "装备.幽灵短刃",
                 uuid: "00000000-0000-0000-0000-000000000001",
                 type: "GearItem",
-                description: "（mock）由旧铁剪反复磨砺而成的短刃。",
+                description:
+                  "（mock）一段压缩到极致的攻击性脚本，在网络空间里化形为一柄半透明的短刃。",
                 count: 1,
                 resources: [],
                 cards: [],
               },
               {
-                name: "消耗品.吗啡针剂",
+                name: "消耗品.急救纳米剂",
                 uuid: "00000000-0000-0000-0000-000000000002",
                 type: "ConsumableItem",
-                description: "（mock）淡琥珀色的玻璃针剂。",
+                description: "（mock）淡蓝色的纳米注射笔。",
                 count: 2,
                 on_use_prompt: ["（mock）恢复 4 点 HP。"],
                 resources: [],
@@ -91,18 +97,18 @@ export const blueprintFixture: Schemas["Blueprint"] = {
       assets: {},
     },
     {
-      name: "场景.一楼客房",
+      name: "场景.后巷工位",
       type: "Home",
-      profile: "（mock）一楼客房",
+      profile: "（mock）后巷工位",
       system_message: "（mock）",
-      actors: [actor("角色.小厮", "NPC")],
+      actors: [actor("角色.麻雀", "NPC")],
       components: {},
       assets: {},
     },
     {
-      name: "场景.二楼卧室",
+      name: "场景.阁楼隔间",
       type: "Home",
-      profile: "（mock）二楼卧室",
+      profile: "（mock）阁楼隔间",
       system_message: "（mock）",
       actors: [],
       components: {},
@@ -121,7 +127,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
           name: "世界.储物箱",
           items: [
             {
-              name: "材料.旧麻绳",
+              name: "材料.数据线缆",
               uuid: "00000000-0000-0000-0000-000000000003",
               type: "MaterialItem",
               description: "（mock）已泛黄，但韧劲仍在。",
@@ -164,7 +170,7 @@ export const stageEntityFixtures: Entity[] = blueprintFixture.stages.map((stage,
     [COMPONENT.Stage]: { name: stage.name },
     [COMPONENT.Environment]: {
       name: stage.name,
-      narrative: `（mock）${stage.name} 的环境叙述：梁柱森然，灯火幽微。`,
+      narrative: `（mock）${stage.name} 的环境叙述：霓虹明灭，电流低鸣。`,
     },
   },
 }));
@@ -190,8 +196,8 @@ export const playerEntityFixture: Entity = {
     },
     [COMPONENT.Appearance]: {
       name: blueprintFixture.player_actor,
-      base_body: "（mock）清瘦的青年，着一身洗得发白的青布长衫。",
-      appearance: "（mock）清瘦的青年，着青布长衫，腰间悬着一柄缠麻短刃。",
+      base_body: "（mock）清瘦的青年，穿着一件洗得发硬的旧夹克。",
+      appearance: "（mock）清瘦的青年，穿着旧夹克，腰间挂着一柄半透明的幽灵短刃。",
     },
     [COMPONENT.CharacterStats]: {
       name: blueprintFixture.player_actor,
@@ -208,41 +214,41 @@ export const playerEntityFixture: Entity = {
  */
 export const npcEntityFixtures: Entity[] = [
   {
-    name: "角色.顾知秋",
+    name: "角色.螳螂",
     data: {
-      [COMPONENT.NPC]: { name: "角色.顾知秋" },
+      [COMPONENT.NPC]: { name: "角色.螳螂" },
       [COMPONENT.Identity]: {
-        name: "角色.顾知秋",
+        name: "角色.螳螂",
         creation_order: 1,
         entity_id: "00000000-0000-0000-0000-0000000000bb",
       },
       [COMPONENT.Appearance]: {
-        name: "角色.顾知秋",
+        name: "角色.螳螂",
         base_body: "（mock）身量高挑的女子。",
-        appearance: "（mock）着朱砂暗纹道袍的女子。",
+        appearance: "（mock）穿深灰色工装、后颈露出神经接口的女子。",
       },
       [COMPONENT.CharacterStats]: {
-        name: "角色.顾知秋",
+        name: "角色.螳螂",
         stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 },
       },
     },
   },
   {
-    name: "角色.小厮",
+    name: "角色.麻雀",
     data: {
-      [COMPONENT.NPC]: { name: "角色.小厮" },
+      [COMPONENT.NPC]: { name: "角色.麻雀" },
       [COMPONENT.Identity]: {
-        name: "角色.小厮",
+        name: "角色.麻雀",
         creation_order: 3,
         entity_id: "00000000-0000-0000-0000-0000000000cc",
       },
       [COMPONENT.Appearance]: {
-        name: "角色.小厮",
+        name: "角色.麻雀",
         base_body: "（mock）瘦小的少年。",
-        appearance: "（mock）一身短打的小厮。",
+        appearance: "（mock）穿荧光描边连帽卫衣的街头少年。",
       },
       [COMPONENT.CharacterStats]: {
-        name: "角色.小厮",
+        name: "角色.麻雀",
         stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 },
       },
     },
@@ -268,19 +274,19 @@ export const newGameFixture: Schemas["NewGameResponse"] = {
  */
 export const runtimeInventoryFixture: Record<string, unknown>[] = [
   {
-    name: "装备.缠麻短刃",
+    name: "装备.幽灵短刃",
     uuid: "00000000-0000-0000-0000-000000000001",
     type: "GearItem",
-    description: "（mock）由旧铁剪反复磨砺而成的短刃。",
+    description: "（mock）一段压缩到极致的攻击性脚本，在网络空间里化形为一柄半透明的短刃。",
     count: 1,
     resources: [],
     cards: [],
   },
   {
-    name: "消耗品.吗啡针剂",
+    name: "消耗品.急救纳米剂",
     uuid: "00000000-0000-0000-0000-000000000002",
     type: "ConsumableItem",
-    description: "（mock）淡琥珀色的玻璃针剂。",
+    description: "（mock）淡蓝色的纳米注射笔。",
     count: 2,
     on_use_prompt: ["（mock）恢复 4 点 HP。"],
     resources: [],
@@ -290,33 +296,33 @@ export const runtimeInventoryFixture: Record<string, unknown>[] = [
 /** 运行期道具：储物箱（材料两种、装备一件、时装一件）。 */
 export const runtimeStorageFixture: Record<string, unknown>[] = [
   {
-    name: "材料.旧麻绳",
+    name: "材料.数据线缆",
     uuid: "00000000-0000-0000-0000-000000000003",
     type: "MaterialItem",
-    description: "（mock）已泛黄，但韧劲仍在。",
+    description: "（mock）已微微发脆，但韧劲仍在。",
     count: 3,
   },
   {
-    name: "材料.符纸残片",
+    name: "材料.旧网数据包",
     uuid: "00000000-0000-0000-0000-000000000004",
     type: "MaterialItem",
-    description: "（mock）边角焦黑的黄符残片。",
+    description: "（mock）从旧网深处捞出的数据包，内容已模糊不可辨。",
     count: 2,
   },
   {
-    name: "装备.铁刀",
+    name: "装备.电磁刃",
     uuid: "00000000-0000-0000-0000-000000000005",
     type: "GearItem",
-    description: "（mock）样式朴素的铁刀。",
+    description: "（mock）样式朴素的电磁刃。",
     count: 1,
     resources: [],
     cards: [],
   },
   {
-    name: "时装.青衫",
+    name: "时装.旧夹克",
     uuid: "00000000-0000-0000-0000-000000000006",
     type: "CostumeItem",
-    description: "（mock）浆洗得发白的青布长衫。",
+    description: "（mock）浆洗得发硬的旧夹克。",
     count: 1,
     resources: [],
   },
@@ -325,12 +331,12 @@ export const runtimeStorageFixture: Record<string, unknown>[] = [
 /** 穿戴中的时装（`WornCostumeComponent` 的运行期状态，蓝图里没有）。 */
 export const wornCostumesFixture: { wearer: string; item: Record<string, unknown> }[] = [
   {
-    wearer: "角色.顾知秋",
+    wearer: "角色.螳螂",
     item: {
-      name: "时装.朱砂袍",
+      name: "时装.机能风衣",
       uuid: "00000000-0000-0000-0000-000000000007",
       type: "CostumeItem",
-      description: "（mock）绯色暗纹的道袍。",
+      description: "（mock）深灰色的工装。",
       count: 1,
       resources: [],
     },
@@ -346,41 +352,41 @@ export const sessionMessagesFixture: Schemas["SessionMessage"][] = [
     sequence_id: 1,
     agent_event: {
       type: "mind",
-      message: "（mock）# 角色.顾知秋 内心活动: 门厅里静得反常。",
-      actor: "角色.顾知秋",
-      stage: "场景.门厅",
-      content: "门厅里静得反常。",
+      message: "（mock）# 角色.螳螂 内心活动: 酒吧大厅里静得反常。",
+      actor: "角色.螳螂",
+      stage: "场景.酒吧大厅",
+      content: "酒吧大厅里静得反常。",
     },
   },
   {
     sequence_id: 2,
     agent_event: {
       type: "speak",
-      message: "（mock）# 角色.顾知秋 对 角色.无名 说: 这位先生，你到此几日哉？",
-      actor: "角色.顾知秋",
-      stage: "场景.门厅",
-      target: "角色.无名",
-      content: "这位先生，你到此几日哉？",
+      message: "（mock）# 角色.螳螂 对 角色.零号 说: 你醒咗几耐啦？",
+      actor: "角色.螳螂",
+      stage: "场景.酒吧大厅",
+      target: "角色.零号",
+      content: "你醒咗几耐啦？",
     },
   },
   {
     sequence_id: 3,
     agent_event: {
       type: "announce",
-      message: "（mock）宣布：堂中灯火忽地一暗。",
+      message: "（mock）宣布：吧台后的霓虹灯忽地一暗。",
       actor: "旁白",
-      stage: "场景.门厅",
-      content: "堂中灯火忽地一暗。",
+      stage: "场景.酒吧大厅",
+      content: "吧台后的霓虹灯忽地一暗。",
     },
   },
   {
     sequence_id: 4,
     agent_event: {
       type: "trans_stage",
-      message: "（mock）角色.无名 由 场景.门厅 移至 场景.一楼客房。",
-      actor: "角色.无名",
-      stage: "场景.门厅",
-      target: "场景.一楼客房",
+      message: "（mock）角色.零号 由 场景.酒吧大厅 移至 场景.后巷工位。",
+      actor: "角色.零号",
+      stage: "场景.酒吧大厅",
+      target: "场景.后巷工位",
     },
   },
   {
@@ -437,8 +443,8 @@ function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"
  * 这里给一个开场房间（无敌人）+ 一个战斗房间（含怪物），使「查阅」视图有意义。
  */
 export const dungeonFixture: Schemas["Dungeon"] = {
-  name: "副本.荒村义庄",
-  profile: "（mock）荒村外的旧义庄：停柩不腐，夜里似有人影走动。",
+  name: "副本.数据坟场",
+  profile: "（mock）数据坟场：废弃进程在此徘徊不散，信号里似有低语。",
   created_at: "2026-09-11T12:00:00Z",
   current_room_index: -1,
   setup_entities: false,
@@ -448,20 +454,20 @@ export const dungeonFixture: Schemas["Dungeon"] = {
     {
       type: "opening",
       initialized: false,
-      stage: dungeonStage("场景.义庄前院", []),
+      stage: dungeonStage("场景.坟场网关", []),
     },
     {
       type: "combat",
       combat: { name: "", state: 0, result: 0, rounds: [], retreated: false },
-      stage: dungeonStage("场景.停柩房", [
+      stage: dungeonStage("场景.残骸核心", [
         dungeonActor(
-          "怪物.纸人",
+          "怪物.门神",
           "Monster",
           { hp: 9, max_hp: 9, attack: 3, defense: 1 },
-          "（mock）薄纸糊成的纸人，脸上画着朱砂笑眼，风一吹便有簌簌的纸响。",
+          "（mock）门板般僵直的门神程序，一对赤红扫描眼在数据流里忽明忽暗。",
         ),
         dungeonActor(
-          "怪物.棺中殭尸",
+          "怪物.腐化进程",
           "Monster",
           {
             hp: 16,
@@ -469,19 +475,19 @@ export const dungeonFixture: Schemas["Dungeon"] = {
             attack: 5,
             defense: 2,
           },
-          "（mock）棺木爆开处爬出的殭尸，浑身裹着霉烂的殓布，指爪青黑。",
+          "（mock）从崩溃节点里爬出的腐化进程，浑身缠着霉烂的数据残片，指节渗出青黑的错误码。",
         ),
         dungeonActor(
-          "怪物.纸傀儡",
+          "怪物.傀儡义体",
           "Monster",
           { hp: 7, max_hp: 7, attack: 2, defense: 0 },
-          "（mock）一具提线纸傀儡，关节用麻绳系着，走起来哔哒作响。",
+          "（mock）一具提线傀儡义体，关节用线缆系着，走起来哔哒作响。",
         ),
         dungeonActor(
-          "怪物.吊死鬼",
+          "怪物.吊线幽灵",
           "Monster",
           { hp: 12, max_hp: 12, attack: 4, defense: 1 },
-          "（mock）悬在梁上的吊死鬼，脚不沾地，脖颈勒出一道乌痕。",
+          "（mock）悬在线缆上的吊线幽灵，脚不沾地，脖颈勒出一道乌痕。",
         ),
       ]),
     },
@@ -511,7 +517,7 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
  */
 export function combatFixture(overrides: Partial<Schemas["Combat"]> = {}): Schemas["Combat"] {
   return {
-    name: "（mock）停柩房战斗",
+    name: "（mock）残骸核心战斗",
     state: 0,
     result: 0,
     rounds: [],
@@ -557,7 +563,7 @@ export function combatRoomFixture(
 ): Schemas["CombatRoom"] {
   return {
     type: "combat",
-    stage: options.stage ?? dungeonStage("场景.停柩房", []),
+    stage: options.stage ?? dungeonStage("场景.残骸核心", []),
     combat: combatFixture(options.combat),
   };
 }
@@ -571,7 +577,7 @@ export function combatRoomFixture(
 export function openingRoomFixture(initialized = false): Schemas["OpeningRoom"] {
   return {
     type: "opening",
-    stage: dungeonStage("场景.义庄前院", []),
+    stage: dungeonStage("场景.坟场网关", []),
     initialized,
   };
 }
@@ -609,102 +615,102 @@ function mockCard(name: string, overrides: Record<string, unknown> = {}): Record
 
 /** 几张示例卡，覆盖卡面上的各种部件（数值 / 多段 / 自身目标 / 阵营散射 / 消耗 / 不可出牌 / 词缀）。 */
 export const cardFixtures = {
-  cleave: mockCard("剖棺", {
+  cleave: mockCard("破译", {
     cost: 1,
     damage: 3,
     // 前 5 张手牌里给一张带**时机词缀**的：回合界面上点它就能试「点词缀 → 详情右栏高亮」那条链路
-    on_play_affixes: ["[开棺]:命中后可以再摸一张"],
-    source: "角色.无名",
+    on_play_affixes: ["[破壳]:命中后可以再摸一张"],
+    source: "角色.零号",
     transferable: true,
   }),
-  sweep: mockCard("撬棍横击", {
+  sweep: mockCard("过载横击", {
     cost: 2,
     damage: 2,
     hit_count: 2,
-    on_play_affixes: ["[破竹]:本段命中后更容易击穿格挡"],
-    source: "角色.顾知秋",
+    on_play_affixes: ["[过载]:本段命中后更容易击穿格挡"],
+    source: "角色.螳螂",
     transferable: true,
   }),
-  breath: mockCard("屏息", {
-    description: "（mock）贴着棺壁屏住呼吸，把手里的家伙握稳。",
+  breath: mockCard("静默", {
+    description: "（mock）屏住呼吸冷启动，把手里的程序握稳。",
     cost: 1,
     damage: 0,
     block: 3,
     self_target: true,
   }),
-  spark: mockCard("火折子", {
-    description: "（mock）吹亮火折子，只此一次的爆亮。",
+  spark: mockCard("短路", {
+    description: "（mock）拉下一道瞬时过载，只此一次的爆亮。",
     cost: 0,
     damage: 5,
     exhaust: true,
   }),
-  paper: mockCard("撒纸钱", {
+  paper: mockCard("撒噪声", {
     cost: 2,
     damage: 1,
     hit_count: 3,
     target_type: "spread",
-    on_turn_end_affixes: ["[纸灰]:回合结束时纸灰未落，气场不散"],
+    on_turn_end_affixes: ["[噪点]:回合结束时噪点未落，干扰不散"],
   }),
-  ward: mockCard("镇棺符", {
-    description: "（mock）贴在棺头的镇物，只在手里才管用。",
+  ward: mockCard("冰墙", {
+    description: "（mock）贴在终端前的防火墙，只在手里才管用。",
     cost: 1,
     damage: 0,
     block: 2,
     retain: true,
     self_target: true,
   }),
-  passive: mockCard("常驻厌胜", {
-    description: "（mock）缝在衣里的厌胜之物，靠它自己起作用。",
+  passive: mockCard("常驻协议", {
+    description: "（mock）埋在神经里的常驻协议，靠它自己起作用。",
     cost: 0,
     damage: 0,
     playable: false,
     retain: false,
   }),
-  nail: mockCard("钉棺", {
-    description: "（mock）抡起枣木钉，一钉一钉楔进棺盖的缝。",
+  nail: mockCard("钉入", {
+    description: "（mock）抡起数据锚钉，一钉一钉楔进进程的缝。",
     cost: 1,
     damage: 2,
     hit_count: 2,
-    on_hit_affixes: ["[入木]:命中的段数越多，棺盖越难再开"],
-    source: "角色.无名",
+    on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
+    source: "角色.零号",
     transferable: true,
   }),
-  bell: mockCard("摇铃", {
-    description: "（mock）摄魂铃一响，满堂的纸人都慢半拍。",
+  bell: mockCard("干扰广播", {
+    description: "（mock）干扰广播一响，满场的程序都慢半拍。",
     cost: 2,
     damage: 0,
     block: 3,
     target_type: "all",
   }),
-  shroud: mockCard("裹尸布", {
-    description: "（mock）随手扯下的白布，缠在臂上挡一挡。",
+  shroud: mockCard("屏蔽层", {
+    description: "（mock）随手扯下的屏蔽布，缠在臂上挡一挡。",
     cost: 1,
     damage: 0,
     block: 4,
     retain: true,
     self_target: true,
   }),
-  lantern: mockCard("引魂灯", {
-    description: "（mock）灯芯只够燃一瞬，灭前把路照穿。",
+  lantern: mockCard("引航信标", {
+    description: "（mock）信标只够亮一瞬，灭前把路照穿。",
     cost: 3,
     damage: 6,
     ethereal: true,
   }),
-  chant: mockCard("诵经", {
-    description: "（mock）低声诵一段往生咒，压住翻涌的阴气。",
+  chant: mockCard("同步节律", {
+    description: "（mock）低声同步一段节律，压住翻涌的噪声。",
     cost: 1,
     damage: 0,
     block: 2,
     on_turn_end_affixes: ["[余音]:回合结束时余音未散，护持仍在"],
   }),
-  mirror: mockCard("照妖镜", {
-    description: "（mock）铜镜一转，把光碎成数道抛向四面。",
+  mirror: mockCard("棱镜反射", {
+    description: "（mock）棱镜一转，把光碎成数道抛向四面。",
     cost: 2,
     damage: 3,
     target_type: "spread",
   }),
   // 多段命中示例（看数值行末尾的「段数 ×N」）：
-  // 双锋带「被命中时」词缀（逐段触发）、乱刀是散射三段
+  // 双锋带「被命中时」词缀（逐段触发）、乱流是散射三段
   twinFang: mockCard("双锋", {
     description: "（mock）两刃并进，一前一后咬住同一处。",
     cost: 1,
@@ -712,8 +718,8 @@ export const cardFixtures = {
     hit_count: 2,
     on_hit_affixes: ["[裂甲]:每一段命中都削去一层护体"],
   }),
-  flurry: mockCard("乱刀", {
-    description: "（mock）刀势不成章法，四下里都是刀风。",
+  flurry: mockCard("乱流", {
+    description: "（mock）数据流乱成一团，四下里都是碎片。",
     cost: 2,
     damage: 1,
     hit_count: 3,
@@ -725,11 +731,11 @@ export const cardFixtures = {
 /**
  * 各成员的固定牌组。
  *
- * 张数故意拉开：玩家 9 张（三行满）、顾知秋 5 张（最后一行不满、居中）、小厮 2 张——
+ * 张数故意拉开：玩家 9 张（三行满）、螳螂 5 张（最后一行不满、居中）、麻雀 2 张——
  * 这样「牌组」浏览里一行三张、多行、末行居中这三种情形在 mock 下都能一眼看到。
  *
  * 玩家的**前 5 张 = 每回合抓到手的那一把**（`MOCK_DRAW_PER_TURN = 5`，按数组顺序抓），所以把
- * `single`（剖棺）/ `self_target`（屏息）/ 不可出牌（常驻厌胜）/ `spread`（照妖镜）/ `all`（摇铃）
+ * `single`（破译）/ `self_target`（静默）/ 不可出牌（常驻协议）/ `spread`（棱镜反射）/ `all`（干扰广播）
  * 这五种目标类型各摆一张在手牌里，方便直接在回合界面上试选目标。
  */
 export const deckFixtures: Record<string, Record<string, unknown>[]> = {
@@ -744,14 +750,14 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
     cardFixtures.lantern,
     cardFixtures.chant,
   ],
-  "角色.顾知秋": [
+  "角色.螳螂": [
     cardFixtures.sweep,
     cardFixtures.ward,
     cardFixtures.nail,
     cardFixtures.bell,
     cardFixtures.chant,
   ],
-  "角色.小厮": [cardFixtures.cleave, cardFixtures.shroud],
+  "角色.麻雀": [cardFixtures.cleave, cardFixtures.shroud],
 };
 
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
@@ -759,7 +765,7 @@ export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleav
 /**
  * dev 种子 `combat:multihit` 的手牌：**整把都是多段命中**，一眼看数值行末尾的 `段数 ×N`。
  * 覆盖四种形态：
- * 带「被命中时」词缀（钉棺）/ 带「打出时」词缀（撬棍横击）/ 散射多段（撒纸钱、乱刀）/ 无词缀（双锋）。
+ * 带「被命中时」词缀（钉入）/ 带「打出时」词缀（过载横击）/ 散射多段（撒噪声、乱流）/ 无词缀（双锋）。
  *
  * 只被这个种子用；正常牌组（`deckFixtures`）不动，避免影响既有断言。
  */
@@ -772,7 +778,7 @@ export const multiHitHandFixture: Record<string, unknown>[] = [
 ];
 
 /**
- * `棺中殭尸` 多出来的那一段牌组（加在它原本的 5 张后面）。
+ * `腐化进程` 多出来的那一段牌组（加在它原本的 5 张后面）。
  *
  * 为什么偏偏给它加长：卡牌列表浮窗（牌组 / 手牌 / 牌堆）是**固定三行 × 三列、超出在框内滚动**的，
  * 而 3×3 = 9 张正是它的临界值——手牌 5 张、别家牌组 5 张都碰不到那条线，**滚动与裁切在 mock 里
@@ -783,27 +789,27 @@ export const multiHitHandFixture: Record<string, unknown>[] = [
  * 手牌上的【塞牌】/【被动】演示靠它们。这里的牌名也不能与那 5 张重名（uuid 由牌名推出来）。
  */
 const coffinExtraCards = [
-  mockCard("掐颈", { cost: 1, damage: 2 }),
-  mockCard("尸气", {
-    description: "（mock）吐出一口积在棺里的浊气，满室无风自动。",
+  mockCard("锁喉", { cost: 1, damage: 2 }),
+  mockCard("泄漏", {
+    description: "（mock）吐出一口积在缓存里的浊流，满室无风自动。",
     cost: 1,
     damage: 0,
     target_type: "all",
-    on_turn_end_affixes: ["[尸毒]:回合结束时尸毒未散，仍在渗"],
+    on_turn_end_affixes: ["[泄流]:回合结束时泄流未止，仍在渗"],
   }),
-  mockCard("破棺", { cost: 2, damage: 4, exhaust: true }),
-  mockCard("啃噬", { cost: 0, damage: 1, hit_count: 3 }),
-  mockCard("腐血", {
-    description: "（mock）指节一挤，黑血流下。",
+  mockCard("破壳", { cost: 2, damage: 4, exhaust: true }),
+  mockCard("蚕食", { cost: 0, damage: 1, hit_count: 3 }),
+  mockCard("腐蚀液", {
+    description: "（mock）指节一挤，黑血般的错误码流下。",
     cost: 1,
     damage: 2,
-    on_hit_affixes: ["[蚀骨]:命中的段数越多，护体越薄"],
+    on_hit_affixes: ["[蚀甲]:命中的段数越多，护体越薄"],
   }),
-  mockCard("僵直", { cost: 1, damage: 0, block: 5, self_target: true }),
+  mockCard("冻结", { cost: 1, damage: 0, block: 5, self_target: true }),
   mockCard("拖拽", { cost: 1, damage: 2, target_type: "spread" }),
-  mockCard("阴风", { cost: 1, damage: 0, block: 3, target_type: "all" }),
-  mockCard("怨念", { cost: 0, damage: 0, playable: false }),
-  mockCard("立尸", { cost: 2, damage: 3, hit_count: 2, ethereal: true }),
+  mockCard("杂讯", { cost: 1, damage: 0, block: 3, target_type: "all" }),
+  mockCard("死循环", { cost: 0, damage: 0, playable: false }),
+  mockCard("强制唤醒", { cost: 2, damage: 3, hit_count: 2, ethereal: true }),
 ];
 
 /**
@@ -817,14 +823,14 @@ export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
   // 这样 `dev:mock` 下能一眼看到名单卡上的 [被动] / [塞牌]（见种子 `combat:turn`）。
   // `spark` / `lantern` 额外把「消耗牌」（橙）/「虚无」（紫）两个布尔标记也铺到一张手牌里，
   // 方便一次看全卡面全部的标记颜色。
-  "怪物.纸人": [
+  "怪物.门神": [
     cardFixtures.nail,
     cardFixtures.paper,
     cardFixtures.ward,
     cardFixtures.spark,
     cardFixtures.lantern,
   ],
-  "怪物.棺中殭尸": [
+  "怪物.腐化进程": [
     cardFixtures.cleave,
     cardFixtures.breath,
     cardFixtures.nail,
@@ -832,14 +838,14 @@ export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
     cardFixtures.bell,
     ...coffinExtraCards,
   ],
-  "怪物.纸傀儡": [
+  "怪物.傀儡义体": [
     cardFixtures.nail,
     cardFixtures.sweep,
     cardFixtures.ward,
     cardFixtures.shroud,
     cardFixtures.paper,
   ],
-  "怪物.吊死鬼": [
+  "怪物.吊线幽灵": [
     cardFixtures.nail,
     cardFixtures.bell,
     cardFixtures.chant,
@@ -874,7 +880,7 @@ export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((ro
     [COMPONENT.Stage]: { name: room.stage.name },
     [COMPONENT.Environment]: {
       name: room.stage.name,
-      narrative: `（mock）${room.stage.name} 的环境叙述：门轴涩住，风从棺缝里过。`,
+      narrative: `（mock）${room.stage.name} 的环境叙述：线路老化，数据从裂缝里渗出。`,
     },
   },
 }));

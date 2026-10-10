@@ -22,27 +22,27 @@ describe("mock 道具堆叠（对齐后端 Item 语义）", () => {
     craftMockItem("consumable", []);
     craftMockItem("consumable", []);
 
-    const crafted = storageItems().filter((item) => item.name === "消耗品.回气散");
+    const crafted = storageItems().filter((item) => item.name === "消耗品.充能剂");
     expect(crafted).toHaveLength(1);
     expect(crafted[0]?.count).toBe(2);
   });
 
   it("移动消耗品到已有同堆叠的容器：数量累加", () => {
     craftMockItem("consumable", []);
-    expect(moveMockItem("消耗品.回气散", "inventory")).toBe(true);
+    expect(moveMockItem("消耗品.充能剂", "inventory")).toBe(true);
     craftMockItem("consumable", []);
-    expect(moveMockItem("消耗品.回气散", "inventory")).toBe(true);
+    expect(moveMockItem("消耗品.充能剂", "inventory")).toBe(true);
 
-    const inventory = inventoryItems().filter((item) => item.name === "消耗品.回气散");
+    const inventory = inventoryItems().filter((item) => item.name === "消耗品.充能剂");
     expect(inventory).toHaveLength(1);
     expect(inventory[0]?.count).toBe(2);
-    expect(storageItems().some((item) => item.name === "消耗品.回气散")).toBe(false);
+    expect(storageItems().some((item) => item.name === "消耗品.充能剂")).toBe(false);
   });
 
   it("合成按名字消耗材料数量", () => {
-    craftMockItem("consumable", ["材料.旧麻绳", "材料.旧麻绳"]);
+    craftMockItem("consumable", ["材料.数据线缆", "材料.数据线缆"]);
 
-    const rope = storageItems().find((item) => item.name === "材料.旧麻绳");
+    const rope = storageItems().find((item) => item.name === "材料.数据线缆");
     expect(rope?.count).toBe(1);
   });
 
@@ -50,19 +50,19 @@ describe("mock 道具堆叠（对齐后端 Item 语义）", () => {
     craftMockItem("gear", []);
     craftMockItem("gear", []);
 
-    const gear = storageItems().filter((item) => item.name === "装备.符纹刀");
+    const gear = storageItems().filter((item) => item.name === "装备.协议刀");
     expect(gear).toHaveLength(2);
   });
 
   it("战利品并入背包：同名材料累加", () => {
     addMockInventoryItems([
-      { name: "素材.腐骨", uuid: "a", type: "MaterialItem", description: "", count: 2 },
+      { name: "素材.腐化芯片", uuid: "a", type: "MaterialItem", description: "", count: 2 },
     ]);
     addMockInventoryItems([
-      { name: "素材.腐骨", uuid: "b", type: "MaterialItem", description: "", count: 3 },
+      { name: "素材.腐化芯片", uuid: "b", type: "MaterialItem", description: "", count: 3 },
     ]);
 
-    const bones = inventoryItems().filter((item) => item.name === "素材.腐骨");
+    const bones = inventoryItems().filter((item) => item.name === "素材.腐化芯片");
     expect(bones).toHaveLength(1);
     expect(bones[0]?.count).toBe(5);
   });

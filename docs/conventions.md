@@ -120,7 +120,7 @@ pages ──┬──▶ features ──┬──▶ components
 
 - **保留后端 snake_case**，不做 camelCase 转换（详见 [api-layer.md](api-layer.md) 基本原则）。
 - **不手写 API 类型**，不 `any`，不在 API 边界 `as`。
-- **服务器名字一律经 `displayName` 显示**（`src/components/displayName.ts`）：只保留最后一段，`角色.无名` → `无名`。**取身份的地方一律用原始名字**——比较、URL、API 参数、React key 都用原值（显示名会撞：`角色.无名` / `怪物.无名`）。要改"名字怎么显示"只改这一个函数，不在组件里各写一份。
+- **服务器名字一律经 `displayName` 显示**（`src/components/displayName.ts`）：只保留最后一段，`角色.零号` → `零号`。**取身份的地方一律用原始名字**——比较、URL、API 参数、React key 都用原值（显示名会撞：`角色.零号` / `怪物.零号`）。要改"名字怎么显示"只改这一个函数，不在组件里各写一份。
 - **Provider 只在 `main.tsx` 装配**（`QueryClientProvider`、`BrowserRouter`），页面不自己创建，便于测试用 `MemoryRouter` 替换。
 - **端口只有一个来源**：dev / mock 端口写在 `scripts/devPorts.mjs`，别处一律 import（`vite.config.ts`、`scripts/screenshot.mjs`）；注释里也不写数字，具体端口见 [dev-setup.md](dev-setup.md)。由 `pnpm lint` 强制。
 

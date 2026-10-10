@@ -5,7 +5,7 @@ import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 
 const card: Card = {
   uuid: "",
-  name: "火折子",
+  name: "短路",
   cost: 1,
   damage: 0,
   block: 0,
@@ -26,7 +26,7 @@ const card: Card = {
 
 function member(claimedCards: Card[] | null, candidateCards: Card[] = [card]): DungeonPartyMember {
   return {
-    name: "角色.无名",
+    name: "角色.零号",
     player: true,
     stats: null,
     deck: [],

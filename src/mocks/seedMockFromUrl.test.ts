@@ -55,7 +55,7 @@ describe("seedMockFromUrl", () => {
   it("opening:claimed → 已生成奖励且已领走一张", () => {
     seedMockFromUrl(`${BASE}?seed=opening:claimed`);
     expect(readMockDungeonRoom()?.type).toBe("opening");
-    expect(readMockClaimedCount("角色.无名")).toBe(1);
+    expect(readMockClaimedCount("角色.零号")).toBe(1);
   });
 
   it("combat:init → 战斗房间处于 INITIALIZATION", () => {
@@ -91,8 +91,8 @@ describe("seedMockFromUrl", () => {
     seedMockFromUrl(`${BASE}?seed=combat:multihit`);
     expect(readMockCombat().state).toBe(2);
 
-    const hand = readMockHand("角色.无名");
-    expect(hand.map((card) => card.name)).toEqual(["钉棺", "撬棍横击", "撒纸钱", "双锋", "乱刀"]);
+    const hand = readMockHand("角色.零号");
+    expect(hand.map((card) => card.name)).toEqual(["钉入", "过载横击", "撒噪声", "双锋", "乱流"]);
     expect(hand.every((card) => typeof card.hit_count === "number" && card.hit_count > 1)).toBe(
       true,
     );
@@ -102,6 +102,6 @@ describe("seedMockFromUrl", () => {
   it("party:full → 队伍含玩家与两名同伴", () => {
     seedMockFromUrl(`${BASE}?seed=party:full`);
     expect(readMockDungeonRoom()?.type).toBe("opening");
-    expect(readMockPartyNames()).toEqual(["角色.无名", "角色.顾知秋", "角色.小厮"]);
+    expect(readMockPartyNames()).toEqual(["角色.零号", "角色.螳螂", "角色.麻雀"]);
   });
 });

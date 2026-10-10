@@ -11,9 +11,9 @@ import type { Card } from "./types";
  * （`CardMarkTip`），来源只在"不是自己的牌"时出现且标 `foreign`，`【塞牌】`不进卡面。
  */
 const CARD: Card = {
-  name: "钉棺",
+  name: "钉入",
   uuid: "c1",
-  description: "（mock）抡起枣木钉，一钉一钉楔进棺盖的缝。",
+  description: "（mock）抡起数据锚钉，一钉一钉楔进进程的缝。",
   source: "",
   cost: 1,
   damage: 2,
@@ -21,8 +21,8 @@ const CARD: Card = {
   block: 0,
   target_type: "single",
   self_target: false,
-  on_play_affixes: ["[破竹]:本段命中后更容易击穿格挡"],
-  on_hit_affixes: ["[入木]:命中的段数越多，棺盖越难再开"],
+  on_play_affixes: ["[过载]:本段命中后更容易击穿格挡"],
+  on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: ["[余音]:回合结束时余音未散"],
   exhaust: true,
   retain: true,
@@ -45,8 +45,8 @@ describe("CardItem", () => {
     expect(screen.getByText("虚无")).toHaveClass("affix-chip--ethereal");
     expect(screen.getByText("可传递")).toHaveClass("affix-chip--transfer");
     // 三种时机词缀各一色（卡面只写 [名称]）
-    expect(screen.getByText("[破竹]")).toHaveClass("affix-chip--play");
-    expect(screen.getByText("[入木]")).toHaveClass("affix-chip--hit");
+    expect(screen.getByText("[过载]")).toHaveClass("affix-chip--play");
+    expect(screen.getByText("[楔入]")).toHaveClass("affix-chip--hit");
     expect(screen.getByText("[余音]")).toHaveClass("affix-chip--turn-end");
   });
 
@@ -92,9 +92,9 @@ describe("CardItem", () => {
       </ul>,
     );
 
-    expect(screen.queryByText(/楔进棺盖的缝/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/楔进进程的缝/)).not.toBeInTheDocument();
     // 名字 / 数值行 / 标记行照旧在卡面上（省下来的位置就是那句叙述）
-    expect(screen.getByText("钉棺")).toBeInTheDocument();
+    expect(screen.getByText("钉入")).toBeInTheDocument();
     expect(screen.getByText(/费用 1/)).toBeInTheDocument();
     expect(screen.getByText("保留")).toBeInTheDocument();
   });
@@ -102,7 +102,7 @@ describe("CardItem", () => {
   it("来源只在「不是自己的牌」时显示，并标 foreign", () => {
     const { rerender } = render(
       <ul>
-        <CardItem card={{ ...CARD, source: "角色.无名" }} owner="角色.无名" />
+        <CardItem card={{ ...CARD, source: "角色.零号" }} owner="角色.零号" />
       </ul>,
     );
     // 持有者就是来源：不显示
@@ -110,10 +110,10 @@ describe("CardItem", () => {
 
     rerender(
       <ul>
-        <CardItem card={{ ...CARD, source: "角色.无名" }} owner="怪物.纸人" />
+        <CardItem card={{ ...CARD, source: "角色.零号" }} owner="怪物.门神" />
       </ul>,
     );
-    expect(screen.getByText("来源：角色.无名")).toHaveClass("card-tile-source--foreign");
+    expect(screen.getByText("来源：角色.零号")).toHaveClass("card-tile-source--foreign");
   });
 
   it("点任意一枚标记（布尔或词缀）都弹说明浮层；再点同一枚收起", () => {
@@ -132,12 +132,12 @@ describe("CardItem", () => {
     expect(tip).toHaveTextContent("保留");
 
     // 词缀：说明就是它自己那段原文
-    fireEvent.click(screen.getByRole("button", { name: "[入木]" }));
+    fireEvent.click(screen.getByRole("button", { name: "[楔入]" }));
     expect(screen.getAllByRole("tooltip")).toHaveLength(1);
-    expect(screen.getByRole("tooltip")).toHaveTextContent("命中的段数越多，棺盖越难再开");
+    expect(screen.getByRole("tooltip")).toHaveTextContent("命中的段数越多，进程越难再逃");
 
     // 再点同一枚 → 收起
-    fireEvent.click(screen.getByRole("button", { name: "[入木]" }));
+    fireEvent.click(screen.getByRole("button", { name: "[楔入]" }));
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 
@@ -167,8 +167,8 @@ describe("CardItem", () => {
       </ul>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "[入木]" }));
-    expect(picked).toEqual(["on_hit_affixes:[入木]:命中的段数越多，棺盖越难再开"]);
+    fireEvent.click(screen.getByRole("button", { name: "[楔入]" }));
+    expect(picked).toEqual(["on_hit_affixes:[楔入]:命中的段数越多，进程越难再逃"]);
     expect(screen.queryByRole("tooltip")).not.toBeInTheDocument();
   });
 });

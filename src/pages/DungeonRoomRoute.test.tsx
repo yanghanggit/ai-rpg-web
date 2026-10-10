@@ -25,11 +25,11 @@ describe("副本房间 · 路由解析器", () => {
 
   it("进行中的是开场房间 → 分发到 OpeningRoomPage", async () => {
     server.use(instantTasks());
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     renderRoom(<DungeonRoomRoute />);
 
     expect(
-      await screen.findByRole("heading", { name: "荒村义庄 (1/2) 义庄前院" }),
+      await screen.findByRole("heading", { name: "数据坟场 (1/2) 坟场网关" }),
     ).toBeInTheDocument();
     // 开场房间正文（队伍块）在，说明分发到了开场页
     expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
@@ -37,12 +37,12 @@ describe("副本房间 · 路由解析器", () => {
 
   it("进行中的是战斗房间 → 分发到 CombatRoomPage", async () => {
     server.use(instantTasks());
-    enterMockDungeon("副本.荒村义庄");
+    enterMockDungeon("副本.数据坟场");
     advanceMockDungeon();
     renderRoom(<DungeonRoomRoute />);
 
     expect(
-      await screen.findByRole("heading", { name: "荒村义庄 (2/2) 停柩房" }),
+      await screen.findByRole("heading", { name: "数据坟场 (2/2) 残骸核心" }),
     ).toBeInTheDocument();
     // 战斗房间正文（开局准备阶段）在，说明分发到了战斗页
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();

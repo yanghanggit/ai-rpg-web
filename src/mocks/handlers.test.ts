@@ -10,7 +10,7 @@ import { handlers } from "./handlers";
 const USER = "webdev";
 const GAME = "Game1";
 const PLAYER = blueprintFixture.player_actor;
-const COMBAT_STAGE = "场景.停柩房";
+const COMBAT_STAGE = "场景.残骸核心";
 
 const path = { user_name: USER, game_name: GAME };
 
@@ -30,7 +30,7 @@ async function getCombat() {
 
 /** 进入副本并推进到战斗房间（复用 mock 的同步推进）。 */
 function enterCombat(): void {
-  enterMockDungeon("副本.荒村义庄");
+  enterMockDungeon("副本.数据坟场");
   advanceMockDungeon();
 }
 
@@ -65,17 +65,17 @@ describe("战斗房间接口（mock handlers）", () => {
     // 怪物实体也持 DeckComponent（战斗双方都有牌库，「牌组一览」要靠它列敌方）
     const monsters = unwrap(
       await client.GET("/api/entities/v1/{user_name}/{game_name}/details", {
-        params: { path, query: { entities: ["怪物.纸人"] } },
+        params: { path, query: { entities: ["怪物.门神"] } },
       }),
     );
-    expect(monsters.entities["怪物.纸人"]?.[COMPONENT.Deck]).toBeDefined();
+    expect(monsters.entities["怪物.门神"]?.[COMPONENT.Deck]).toBeDefined();
 
     // 场景映射里能按玩家定位到战斗场景，且怪物在场
     const stages = unwrap(
       await client.GET("/api/stages/v1/{user_name}/{game_name}/state", { params: { path } }),
     );
     expect(stages.actors_by_stage[COMBAT_STAGE]).toContain(PLAYER);
-    expect(stages.actors_by_stage[COMBAT_STAGE]).toContain("怪物.纸人");
+    expect(stages.actors_by_stage[COMBAT_STAGE]).toContain("怪物.门神");
   });
 
   it("未抓牌就出牌：handler 返回 400（与后端前置校验一致）", async () => {
@@ -83,7 +83,7 @@ describe("战斗房间接口（mock handlers）", () => {
     unwrap(await client.POST("/api/dungeon/combat/init/v1/", { body: { ...path } }));
 
     const result = await client.POST("/api/dungeon/combat/play_cards/v1/", {
-      body: { ...path, actor_name: PLAYER, card_name: "剖棺", targets: ["怪物.纸人"] },
+      body: { ...path, actor_name: PLAYER, card_name: "破译", targets: ["怪物.门神"] },
     });
     expect(result.response.status).toBe(400);
   });

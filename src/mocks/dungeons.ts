@@ -181,7 +181,7 @@ export function advanceMockDungeon(): boolean {
 export function generateMockDungeon(): Schemas["Dungeon"] {
   generatedCount += 1;
   const dungeon = structuredClone(dungeonFixture);
-  dungeon.name = `副本.试炼之地${generatedCount}`;
+  dungeon.name = `副本.深潜试炼${generatedCount}`;
   dungeon.created_at = new Date().toISOString();
   dungeons.push(dungeon);
   return dungeon;

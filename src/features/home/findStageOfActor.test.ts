@@ -2,15 +2,15 @@ import { describe, expect, it } from "vitest";
 import { findStageOfActor } from "./findStageOfActor";
 
 const actorsByStage = {
-  "场景.门厅": ["角色.顾知秋", "角色.无名"],
-  "场景.一楼客房": ["角色.小厮"],
-  "场景.二楼卧室": [],
+  "场景.酒吧大厅": ["角色.螳螂", "角色.零号"],
+  "场景.后巷工位": ["角色.麻雀"],
+  "场景.阁楼隔间": [],
 };
 
 describe("findStageOfActor", () => {
   it("返回角色所在的场景", () => {
-    expect(findStageOfActor(actorsByStage, "角色.无名")).toBe("场景.门厅");
-    expect(findStageOfActor(actorsByStage, "角色.小厮")).toBe("场景.一楼客房");
+    expect(findStageOfActor(actorsByStage, "角色.零号")).toBe("场景.酒吧大厅");
+    expect(findStageOfActor(actorsByStage, "角色.麻雀")).toBe("场景.后巷工位");
   });
 
   it("角色不在任何场景时返回 null", () => {

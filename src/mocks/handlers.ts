@@ -175,7 +175,7 @@ export const handlers = [
       type: "announce",
       message: "（mock）家园推进：角色们各自行动了一轮。",
       actor: "旁白",
-      stage: "场景.门厅",
+      stage: "场景.酒吧大厅",
       content: "角色们各自行动了一轮。",
     });
     return HttpResponse.json({
@@ -256,7 +256,7 @@ export const handlers = [
       type: "announce",
       message: `（mock）${body.target_name} 换上了 ${body.item_name}。`,
       actor: body.target_name,
-      stage: "场景.门厅",
+      stage: "场景.酒吧大厅",
       content: `换上了 ${body.item_name}。`,
     });
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 换装任务已启动" });
@@ -271,7 +271,7 @@ export const handlers = [
       type: "announce",
       message: `（mock）${body.target_name} 脱下了时装。`,
       actor: body.target_name,
-      stage: "场景.门厅",
+      stage: "场景.酒吧大厅",
       content: "脱下了时装。",
     });
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 脱装任务已启动" });
@@ -317,8 +317,8 @@ export const handlers = [
       type: "trans_stage",
       message: `（mock）进入副本：${body.dungeon_name}。`,
       actor: blueprintFixture.player_actor,
-      stage: "场景.门厅",
-      target: "场景.义庄前院",
+      stage: "场景.酒吧大厅",
+      target: "场景.坟场网关",
     });
     return HttpResponse.json({ message: `mock 已进入副本：${body.dungeon_name}` });
   }),
@@ -351,8 +351,8 @@ export const handlers = [
       type: "announce",
       message: "（mock）开场房间初始化完成。",
       actor: "旁白",
-      stage: "场景.义庄前院",
-      content: "（mock）开场叙事：门轴涩住，风从棺缝里过。",
+      stage: "场景.坟场网关",
+      content: "（mock）开场叙事：接线完成，数据从裂缝里渗出来。",
     });
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 开场初始化任务已启动" });
   }),
@@ -492,7 +492,7 @@ export const handlers = [
       type: "announce",
       message: `（mock）已生成新副本：${dungeon.name}。`,
       actor: "旁白",
-      stage: "场景.门厅",
+      stage: "场景.酒吧大厅",
       content: `已生成新副本：${dungeon.name}。`,
     });
     return HttpResponse.json({

@@ -82,7 +82,7 @@ export interface CardMark {
   id: string;
   /** 分类标签：`标记`（布尔）/ `打出时` / `被命中时` / `回合结束时`。 */
   group: string;
-  /** chip 上的文字：`保留` / `[入木]`（解析不出名称的词缀是截断后的原文）。 */
+  /** chip 上的文字：`保留` / `[楔入]`（解析不出名称的词缀是截断后的原文）。 */
   label: string;
   /** chip 的色调：对应 `index.css` 的 `.affix-chip--<tone>`。 */
   tone: string;

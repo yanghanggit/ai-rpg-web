@@ -23,7 +23,7 @@ import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } f
  *   `[被动] N`（手牌里「被命中时」词缀的条数）+（仅敌方）`[塞牌] M`（手牌里来自我方阵营的牌数），
  *   保留红 / 青的文字色；具体是哪张、什么词缀，点开手牌细看。
  *
- * 名字显示走 `displayName`（`怪物.纸人` → `纸人`），但 key / 比较一律用原始名。
+ * 名字显示走 `displayName`（`怪物.门神` → `门神`），但 key / 比较一律用原始名。
  */
 export default function CombatActionRoster({
   combatants,

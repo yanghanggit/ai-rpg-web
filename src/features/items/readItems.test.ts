@@ -15,13 +15,13 @@ describe("readItems", () => {
   it("读出道具并收窄 type", () => {
     const items = readItems(
       withStorage([
-        { name: "材料.旧麻绳", uuid: "u1", type: "MaterialItem", description: "麻绳", count: 3 },
+        { name: "材料.数据线缆", uuid: "u1", type: "MaterialItem", description: "线缆", count: 3 },
       ]),
       COMPONENT.Storage,
     );
 
     expect(items).toEqual([
-      { name: "材料.旧麻绳", uuid: "u1", type: "MaterialItem", description: "麻绳", count: 3 },
+      { name: "材料.数据线缆", uuid: "u1", type: "MaterialItem", description: "线缆", count: 3 },
     ]);
   });
 
@@ -32,12 +32,12 @@ describe("readItems", () => {
         { name: "材料.没有类型" }, // 缺 type
         { name: "材料.未知类型", type: "UnknownItem" }, // type 不在已知四种里
         "根本不是对象",
-        { name: "材料.旧麻绳", type: "MaterialItem", count: 3 },
+        { name: "材料.数据线缆", type: "MaterialItem", count: 3 },
       ]),
       COMPONENT.Storage,
     );
 
-    expect(items.map((item) => item.name)).toEqual(["材料.旧麻绳"]);
+    expect(items.map((item) => item.name)).toEqual(["材料.数据线缆"]);
   });
 
   it("uuid / description / count 缺失时给保守默认值", () => {

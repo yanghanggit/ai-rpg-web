@@ -28,18 +28,18 @@ describe("collectItemContainers", () => {
 
     expect(containers.map((container) => container.label)).toEqual(["随身背包", "储物箱"]);
     expect(containers[0]?.items.map((item) => item.name)).toEqual([
-      "装备.缠麻短刃",
-      "消耗品.吗啡针剂",
+      "装备.幽灵短刃",
+      "消耗品.急救纳米剂",
     ]);
-    expect(containers[1]?.items.map((item) => item.name)).toEqual(["材料.旧麻绳"]);
+    expect(containers[1]?.items.map((item) => item.name)).toEqual(["材料.数据线缆"]);
   });
 
   it("保留 count 与 description（界面要显示「×N」和描述）", () => {
     const backpack = collectItemContainers(blueprintFixture).find((c) => c.label === "随身背包");
-    const consumable = backpack?.items.find((item) => item.name === "消耗品.吗啡针剂");
+    const consumable = backpack?.items.find((item) => item.name === "消耗品.急救纳米剂");
 
     expect(consumable?.count).toBe(2);
-    expect(consumable?.description).toBe("（mock）淡琥珀色的玻璃针剂。");
+    expect(consumable?.description).toBe("（mock）淡蓝色的纳米注射笔。");
   });
 
   it("同类容器只取第一个（不重复列出多个同名标签）", () => {
@@ -103,21 +103,21 @@ describe("collectItemContainers", () => {
           { type: "MaterialItem", count: 1 }, // 缺 name
           { name: "材料.没有类型" }, // 缺 type
           "根本不是对象",
-          { name: "材料.旧麻绳", type: "MaterialItem", count: 3 },
+          { name: "材料.数据线缆", type: "MaterialItem", count: 3 },
         ]),
       ),
     );
 
-    expect(containers[0]?.items.map((item) => item.name)).toEqual(["材料.旧麻绳"]);
+    expect(containers[0]?.items.map((item) => item.name)).toEqual(["材料.数据线缆"]);
   });
 
   it("count / description 缺失时给保守默认值", () => {
     const containers = collectItemContainers(
-      blueprintWithStorage(storageWithItems([{ name: "材料.符纸残片", type: "MaterialItem" }])),
+      blueprintWithStorage(storageWithItems([{ name: "材料.旧网数据包", type: "MaterialItem" }])),
     );
 
     expect(containers[0]?.items[0]).toEqual({
-      name: "材料.符纸残片",
+      name: "材料.旧网数据包",
       type: "MaterialItem",
       count: 1,
       description: "",

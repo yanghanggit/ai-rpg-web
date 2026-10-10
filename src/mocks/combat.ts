@@ -62,7 +62,13 @@ function clone<T>(value: T): T {
 }
 
 function emptyCombat(): Schemas["Combat"] {
-  return { name: "（mock）停柩房战斗", state: STATE_NONE, result: 0, rounds: [], retreated: false };
+  return {
+    name: "（mock）残骸核心战斗",
+    state: STATE_NONE,
+    result: 0,
+    rounds: [],
+    retreated: false,
+  };
 }
 
 /** 副本里所有战斗房间的怪物名（用于在没有指定房间时构造参战者）。 */
@@ -422,10 +428,10 @@ export function prepareMockPostCombat(): void {
   }
   loot = [
     {
-      name: "素材.腐骨",
+      name: "素材.腐化芯片",
       uuid: "mock-loot-bone",
       type: "MaterialItem",
-      description: "（mock）从殭尸身上剥下的腐骨。",
+      description: "（mock）从腐化进程残骸里剥离的芯片。",
       count: 2,
     },
   ];

@@ -14,23 +14,23 @@ function entity(name: string, item?: unknown): Entity {
 describe("readWornCostumes", () => {
   it("读出穿戴者与那件时装", () => {
     const worn = readWornCostumes([
-      entity("角色.顾知秋", {
-        name: "时装.朱砂袍",
+      entity("角色.螳螂", {
+        name: "时装.机能风衣",
         uuid: "u1",
         type: "CostumeItem",
-        description: "绯色道袍",
+        description: "深灰色的工装",
         count: 1,
       }),
     ]);
 
     expect(worn).toEqual([
       {
-        wearer: "角色.顾知秋",
+        wearer: "角色.螳螂",
         item: {
-          name: "时装.朱砂袍",
+          name: "时装.机能风衣",
           uuid: "u1",
           type: "CostumeItem",
-          description: "绯色道袍",
+          description: "深灰色的工装",
           count: 1,
         },
       },

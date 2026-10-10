@@ -111,13 +111,15 @@ describe("玩家入口页 /lobby", () => {
     expect(select).toHaveValue("Game1");
 
     // 蓝图详情（来自共享 fixture）：玩家角色 / 战役设定 / 场景-角色 / 世界实体
-    expect(screen.getByText("无名")).toBeInTheDocument();
+    expect(screen.getByText("零号")).toBeInTheDocument();
     expect(
-      screen.getByText("（mock）这是一个架空的、融合狩猎玩法的中式民俗志怪游戏世界。"),
+      screen.getByText(
+        "（mock）这是一个架空的、融合黑客狩猎玩法的赛博朋克游戏世界，以意象化的港口都市「新香港」为背景。",
+      ),
     ).toBeInTheDocument();
-    expect(screen.getByText("门厅")).toBeInTheDocument();
-    expect(screen.getByText(/顾知秋（NPC）/)).toBeInTheDocument();
-    expect(screen.getByText(/无名（NPC · 玩家角色）/)).toBeInTheDocument();
+    expect(screen.getByText("酒吧大厅")).toBeInTheDocument();
+    expect(screen.getByText(/螳螂（NPC）/)).toBeInTheDocument();
+    expect(screen.getByText(/零号（NPC · 玩家角色）/)).toBeInTheDocument();
     expect(screen.getAllByText("无角色")).toHaveLength(1);
     expect(screen.getByText("储物箱")).toBeInTheDocument();
   });
@@ -142,11 +144,13 @@ describe("玩家入口页 /lobby", () => {
     expect(screen.getByText(/^储物箱（1）/)).toBeInTheDocument();
 
     // 折叠只是视觉上的，内容仍在 DOM 里
-    expect(screen.getByText("缠麻短刃")).toBeInTheDocument();
-    expect(screen.getByText("吗啡针剂")).toBeInTheDocument();
+    expect(screen.getByText("幽灵短刃")).toBeInTheDocument();
+    expect(screen.getByText("急救纳米剂")).toBeInTheDocument();
     expect(screen.getByText("×2")).toBeInTheDocument();
-    expect(screen.getByText("（mock）由旧铁剪反复磨砺而成的短刃。")).toBeInTheDocument();
-    expect(screen.getByText("旧麻绳")).toBeInTheDocument();
+    expect(
+      screen.getByText("（mock）一段压缩到极致的攻击性脚本，在网络空间里化形为一柄半透明的短刃。"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("数据线缆")).toBeInTheDocument();
     expect(screen.getByText("×3")).toBeInTheDocument();
   });
 
@@ -260,14 +264,14 @@ describe("家园页 /game/:userName/:gameName/home", () => {
     renderApp("/game/webdev/Game1/home");
 
     expect(await screen.findByRole("button", { name: "角色信息" })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "门厅" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "酒吧大厅" })).toBeInTheDocument();
 
     // 断言限定在「场景」分区内：叙事分区也会出现角色名（谁/何地/何事）
     const stages = screen.getByRole("region", { name: "场景" });
-    // 门厅卡片 2 个 actor，一楼客房 1 个，二楼卧室无角色
-    expect(within(stages).getByText("顾知秋")).toBeInTheDocument();
-    expect(within(stages).getByText("无名")).toBeInTheDocument();
-    expect(within(stages).getByText("小厮")).toBeInTheDocument();
+    // 酒吧大厅卡片 2 个 actor，后巷工位 1 个，阁楼隔间无角色
+    expect(within(stages).getByText("螳螂")).toBeInTheDocument();
+    expect(within(stages).getByText("零号")).toBeInTheDocument();
+    expect(within(stages).getByText("麻雀")).toBeInTheDocument();
     expect(within(stages).getAllByText("无角色")).toHaveLength(1);
   });
 

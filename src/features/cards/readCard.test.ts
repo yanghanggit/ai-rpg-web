@@ -3,9 +3,9 @@ import { readCard } from "./readCard";
 
 /** 一张字段齐全的卡：真实后端的 `Card` 载荷形状。 */
 const cardFixture = {
-  name: "卡.剖棺",
-  description: "（mock）一刀剖开棺盖。",
-  source: "角色.无名",
+  name: "卡.破译",
+  description: "（mock）一段脚本剖开冰墙。",
+  source: "角色.零号",
   cost: 2,
   damage: 3,
   hit_count: 2,
@@ -27,7 +27,7 @@ describe("readCard", () => {
     const card = readCard(cardFixture);
 
     expect(card).toMatchObject({
-      name: "卡.剖棺",
+      name: "卡.破译",
       cost: 2,
       damage: 3,
       hit_count: 2,

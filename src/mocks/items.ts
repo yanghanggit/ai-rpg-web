@@ -26,28 +26,28 @@ const STORAGE_ENTITY = "世界.储物箱";
 
 const CRAFTED_ITEMS: Record<Workshop, RawItem> = {
   consumable: {
-    name: "消耗品.回气散",
+    name: "消耗品.充能剂",
     uuid: "mock-crafted-consumable",
     type: "ConsumableItem",
-    description: "（mock）工坊合成的消耗品。",
+    description: "（mock）工坊合成的充能剂，注射后能立刻回一口气。",
     count: 1,
     on_use_prompt: ["（mock）恢复少量体力。"],
     resources: [],
   },
   gear: {
-    name: "装备.符纹刀",
+    name: "装备.协议刀",
     uuid: "mock-crafted-gear",
     type: "GearItem",
-    description: "（mock）工坊锻造的装备。",
+    description: "（mock）工坊锻出的攻击性脚本，化形为一把半透明的刀。",
     count: 1,
     resources: [],
     cards: [],
   },
   costume: {
-    name: "时装.玄狐裘",
+    name: "时装.夜行外装",
     uuid: "mock-crafted-costume",
     type: "CostumeItem",
-    description: "（mock）工坊缝制的时装。",
+    description: "（mock）工坊缝制的夜行外装。",
     count: 1,
     resources: [],
   },
@@ -201,7 +201,7 @@ export function craftMockItem(workshop: Workshop, materials: string[]): void {
     type: "announce",
     message: `（mock）工坊完成一件${CRAFT_LABELS[workshop]}：${String(crafted.name)}。`,
     actor: "旁白",
-    stage: "场景.门厅",
+    stage: "场景.酒吧大厅",
     content: `工坊完成一件${CRAFT_LABELS[workshop]}。`,
   });
 }

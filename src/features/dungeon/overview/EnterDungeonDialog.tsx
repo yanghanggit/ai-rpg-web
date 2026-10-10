@@ -32,7 +32,7 @@ export default function EnterDungeonDialog({
   gameName: string;
   /** 玩家角色原始名（确认框里标出「你」）。 */
   playerActor: string;
-  /** 要进入的副本原始名（`副本.荒村义庄`）。 */
+  /** 要进入的副本原始名（`副本.数据坟场`）。 */
   dungeonName: string;
   /** 提交中：禁用两个按钮，避免重复发起。 */
   busy: boolean;

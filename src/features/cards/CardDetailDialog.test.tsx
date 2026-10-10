@@ -11,18 +11,18 @@ import type { Card } from "./types";
  * （右栏已经把全文写在眼前，再弹一层是重复信息）。
  */
 const CARD: Card = {
-  name: "钉棺",
+  name: "钉入",
   uuid: "c1",
-  description: "（mock）抡起枣木钉，一钉一钉楔进棺盖的缝——这句话在卡面上是放不下的。",
-  source: "角色.无名",
+  description: "（mock）抡起数据锚钉，一钉一钉楔进进程的缝——这句话在卡面上是放不下的。",
+  source: "角色.零号",
   cost: 1,
   damage: 2,
   hit_count: 2,
   block: 0,
   target_type: "single",
   self_target: false,
-  on_play_affixes: ["[破竹]:本段命中后更容易击穿格挡"],
-  on_hit_affixes: ["[入木]:命中的段数越多，棺盖越难再开"],
+  on_play_affixes: ["[过载]:本段命中后更容易击穿格挡"],
+  on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: [],
   exhaust: false,
   retain: false,
@@ -48,7 +48,7 @@ describe("CardDetailDialog", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
     // 左栏 = 那张卡：词缀只写 `[名称]`，说明全文不在这里
-    expect(within(face()).getByText("[破竹]")).toBeInTheDocument();
+    expect(within(face()).getByText("[过载]")).toBeInTheDocument();
     expect(within(face()).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
     // 叙述也不在卡面上（卡面只剩名字 / 数值 / 标记），全文只在右栏
     expect(within(face()).queryByText(/这句话在卡面上是放不下的/)).not.toBeInTheDocument();
@@ -93,7 +93,7 @@ describe("CardDetailDialog", () => {
   it("选中态只落在一枚标记上（点词缀不会连带选中布尔那一条）", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
-    fireEvent.click(within(face()).getByRole("button", { name: "[入木]" }));
+    fireEvent.click(within(face()).getByRole("button", { name: "[楔入]" }));
     expect(row("被命中时", 0)).toHaveClass("card-detail-mark--active");
     expect(row("标记", 0)).not.toHaveClass("card-detail-mark--active");
   });

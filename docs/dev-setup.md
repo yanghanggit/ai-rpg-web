@@ -91,7 +91,7 @@ curl -I http://192.168.22.235:8000/     # 后端可达
 pnpm screenshot /game/webdev/Game1/dungeon
 
 # 指定视口（本项目最小支持宽度 1024px）+ 点开确认浮窗
-pnpm screenshot /game/webdev/Game1/dungeon --size 1024x768 --click "进入副本：荒村义庄"
+pnpm screenshot /game/webdev/Game1/dungeon --size 1024x768 --click "进入副本：数据坟场"
 
 # mock 模式（pnpm dev:mock 固定跑在自己的端口，不必再手填 --base）
 pnpm screenshot /game/webdev/Game1/dungeon --mock

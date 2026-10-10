@@ -6,17 +6,17 @@ describe("readDungeonInfo", () => {
   it("整理房间：类型、场景名与敌人", () => {
     const info = readDungeonInfo(dungeonFixture);
 
-    expect(info.name).toBe("副本.荒村义庄");
+    expect(info.name).toBe("副本.数据坟场");
     expect(info.rooms).toHaveLength(2);
     expect(info.rooms[0]?.type).toBe("opening");
-    expect(info.rooms[0]?.stageName).toBe("场景.义庄前院");
+    expect(info.rooms[0]?.stageName).toBe("场景.坟场网关");
     expect(info.rooms[0]?.monsters).toEqual([]);
     expect(info.rooms[1]?.type).toBe("combat");
     expect(info.rooms[1]?.monsters.map((monster) => monster.name)).toEqual([
-      "怪物.纸人",
-      "怪物.棺中殭尸",
-      "怪物.纸傀儡",
-      "怪物.吊死鬼",
+      "怪物.门神",
+      "怪物.腐化进程",
+      "怪物.傀儡义体",
+      "怪物.吊线幽灵",
     ]);
   });
 
