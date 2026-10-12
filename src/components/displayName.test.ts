@@ -3,13 +3,13 @@ import { displayName } from "./displayName";
 
 describe("displayName", () => {
   it("取最后一段：服务器名字是「类型.名字」", () => {
-    expect(displayName("角色.零号")).toBe("零号");
-    expect(displayName("场景.酒吧大厅")).toBe("酒吧大厅");
+    expect(displayName("角色.无名")).toBe("无名");
+    expect(displayName("场景.佣兵公会")).toBe("佣兵公会");
     expect(displayName("世界.副本生成系统")).toBe("副本生成系统");
-    expect(displayName("装备.幽灵短刃")).toBe("幽灵短刃");
-    expect(displayName("消耗品.急救纳米剂")).toBe("急救纳米剂");
+    expect(displayName("装备.旧铁剑")).toBe("旧铁剑");
+    expect(displayName("消耗品.治疗药水")).toBe("治疗药水");
     expect(displayName("神器.纸钱方孔")).toBe("纸钱方孔");
-    expect(displayName("怪物.门神")).toBe("门神");
+    expect(displayName("怪物.石像鬼")).toBe("石像鬼");
   });
 
   it("多于两段时同样只留最后一段", () => {
@@ -28,7 +28,7 @@ describe("displayName", () => {
     expect(displayName(".")).toBe(".");
     expect(displayName("..")).toBe("..");
     expect(displayName("角色.")).toBe("角色");
-    expect(displayName(".零号")).toBe("零号");
-    expect(displayName("角色..零号")).toBe("零号");
+    expect(displayName(".无名")).toBe("无名");
+    expect(displayName("角色..无名")).toBe("无名");
   });
 });

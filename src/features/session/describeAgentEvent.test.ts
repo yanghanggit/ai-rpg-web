@@ -9,50 +9,50 @@ describe("describeAgentEvent", () => {
     const event: AgentEvent = {
       type: "speak",
       message: "（message 不应被使用）",
-      actor: "角色.螳螂",
-      stage: "场景.酒吧大厅",
-      target: "角色.零号",
+      actor: "角色.坏运气",
+      stage: "场景.佣兵公会",
+      target: "角色.无名",
       content: "你到此几日哉？",
     };
 
     expect(describeAgentEvent(event)).toEqual({
       label: "说",
-      who: "螳螂",
-      where: "酒吧大厅",
-      what: "对 零号 说：你到此几日哉？",
+      who: "坏运气",
+      where: "佣兵公会",
+      what: "对 无名 说：你到此几日哉？",
     });
   });
 
   it("内心：何地取 stage，而不是 message 里的文本", () => {
     const event: AgentEvent = {
       type: "mind",
-      message: "# 角色.螳螂 内心活动: 酒吧大厅里静得反常。",
-      actor: "角色.螳螂",
-      stage: "场景.酒吧大厅",
-      content: "酒吧大厅里静得反常。",
+      message: "# 角色.坏运气 内心活动: 佣兵公会里静得反常。",
+      actor: "角色.坏运气",
+      stage: "场景.佣兵公会",
+      content: "佣兵公会里静得反常。",
     };
 
     const parts = describeAgentEvent(event);
 
-    expect(parts.where).toBe("酒吧大厅");
-    expect(parts.what).toBe("酒吧大厅里静得反常。");
+    expect(parts.where).toBe("佣兵公会");
+    expect(parts.what).toBe("佣兵公会里静得反常。");
     // message 里没有 stage，这正是不能直接渲染 message 的原因
-    expect(event.message).not.toContain("场景.酒吧大厅");
+    expect(event.message).not.toContain("场景.佣兵公会");
   });
 
   it("转场：何地是「从哪到哪」，没有 what", () => {
     const event: AgentEvent = {
       type: "trans_stage",
       message: "（忽略）",
-      actor: "角色.零号",
-      stage: "场景.酒吧大厅",
-      target: "场景.后巷工位",
+      actor: "角色.无名",
+      stage: "场景.佣兵公会",
+      target: "场景.酒馆",
     };
 
     expect(describeAgentEvent(event)).toEqual({
       label: "转场",
-      who: "零号",
-      where: "酒吧大厅 → 后巷工位",
+      who: "无名",
+      where: "佣兵公会 → 酒馆",
       what: "",
     });
   });
@@ -61,24 +61,24 @@ describe("describeAgentEvent", () => {
     const event: AgentEvent = {
       type: "whisper",
       message: "（忽略）",
-      actor: "角色.螳螂",
-      stage: "场景.阁楼隔间",
-      target: "怪物.门神",
+      actor: "角色.坏运气",
+      stage: "场景.铁匠铺",
+      target: "怪物.石像鬼",
       content: "别出声。",
     };
 
     const parts = describeAgentEvent(event);
 
-    expect(parts.who).toBe("螳螂");
-    expect(parts.where).toBe("阁楼隔间");
-    expect(parts.what).toBe("对 门神 耳语：别出声。");
+    expect(parts.who).toBe("坏运气");
+    expect(parts.where).toBe("铁匠铺");
+    expect(parts.what).toBe("对 石像鬼 耳语：别出声。");
   });
 
   it("战斗裁决：没有单一行动者，何事取 narrative 而非 combat_log", () => {
     const event: AgentEvent = {
       type: "combat_arbitration",
       message: "（忽略）",
-      stage: "场景.酒吧大厅",
+      stage: "场景.佣兵公会",
       combat_log: "原始日志",
       narrative: "两人错身而过，谁也没占到便宜。",
     };
@@ -86,7 +86,7 @@ describe("describeAgentEvent", () => {
     expect(describeAgentEvent(event)).toEqual({
       label: "战斗裁决",
       who: "",
-      where: "酒吧大厅",
+      where: "佣兵公会",
       what: "两人错身而过，谁也没占到便宜。",
     });
   });
@@ -95,8 +95,8 @@ describe("describeAgentEvent", () => {
     const event: AgentEvent = {
       type: "appearance_update",
       message: "（忽略）",
-      actor: "角色.螳螂",
-      stage: "场景.酒吧大厅",
+      actor: "角色.坏运气",
+      stage: "场景.佣兵公会",
       appearance: "换上了藕荷色衫裙。",
     };
 

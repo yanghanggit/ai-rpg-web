@@ -63,7 +63,7 @@ function clone<T>(value: T): T {
 
 function emptyCombat(): Schemas["Combat"] {
   return {
-    name: "（mock）残骸核心战斗",
+    name: "（mock）地窟深处战斗",
     state: STATE_NONE,
     result: 0,
     rounds: [],
@@ -428,10 +428,10 @@ export function prepareMockPostCombat(): void {
   }
   loot = [
     {
-      name: "素材.腐化芯片",
+      name: "材料.腐化兽骨",
       uuid: "mock-loot-bone",
       type: "MaterialItem",
-      description: "（mock）从腐化进程残骸里剥离的芯片。",
+      description: "（mock）从腐沼巨蜥残骸里剥离的兽骨。",
       count: 2,
     },
   ];

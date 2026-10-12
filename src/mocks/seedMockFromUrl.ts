@@ -21,12 +21,12 @@ import {
 import { addMockRosterMember } from "./roster";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
-const DUNGEON = "副本.数据坟场";
+const DUNGEON = "副本.荒废地窟";
 const PLAYER = blueprintFixture.player_actor;
 
 /** 演示用：进副本前把队伍补满（队伍在进入那一刻固化，必须在 enter 之前调用）。 */
 function fillParty(): void {
-  addMockRosterMember("角色.螳螂");
+  addMockRosterMember("角色.坏运气");
   addMockRosterMember("角色.麻雀");
 }
 
@@ -57,7 +57,7 @@ const SEEDS: Record<string, () => void> = {
     enterMockDungeon(DUNGEON);
     initMockOpening();
     generateMockSpoils();
-    claimFirstMockSpoilsCard("角色.零号");
+    claimFirstMockSpoilsCard("角色.无名");
   },
   // OPENING：队伍里有同伴（用于看 / 调试「牌组」浏览：一级名单里有三个角色）
   "party:full": () => {

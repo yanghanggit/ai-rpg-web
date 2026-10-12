@@ -14,14 +14,14 @@ const CARD: Card = {
   name: "钉入",
   uuid: "c1",
   description: "（mock）抡起数据锚钉，一钉一钉楔进进程的缝——这句话在卡面上是放不下的。",
-  source: "角色.零号",
+  source: "角色.无名",
   cost: 1,
   damage: 2,
   hit_count: 2,
   block: 0,
   target_type: "single",
   self_target: false,
-  on_play_affixes: ["[过载]:本段命中后更容易击穿格挡"],
+  on_play_affixes: ["[破防]:本段命中后更容易击穿格挡"],
   on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: [],
   exhaust: false,
@@ -48,7 +48,7 @@ describe("CardDetailDialog", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
     // 左栏 = 那张卡：词缀只写 `[名称]`，说明全文不在这里
-    expect(within(face()).getByText("[过载]")).toBeInTheDocument();
+    expect(within(face()).getByText("[破防]")).toBeInTheDocument();
     expect(within(face()).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
     // 叙述也不在卡面上（卡面只剩名字 / 数值 / 标记），全文只在右栏
     expect(within(face()).queryByText(/这句话在卡面上是放不下的/)).not.toBeInTheDocument();

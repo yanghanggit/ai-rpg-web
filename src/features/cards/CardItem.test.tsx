@@ -21,7 +21,7 @@ const CARD: Card = {
   block: 0,
   target_type: "single",
   self_target: false,
-  on_play_affixes: ["[过载]:本段命中后更容易击穿格挡"],
+  on_play_affixes: ["[破防]:本段命中后更容易击穿格挡"],
   on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: ["[余音]:回合结束时余音未散"],
   exhaust: true,
@@ -45,7 +45,7 @@ describe("CardItem", () => {
     expect(screen.getByText("虚无")).toHaveClass("affix-chip--ethereal");
     expect(screen.getByText("可传递")).toHaveClass("affix-chip--transfer");
     // 三种时机词缀各一色（卡面只写 [名称]）
-    expect(screen.getByText("[过载]")).toHaveClass("affix-chip--play");
+    expect(screen.getByText("[破防]")).toHaveClass("affix-chip--play");
     expect(screen.getByText("[楔入]")).toHaveClass("affix-chip--hit");
     expect(screen.getByText("[余音]")).toHaveClass("affix-chip--turn-end");
   });
@@ -102,7 +102,7 @@ describe("CardItem", () => {
   it("来源只在「不是自己的牌」时显示，并标 foreign", () => {
     const { rerender } = render(
       <ul>
-        <CardItem card={{ ...CARD, source: "角色.零号" }} owner="角色.零号" />
+        <CardItem card={{ ...CARD, source: "角色.无名" }} owner="角色.无名" />
       </ul>,
     );
     // 持有者就是来源：不显示
@@ -110,10 +110,10 @@ describe("CardItem", () => {
 
     rerender(
       <ul>
-        <CardItem card={{ ...CARD, source: "角色.零号" }} owner="怪物.门神" />
+        <CardItem card={{ ...CARD, source: "角色.无名" }} owner="怪物.石像鬼" />
       </ul>,
     );
-    expect(screen.getByText("来源：角色.零号")).toHaveClass("card-tile-source--foreign");
+    expect(screen.getByText("来源：角色.无名")).toHaveClass("card-tile-source--foreign");
   });
 
   it("点任意一枚标记（布尔或词缀）都弹说明浮层；再点同一枚收起", () => {
