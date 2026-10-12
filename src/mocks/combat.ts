@@ -148,7 +148,7 @@ export function readMockHand(name: string): RawCard[] {
 /**
  * dev 种子专用：直接把某个角色的**抽牌堆**换成给定牌（必须在 `drawMockCards` 之前调用）。
  *
- * 只服务 `?seed=combat:multihit`——把一批多段命中卡一次性摆进手牌，方便看数值行里的 `段数 ×N`。
+ * 只服务 `?seed=combat:turn`——把一把兼顾多段 / 目标类型 / 词缀的牌摆进手牌，让一个出牌页就能把卡面看全。
  * 正常流程与测试都走 `deckFixtures`，不经过这里（所以既有牌组断言不受影响）。
  */
 export function setMockDrawPile(name: string, cards: RawCard[]): void {
@@ -435,6 +435,41 @@ export function prepareMockPostCombat(): void {
       count: 2,
     },
   ];
+}
+
+/**
+ * 开发调试 / 测试用：直接预置**战败**结算态。
+ *
+ * 对应服务端 `CombatOutcomeSystem` 的「我方失败」判据——`_is_player_side_eliminated`：我方阵营
+ * （`PartyMemberComponent`）**全员带 `DeathComponent`**。所以这里把队伍成员逐个标记战死、怪物保留
+ * 存活，`result = LOSE`、`state = POST_COMBAT`；战败不生成战利品（`CombatLootSystem` 只在 `is_won`
+ * 时跑），所以 `loot` 清空，结算页只剩一行失败。
+ *
+ * 另外两种也判 LOSE 的情形（双方都无牌 / 主动撤退）不在这里造：种子是给「看页面」用的，全灭是最
+ * 典型的那种；撤退另有 `retreatMockCombat` 覆盖。
+ */
+export function prepareMockDefeat(): void {
+  combat.state = STATE_POST_COMBAT;
+  combat.result = RESULT_LOSE;
+  const order = readMockCombatParticipants();
+  const monsters = order.filter((name) => monsterActor(name) !== undefined);
+  const lastBlow = monsters.at(-1) ?? "怪物";
+  combat.rounds = [
+    roundFixture({
+      completed_actors: [...order],
+      action_order: [...order],
+      draw_completed: true,
+      is_completed: true,
+      cards_log: [`${lastBlow} 的最后一击命中了队伍，全员倒下。`],
+      cards_narrative: [`${lastBlow} 嘶吼着扑来，队伍再无人起身。`],
+    }),
+  ];
+  for (const name of order) {
+    if (monsterActor(name) === undefined) {
+      dead.add(name);
+    }
+  }
+  loot = [];
 }
 
 /**

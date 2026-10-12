@@ -9,9 +9,15 @@
  *
  * 「表达状态」用**阶段名**（`combat:turn`）而不是原始字段（`state=2`）：前者是意图，后者是实现细节。
  */
-import { drawMockCards, initMockCombat, prepareMockPostCombat, setMockDrawPile } from "./combat";
+import {
+  drawMockCards,
+  initMockCombat,
+  prepareMockDefeat,
+  prepareMockPostCombat,
+  setMockDrawPile,
+} from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
-import { blueprintFixture, multiHitHandFixture } from "./fixtures";
+import { blueprintFixture, turnHandFixture } from "./fixtures";
 import {
   claimFirstMockSpoilsCard,
   failNextMockOpeningInit,
@@ -79,21 +85,14 @@ const SEEDS: Record<string, () => void> = {
     advanceMockDungeon();
     initMockCombat();
   },
-  // ONGOING 且回合已抓牌：轮到某个角色行动
+  // ONGOING 且回合已抓牌：轮到某个角色行动。手牌换成 `turnHandFixture`——**必含多段命中**，
+  // 兼顾目标类型 / 词缀 / 可传递，所以「多段」不再单开一个种子。
   "combat:turn": () => {
     fillParty();
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     initMockCombat();
-    drawMockCards();
-  },
-  // ONGOING 且回合已抓牌：**玩家手牌全是多段命中**——专门看数值行里的 `段数 ×N`
-  "combat:multihit": () => {
-    fillParty();
-    enterMockDungeon(DUNGEON);
-    advanceMockDungeon();
-    initMockCombat();
-    setMockDrawPile(PLAYER, multiHitHandFixture);
+    setMockDrawPile(PLAYER, turnHandFixture);
     drawMockCards();
   },
   // POST_COMBAT：结算态（胜利 + 战利品 + 怪物战死）
@@ -102,6 +101,13 @@ const SEEDS: Record<string, () => void> = {
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     prepareMockPostCombat();
+  },
+  // POST_COMBAT：战败结算态（我方全灭 + 无战利品）
+  "combat:defeat": () => {
+    fillParty();
+    enterMockDungeon(DUNGEON);
+    advanceMockDungeon();
+    prepareMockDefeat();
   },
 };
 

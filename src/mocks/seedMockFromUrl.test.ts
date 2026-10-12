@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readMockCombat, readMockHand } from "./combat";
+import { readMockCombat, readMockCombatLoot, readMockHand } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
 import {
   consumeFailNextOpeningInit,
@@ -71,31 +71,36 @@ describe("seedMockFromUrl", () => {
     expect(readMockCombat().rounds).toHaveLength(0);
   });
 
-  it("combat:turn → ONGOING 且回合已抓牌、有行动角色", () => {
+  it("combat:turn → ONGOING 且回合已抓牌、手牌含多段命中", () => {
     seedMockFromUrl(`${BASE}?seed=combat:turn`);
     const combat = readMockCombat();
     expect(combat.state).toBe(2);
     expect(combat.rounds).toHaveLength(1);
     expect(combat.rounds[0]?.draw_completed).toBe(true);
     expect(combat.rounds[0]?.current_actor).toBeTruthy();
+
+    // 一个出牌页就把卡面看全：多段命中（×2 / ×3）+ 四种目标 + 三种时机词缀
+    const hand = readMockHand("角色.无名");
+    expect(hand.map((card) => card.name)).toEqual(["劈斩", "钉入", "掷石", "静默", "战吼"]);
+    expect(hand.some((card) => typeof card.hit_count === "number" && card.hit_count > 1)).toBe(
+      true,
+    );
   });
 
-  it("combat:post → POST_COMBAT 且已分出胜负", () => {
+  it("combat:post → POST_COMBAT 且胜利、有战利品", () => {
     seedMockFromUrl(`${BASE}?seed=combat:post`);
     const combat = readMockCombat();
     expect(combat.state).toBe(4);
     expect(combat.result).toBe(1);
+    expect(readMockCombatLoot()).toHaveLength(1);
   });
 
-  it("combat:multihit → 玩家手牌全是多段命中卡（方便看 `连击 ×N`）", () => {
-    seedMockFromUrl(`${BASE}?seed=combat:multihit`);
-    expect(readMockCombat().state).toBe(2);
-
-    const hand = readMockHand("角色.无名");
-    expect(hand.map((card) => card.name)).toEqual(["钉入", "横扫", "掷石", "双锋", "乱流"]);
-    expect(hand.every((card) => typeof card.hit_count === "number" && card.hit_count > 1)).toBe(
-      true,
-    );
+  it("combat:defeat → POST_COMBAT 且战败、无战利品", () => {
+    seedMockFromUrl(`${BASE}?seed=combat:defeat`);
+    const combat = readMockCombat();
+    expect(combat.state).toBe(4);
+    expect(combat.result).toBe(2);
+    expect(readMockCombatLoot()).toEqual([]);
   });
 
   // 放最后：它会改队伍名单（module 级状态），后面的用例都靠前面的空名单

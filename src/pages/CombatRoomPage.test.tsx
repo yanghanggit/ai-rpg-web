@@ -1,7 +1,7 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { prepareMockPostCombat } from "../mocks/combat";
+import { prepareMockDefeat, prepareMockPostCombat } from "../mocks/combat";
 import { advanceMockDungeon, enterMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
@@ -605,7 +605,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(await screen.findByRole("button", { name: "开始新回合" })).toBeInTheDocument();
   });
 
-  it("结算：显示胜负、战利品与收取按钮，怪物标记战死", async () => {
+  it("结算：只留胜负与收取按钮（查阅型信息收进标题行菜单）", async () => {
     // 直接预置结算态，不必把整场战斗打一遍
     enterMockDungeon("副本.荒废地窟");
     advanceMockDungeon();
@@ -613,25 +613,51 @@ describe("副本房间 · 战斗房间", () => {
     renderCombat();
 
     expect(await screen.findByText("🏆 战斗胜利！")).toBeInTheDocument();
-    // 参战者快照要等 details 回来，战利品才会出现；用 find 等它
+    // 参战者快照要等 details 回来，战利品按钮才会出现；用 find 等它
     expect(await screen.findByRole("button", { name: "收取战利品（1）" })).toBeEnabled();
-    // 战利品走 ItemRow：显示名 + 数量后缀 + 中文类型
-    expect(screen.getByText("腐化兽骨 ×2")).toBeInTheDocument();
-    expect(screen.getByText("材料")).toBeInTheDocument();
-    // 四只怪物都已战死
-    expect(screen.getAllByText("已战死")).toHaveLength(4);
+    // 参战者 / 本回合记录 / 战利品清单不再常驻结算页（改在 ⚙「战斗信息」等处查）
+    expect(screen.queryByRole("heading", { name: "战利品" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "参战者" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "本回合记录" })).not.toBeInTheDocument();
+    expect(screen.queryByText("腐化兽骨 ×2")).not.toBeInTheDocument();
   });
 
-  it("结算：收取战利品后列表清空、按钮禁用", async () => {
+  it("结算：入口先弹浮窗列出战利品，收取后才清空并关窗", async () => {
     enterMockDungeon("副本.荒废地窟");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
 
+    // 入口只打开浮窗，不直接收取
     fireEvent.click(await screen.findByRole("button", { name: "收取战利品（1）" }));
+    const dialog = await screen.findByRole("dialog", { name: "战利品" });
+    // 战利品走 ItemRow：显示名 + 数量后缀 + 中文类型
+    expect(within(dialog).getByText("腐化兽骨 ×2")).toBeInTheDocument();
+    expect(within(dialog).getByText("材料")).toBeInTheDocument();
 
-    expect(await screen.findByText("（本场战斗没有战利品，或已收取）")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "收取战利品（0）" })).toBeDisabled();
+    // 浮窗里才真正收取
+    fireEvent.click(within(dialog).getByRole("button", { name: "收取全部（1）" }));
+
+    // 收完：浮窗关掉、入口按钮也随之消失
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "战利品" })).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("button", { name: /收取战利品/ })).not.toBeInTheDocument();
+  });
+
+  it("结算 · 战败：只显示失败，且结束本间 = 离开副本（我方全灭、无战利品）", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒废地窟");
+    advanceMockDungeon();
+    prepareMockDefeat();
+    renderCombat();
+
+    expect(await screen.findByText("💀 战斗失败。")).toBeInTheDocument();
+    // 战败没有战利品：收取按钮不出现，页面只剩那一行胜负
+    expect(screen.queryByRole("button", { name: /收取战利品/ })).not.toBeInTheDocument();
+    // 打输了没有「下一间」：结束本间就是直接离开副本回家园
+    const finish = await screen.findByRole("button", { name: "结束本次战斗" });
+    expect(finish).toHaveAttribute("title", expect.stringContaining("离开副本"));
   });
 
   it("结算：这是最后一间，结束本间 = 直接离开副本回家园（不再绕一次地图）", async () => {
@@ -677,6 +703,8 @@ describe("副本房间 · 战斗房间", () => {
     renderCombat();
 
     fireEvent.click(await screen.findByRole("button", { name: "收取战利品（1）" }));
+    const dialog = await screen.findByRole("dialog", { name: "战利品" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "收取全部（1）" }));
 
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "结束本次战斗" })).not.toHaveClass(

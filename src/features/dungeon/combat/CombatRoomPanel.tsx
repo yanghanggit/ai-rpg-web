@@ -66,8 +66,6 @@ export default function CombatRoomPanel({
           userName={userName}
           gameName={gameName}
           combat={room.combat}
-          combatants={scene.combatants}
-          combatPending={scene.isPending}
           loot={scene.loot}
         />
       ) : (

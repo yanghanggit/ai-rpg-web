@@ -708,22 +708,6 @@ export const cardFixtures = {
     damage: 3,
     target_type: "spread",
   }),
-  // 多段命中示例（看数值行末尾的「段数 ×N」）：
-  // 双锋带「被命中时」词缀（逐段触发）、乱流是散射三段
-  twinFang: mockCard("双锋", {
-    description: "（mock）两刃并进，一前一后咬住同一处。",
-    cost: 1,
-    damage: 2,
-    hit_count: 2,
-    on_hit_affixes: ["[裂甲]:每一段命中都削去一层护体"],
-  }),
-  flurry: mockCard("乱流", {
-    description: "（mock）乱刃四散，四下里都是碎光。",
-    cost: 2,
-    damage: 1,
-    hit_count: 3,
-    target_type: "spread",
-  }),
 };
 
 /** 队伍成员的初始牌组（按角色名）。未列出的角色用默认牌组。 */
@@ -736,6 +720,9 @@ export const cardFixtures = {
  * 玩家的**前 5 张 = 每回合抓到手的那一把**（`MOCK_DRAW_PER_TURN = 5`，按数组顺序抓），所以把
  * `single`（劈斩）/ `self_target`（静默）/ 不可出牌（常驻符文）/ `spread`（镜光）/ `all`（战吼）
  * 这五种目标类型各摆一张在手牌里，方便直接在回合界面上试选目标。
+ *
+ * 注意：dev 种子 `combat:turn` 会用 `turnHandFixture` 覆盖这把抓牌（为了让一个出牌页就把卡面
+ * 看全，含多段命中）；正常流程与测试都走上面这个牌组。
  */
 export const deckFixtures: Record<string, Record<string, unknown>[]> = {
   [blueprintFixture.player_actor]: [
@@ -762,18 +749,20 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
 
 /**
- * dev 种子 `combat:multihit` 的手牌：**整把都是多段命中**，一眼看数值行末尾的 `段数 ×N`。
- * 覆盖四种形态：
- * 带「被命中时」词缀（钉入）/ 带「打出时」词缀（横扫）/ 散射多段（掷石、乱流）/ 无词缀（双锋）。
+ * dev 种子 `combat:turn` 的手牌：**必含多段命中**，同时把卡面要看的东西尽量铺全，
+ * 于是「多段命中」不再需要单开一个种子。
  *
- * 只被这个种子用；正常牌组（`deckFixtures`）不动，避免影响既有断言。
+ * 五张牌尽量各管一摊：四种目标（单体 / 自身 / 阵营散射 / 阵营全体）、段数 `×2` 与 `×3`、
+ * 三种时机词缀各一张、可传递标记。
+ *
+ * 只被这个种子用；正常牌组（`deckFixtures`）与每回合正常抓牌都不动，避免影响既有断言。
  */
-export const multiHitHandFixture: Record<string, unknown>[] = [
-  cardFixtures.nail,
-  cardFixtures.sweep,
-  cardFixtures.paper,
-  cardFixtures.twinFang,
-  cardFixtures.flurry,
+export const turnHandFixture: Record<string, unknown>[] = [
+  cardFixtures.cleave, // 单体 + 打出时词缀 + 可传递
+  cardFixtures.nail, // 多段 ×2 + 被命中时词缀 + 可传递
+  cardFixtures.paper, // 多段 ×3 + 阵营散射 + 回合结束时词缀
+  cardFixtures.breath, // 自身目标
+  cardFixtures.bell, // 阵营全体
 ];
 
 /**

@@ -9,6 +9,7 @@ import {
   initMockCombat,
   passMockTurn,
   playMockCards,
+  prepareMockDefeat,
   prepareMockPostCombat,
   readMockCombat,
   readMockCombatActorEntity,
@@ -170,6 +171,21 @@ describe("结算 / 战利品", () => {
 
     expect(monsterEntity(MONSTER_1).data[COMPONENT.Death]).toBeDefined();
     expect(actorEntity(PLAYER).data[COMPONENT.Loot]).toBeDefined();
+  });
+
+  it("prepareMockDefeat 给出战败结算：我方全灭、怪物存活、无战利品", () => {
+    enterCombat();
+    initMockCombat();
+    prepareMockDefeat();
+
+    expect(readMockCombat().state).toBe(4);
+    expect(readMockCombat().result).toBe(2);
+    expect(readMockCombatLoot()).toEqual([]);
+
+    // 我方全灭：队伍成员都带上了 DeathComponent（对应服务端 `_is_player_side_eliminated`）
+    expect(actorEntity(PLAYER).data[COMPONENT.Death]).toBeDefined();
+    expect(monsterEntity(MONSTER_1).data[COMPONENT.Death]).toBeUndefined();
+    expect(actorEntity(PLAYER).data[COMPONENT.Loot]).toBeUndefined();
   });
 
   it("收取战利品：没有时拒绝，有则清空", () => {

@@ -63,14 +63,16 @@ describe("CardItem", () => {
     expect(screen.queryByRole("button", { name: /段数/ })).not.toBeInTheDocument();
   });
 
-  it("单段也写出「段数 ×1」，不用「不显示 = 单段」去猜", () => {
+  it("单段不写「段数」，只有多段才显示（省掉噪声、突出多段）", () => {
     render(
       <ul>
         <CardItem card={{ ...CARD, hit_count: 1 }} />
       </ul>,
     );
 
-    expect(screen.getByText(/段数 ×1$/)).toBeInTheDocument();
+    // 数值行到「目标」为止，不再拖一段「段数 ×1」
+    expect(screen.getByText(/目标 单体$/)).toBeInTheDocument();
+    expect(screen.queryByText(/段数/)).not.toBeInTheDocument();
   });
 
   it("playable === false 才标「不可出牌」，卡面永远不出现【塞牌】", () => {
