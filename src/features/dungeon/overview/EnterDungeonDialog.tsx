@@ -49,8 +49,7 @@ export default function EnterDungeonDialog({
   const entryRoom = dungeon ? readDungeonInfo(dungeon).rooms[0] : undefined;
 
   const deadMembers = preview.party.filter((member) => member.dead);
-  const incapacitatedMembers = preview.party.filter((member) => member.incapacitated);
-  const blockedMembers = [...deadMembers, ...incapacitatedMembers];
+  const blockedMembers = deadMembers;
 
   return (
     <Modal title="进入副本" meta={displayName(dungeonName)} onClose={onClose}>
@@ -76,8 +75,6 @@ export default function EnterDungeonDialog({
               </span>
               {member.dead ? (
                 <span className="error">已死亡，无法参战</span>
-              ) : member.incapacitated ? (
-                <span className="error">已失能，无法参战</span>
               ) : member.stats ? (
                 <span className="muted">
                   hp {member.stats.hp}/{member.stats.max_hp} · attack {member.stats.attack} ·
@@ -105,9 +102,6 @@ export default function EnterDungeonDialog({
 
       {deadMembers.length > 0 ? (
         <p className="error">队伍里有已死亡的角色，请先在队伍名单里移出他们。</p>
-      ) : null}
-      {incapacitatedMembers.length > 0 ? (
-        <p className="error">队伍里有已失能的角色，请先在队伍名单里移出他们。</p>
       ) : null}
       {error ? <p className="error">进入副本失败：{error}</p> : null}
 

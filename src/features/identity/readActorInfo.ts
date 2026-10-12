@@ -2,7 +2,6 @@ import { COMPONENT } from "../entities/componentNames";
 import {
   type Entity,
   getComponentData,
-  hasComponent,
   isRecord,
   readCharacterStats,
   readNumber,
@@ -38,7 +37,6 @@ export function readActorInfo(entity: Entity) {
     base_body: readString(getComponentData(entity, COMPONENT.Appearance), "base_body"),
     appearance: readString(getComponentData(entity, COMPONENT.Appearance), "appearance"),
     stats: readCharacterStats(entity),
-    incapacitated: hasComponent(entity, COMPONENT.Incapacitated),
     worn_costume: readWornCostume(getComponentData(entity, COMPONENT.WornCostume)),
   };
 }

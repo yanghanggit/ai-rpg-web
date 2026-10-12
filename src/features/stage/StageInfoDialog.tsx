@@ -16,7 +16,6 @@ export default function StageInfoDialog({
   gameName,
   stageName,
   actorNames,
-  incapacitated = new Set(),
   onSelectActor,
   onClose,
 }: {
@@ -26,8 +25,6 @@ export default function StageInfoDialog({
   stageName: string;
   /** 该场景内的角色原始名列表（来自 stages state 的 actors_by_stage）。 */
   actorNames: string[];
-  /** 已永久失能的角色原始名集合；命中的 chip 加标记。 */
-  incapacitated?: ReadonlySet<string>;
   onSelectActor: (actorName: string) => void;
   onClose: () => void;
 }) {
@@ -56,28 +53,17 @@ export default function StageInfoDialog({
             <p className="muted">（无角色）</p>
           ) : (
             <ul className="chips">
-              {actorNames.map((actorName) => {
-                const isIncapacitated = incapacitated.has(actorName);
-                return (
-                  <li key={actorName}>
-                    <button
-                      type="button"
-                      className={
-                        isIncapacitated
-                          ? "chip chip-button mono chip--incapacitated"
-                          : "chip chip-button mono"
-                      }
-                      title={isIncapacitated ? "已永久失能" : undefined}
-                      onClick={() => onSelectActor(actorName)}
-                    >
-                      {displayName(actorName)}
-                      {isIncapacitated ? (
-                        <span className="badge badge--incapacitated">失能</span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
+              {actorNames.map((actorName) => (
+                <li key={actorName}>
+                  <button
+                    type="button"
+                    className="chip chip-button mono"
+                    onClick={() => onSelectActor(actorName)}
+                  >
+                    {displayName(actorName)}
+                  </button>
+                </li>
+              ))}
             </ul>
           )}
         </>

@@ -11,7 +11,7 @@ const playerEntity: Entity = {
     [COMPONENT.Appearance]: { name: "角色.零号", base_body: "基础身体", appearance: "当前外观" },
     [COMPONENT.CharacterStats]: {
       name: "角色.零号",
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, lives: 3 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
     },
   },
 };
@@ -24,8 +24,7 @@ describe("readActorInfo", () => {
       creation_order: 2,
       base_body: "基础身体",
       appearance: "当前外观",
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, lives: 3 },
-      incapacitated: false,
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
       worn_costume: null,
     });
   });
@@ -36,15 +35,14 @@ describe("readActorInfo", () => {
       data: {
         [COMPONENT.Identity]: { name: "角色.螳螂", creation_order: 1, entity_id: "id-2" },
         [COMPONENT.CharacterStats]: {
-          stats: { hp: 18, max_hp: 18, attack: 5, defense: 2, lives: 3 },
+          stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 },
         },
       },
     });
 
     expect(info.player_name).toBeNull();
     expect(info.entity_id).toBe("id-2");
-    expect(info.stats).toEqual({ hp: 18, max_hp: 18, attack: 5, defense: 2, lives: 3 });
-    expect(info.incapacitated).toBe(false);
+    expect(info.stats).toEqual({ hp: 18, max_hp: 18, attack: 5, defense: 2 });
   });
 
   it("穿着时装时读出 WornCostumeComponent.item", () => {
@@ -74,7 +72,6 @@ describe("readActorInfo", () => {
       base_body: null,
       appearance: null,
       stats: null,
-      incapacitated: false,
       worn_costume: null,
     });
   });
@@ -93,20 +90,5 @@ describe("readActorInfo", () => {
     expect(info.player_name).toBeNull();
     expect(info.stats).toBeNull();
     expect(info.worn_costume).toBeNull();
-  });
-
-  it("挂了 IncapacitatedComponent 时 incapacitated 为 true", () => {
-    const info = readActorInfo({
-      name: "角色.枯木",
-      data: {
-        [COMPONENT.Incapacitated]: { name: "角色.枯木" },
-        [COMPONENT.CharacterStats]: {
-          stats: { hp: 0, max_hp: 10, attack: 1, defense: 0, lives: 0 },
-        },
-      },
-    });
-
-    expect(info.incapacitated).toBe(true);
-    expect(info.stats?.lives).toBe(0);
   });
 });

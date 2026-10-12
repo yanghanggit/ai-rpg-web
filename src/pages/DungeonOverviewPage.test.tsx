@@ -7,7 +7,6 @@ import { COMPONENT } from "../features/entities/componentNames";
 import { enterMockDungeon, generateMockDungeon } from "../mocks/dungeons";
 import { entitiesToData } from "../mocks/fixtures";
 import { api } from "../mocks/handlers";
-import { markMockIncapacitated } from "../mocks/incapacitation";
 import { readMockActorEntity } from "../mocks/items";
 import { server } from "../mocks/node";
 import { addMockRosterMember } from "../mocks/roster";
@@ -174,16 +173,6 @@ describe("副本总览 · 队伍名单", () => {
     expect(await screen.findByText(/不是 NPC，无法加入队伍/)).toBeInTheDocument();
   });
 
-  it("已失能的同伴不出现在候选里（后端会拒绝入队）", async () => {
-    // 把「角色.麻雀」标为永久失能：候选应只剩螳螂（玩家始终靠 none_of 排除）
-    markMockIncapacitated("角色.麻雀");
-    renderDungeon();
-
-    expect(await screen.findByRole("heading", { name: "可加入的同伴（1）" })).toBeInTheDocument();
-    expect(screen.getByText("螳螂")).toBeInTheDocument();
-    expect(screen.queryByText("麻雀")).not.toBeInTheDocument();
-  });
-
   it("「← 返回家园」切回家园页", async () => {
     renderDungeon();
 
@@ -286,20 +275,6 @@ describe("副本总览 · 进入副本（最终确认）", () => {
     const dialog = await screen.findByRole("dialog", { name: "进入副本" });
 
     expect(await within(dialog).findByText("已死亡，无法参战")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "确认进入" })).toBeDisabled();
-  });
-
-  it("队伍里有已失能的角色：确认按钮禁用并说明原因", async () => {
-    addMockRosterMember("角色.螳螂");
-    // 失能标记会跟着 actor 实体一起下发（`withMockIncapacitation`），无需额外 mock details
-    markMockIncapacitated("角色.螳螂");
-    renderDungeon();
-
-    fireEvent.click(await screen.findByRole("button", { name: "进入副本：数据坟场" }));
-    const dialog = await screen.findByRole("dialog", { name: "进入副本" });
-
-    expect(await within(dialog).findByText("已失能，无法参战")).toBeInTheDocument();
-    expect(within(dialog).getByText(/队伍里有已失能的角色/)).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "确认进入" })).toBeDisabled();
   });
 

@@ -17,7 +17,7 @@ const entity: Entity = {
     [COMPONENT.Player]: { player_name: "webdev" },
     [COMPONENT.CharacterStats]: {
       name: "角色.零号",
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, lives: 3 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
     },
   },
 };
@@ -70,7 +70,6 @@ describe("readCharacterStats", () => {
       max_hp: 15,
       attack: 3,
       defense: 1,
-      lives: 3,
     });
   });
 

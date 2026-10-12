@@ -129,7 +129,6 @@ describe("副本房间 · 战斗房间", () => {
     await within(dialog).findByText("属性");
     expect(within(dialog).getByText("hp")).toBeInTheDocument();
     expect(within(dialog).getByText("max_hp")).toBeInTheDocument();
-    expect(within(dialog).getByText("lives")).toBeInTheDocument();
     expect(within(dialog).getAllByText("9")).toHaveLength(2);
     // 外观来自 AppearanceComponent：初始「当前」=「基础」（怪物不穿时装，真实后端也如此）
     expect(within(dialog).getAllByText(/赤红扫描眼/)).toHaveLength(2);

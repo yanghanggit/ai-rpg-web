@@ -44,7 +44,7 @@ export default function ActorInfoDialog({
   const entity = useActorEntity(userName, gameName, actorName);
   const actor = firstEntity(entity.data?.entities ?? {});
   const info = actor ? readActorInfo(actor) : null;
-  const actionsDisabled = busy || costumeBusy || (info?.incapacitated ?? false);
+  const actionsDisabled = busy || costumeBusy;
 
   return (
     <Modal title="角色信息" meta={displayName(actorName)} onClose={onClose}>
@@ -54,10 +54,6 @@ export default function ActorInfoDialog({
 
       {actor && info ? (
         <>
-          {info.incapacitated ? (
-            <p className="error">该角色已永久失能：不会行动，也不会再收集信息。</p>
-          ) : null}
-
           <dl className="facts">
             {/* 玩家名只有玩家实体才有（PlayerComponent），NPC 不显示这一行 */}
             {info.player_name ? (
@@ -81,8 +77,6 @@ export default function ActorInfoDialog({
               <dd className="mono">{info.stats.hp}</dd>
               <dt className="mono">max_hp</dt>
               <dd className="mono">{info.stats.max_hp}</dd>
-              <dt className="mono">lives</dt>
-              <dd className="mono">{info.stats.lives}</dd>
               <dt className="mono">attack</dt>
               <dd className="mono">{info.stats.attack}</dd>
               <dt className="mono">defense</dt>
@@ -135,7 +129,6 @@ export default function ActorInfoDialog({
                   </button>
                 )}
               </div>
-              {info.incapacitated ? <p className="muted">已失能角色无法更换时装。</p> : null}
               {costumeError ? <p className="error">时装操作失败：{costumeError}</p> : null}
             </>
           ) : null}

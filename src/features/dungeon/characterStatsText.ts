@@ -9,8 +9,8 @@ import type { Schemas } from "../../api/types";
  * `withAttackDefense` 是给**开局准备那一屏**的（`CombatSetupPanel`）：那时还没开打，对方的
  * `attack` / `defense` 直接影响“先打谁 / 要不要打”的决策，所以连它一起给。同一个函数出两种写法，措辞不会分叉。
  *
- * 字段名一律用 `CharacterStats` 的**原英文**（`hp` / `max_hp` / `lives` / `attack` / `defense`）：
- * 中文里「生命」既可能指 HP 也可能被理解成 `lives`，用原字段名就不会有歧义。
+ * 字段名一律用 `CharacterStats` 的**原英文**（`hp` / `max_hp` / `attack` / `defense`）：
+ * 中文里「生命」既可能指 HP 也可能被理解成 `max_hp`，用原字段名就不会有歧义。
  *
  * 开场房与战斗房的角色卡共用这一份措辞。属性还没读出来时返回「（无属性数据）」，
  * 与"有属性但都是 0"区分开。
