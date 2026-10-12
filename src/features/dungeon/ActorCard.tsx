@@ -4,19 +4,10 @@ import { displayName } from "../../components/displayName";
 import { characterStatsText } from "./characterStatsText";
 
 /**
- * 竖置的**角色卡**（dungeon 内唯一实现，开场房与战斗开局共用）。
+ * 竖置的角色卡（dungeon 内唯一实现，开场房与战斗开局共用）；与场景卡共用一副足迹、只是转 90°。
  *
- * 尺寸与场景卡（`StageCard`）共用同一副足迹（`--card-short` / `--card-tall`）：角色卡是
- * `短 × 长`（竖），场景卡是 `长 × 短`（横）——两者就是同一张卡转 90°，所以横竖并排时是一族
- * （见 `docs/pages.md`）。
- *
- * **交互与场景卡统一：整卡可点。** 给 `onOpenInfo` 时，卡面上铺一层透明按钮，点卡片任何地方
- * （含内边距）都开角色信息浮窗——名字不再是独立的小按钮（那会让人以为只有名字能点）。卡底的
- * **动作按钮（`children`）抬在这层之上**，自己的点击自己收下，不会顺带开出角色信息。不给
- * `onOpenInfo` 时（战斗里的敌人不是可操作对象）整卡不可点，名字只是静态文本。
- *
- * 卡片本身**无状态**：角色信息 / 奖励等浮窗的开关都归调用方（面板层）持有——同一张卡在两种
- * 场景里只是"长没长那颗按钮"的差别，不该各自记住一套浮窗状态。
+ * 给 `onOpenInfo` 时整卡可点（铺一层透明按钮），卡底 `children` 抬在其上；`showAttackDefense`
+ * 决定属性行是否带 attack / defense。卡片无状态，浮窗开关归调用方。
  */
 export default function ActorCard({
   name,
@@ -33,7 +24,7 @@ export default function ActorCard({
   badge?: string;
   /** 角色属性（原始 `CharacterStats`，文案由 `characterStatsText` 统一生成）。 */
   stats: Schemas["CharacterStats"] | null;
-  /** 属性行连 attack / defense 一起给（**开局准备那一屏**：那时对方的硬属性会影响决策）。不给就只写 `hp x/y`。 */
+  /** 属性行连 attack / defense 一起给（开局准备屏）；不给就只写 `hp x/y`。 */
   showAttackDefense?: boolean;
   /** 属性下的第二行（如「卡组 9」）；不给就不占行。 */
   extra?: string;
@@ -58,8 +49,7 @@ export default function ActorCard({
 
       {children === undefined ? null : <div className="card-actions">{children}</div>}
 
-      {/* 整卡可点的那一层：铺满卡面（含内边距）的透明按钮，叠在名字 / 属性之上。
-          卡底动作按钮由 CSS 抬到它上面，所以「奖励」的点击不会被它截走。 */}
+      {/* 整卡可点的透明层；卡底动作按钮由 CSS 抬到它上面 */}
       {onOpenInfo === undefined ? null : (
         <button
           type="button"

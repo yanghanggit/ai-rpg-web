@@ -1,29 +1,9 @@
 /**
- * ECS 组件载荷读取（纯函数，无 React / 网络）。
+ * ECS 组件载荷读取（纯函数）。
  *
- * ## 数据形状
- *
- * 后端 dump 已是 **name-keyed dict**（`ContextData`）：
- *
- * - `/entities/.../details` 响应：`{ [实体名]: { [组件类名]: data } }`；
- * - 蓝图里的 `Actor/Stage/World.components`：`{ [组件类名]: data }`。
- *
- * 所以这里不再有「序列化信封」（旧的 `EntitySerialization` / `ComponentSerialization`
- * 已被后端的 entitas 重构移除）。组件 `data` 在契约里仍是 `Dict[str, Any]`——后端
- * 反序列化走「按 name 查注册表再用字典重建」（`resolve_component_type`），
- * 所以 `data` 本就没有具体类型。这里是**前端版的 `resolve_component_type`**：
- * 按 name 认出关心的组件，再逐字段校验。字段名写错 TypeScript 拦不住（它就是 `unknown`），
- * 只能靠运行时校验兜住：读不出来就返回 `null` / 空值，让界面少显示而不是显示错的。
- *
- * ## 边界
- *
- * - 这里只放**跨领域共用**的那一层：类型、集合解析（`resolveEntities` / `resolveEntity`）、
- *   通用访问（`getComponentData` / `hasComponent`）与一个共享的类型化读取器（`readCharacterStats`）；
- * - 领域专属读取器（手牌 / 牌堆 / 时装 / 名单…）留在各自领域，不进本模块。
- *
- * 归属 `features/entities/` 而不是 `api/`：逐字段读取带着「哪个组件、哪些字段有意义」的
- * 领域含义，不只是传输层胶水；而 `entities` 已是仓库里实体相关基础设施的共享落点
- * （`invalidateEntities` 被 dungeon / costume / items 共用），依赖方向天然无环。
+ * 只放**跨领域共用**的部分：类型与集合解析、通用访问（`getComponentData` / `hasComponent` /
+ * `readString|readNumber|readBoolean`）与共享读取器 `readCharacterStats`；领域专属读取器留在各自领域。
+ * 组件 `data` 是 `Dict[str, Any]`，所以逐字段运行时校验：读不出来返回 `null` / 空值，不猜。
  */
 import type { Schemas } from "../../api/types";
 import { COMPONENT, type ComponentName } from "./componentNames";
@@ -108,10 +88,7 @@ export function readBoolean(data: unknown, key: string): boolean | null {
 }
 
 /**
- * 读 `CharacterStatsComponent.stats`（玩家 / 队友 / 怪物通用）。
- *
- * 这是目前**唯一**被多个领域共用的类型化读取器（身份 / 出征点验 / 战斗），所以放在共享层；
- * 字段直接对齐生成的 `Schemas["CharacterStats"]`，不另手写一份形状。
+ * 读 `CharacterStatsComponent.stats`（玩家 / 队友 / 怪物通用）；字段对齐 `Schemas["CharacterStats"]`。
  */
 export function readCharacterStats(entity: Entity): Schemas["CharacterStats"] | null {
   const data = getComponentData(entity, COMPONENT.CharacterStats);

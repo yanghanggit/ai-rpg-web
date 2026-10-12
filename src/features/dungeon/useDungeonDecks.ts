@@ -1,18 +1,9 @@
 /**
- * 「牌组一览」的数据：我方队伍 + **本间**场景里的怪物。
+ * 「牌组一览」的数据：我方队伍（复用 `useDungeonParty`）+ 本间场景里的怪物。
  *
- * 两步取数（与 `combat/useCombatScene.ts` 同一手法，不新增接口）：
- * 1. 我方直接复用 `useDungeonParty`（`PartyMemberComponent`，进副本时固化，含牌组）；
- * 2. 本间怪物名从**房间模型** `room.stage.actors` 里按 `type === "Monster"` 取。
- *    不直接 `group?all_of=MonsterComponent`：后端 `setup_dungeon`（`dungeon_setup_action.py` 第 6 步）
- *    会把副本**所有房间**的怪物实体一次性建出来，而 group 端点只按组件过滤、不按 stage 过滤，
- *    那样会把别的房间的怪也拉进来。以房间模型为界，与后端 `get_alive_monsters_in_stage`
- *    （按锚点实体的 `current_stage` 过滤）落在同一个位置切片上。
- * 3. 对怪物名一次 details 取回组件，再读 `DeckComponent`（怪物与队伍一样持牌库）。
- *
- * **死的怪也列**：`room.stage.actors` 是静态模型，死亡的怪不会从模型里消失；只要 details
- * 查得到就把它的牌组列出来（对齐 TUI `cmd_combat.py::build_deck_text` 全列双方的口径，
- * 这里不按 `DeathComponent` 过滤）。
+ * 怪物名从房间模型 `room.stage.actors` 按 `type === "Monster"` 取（不能按 `MonsterComponent` 查
+ * group：副本所有房间的怪物实体都已建出，会拉进别的房间的怪），再一次 details 读 `DeckComponent`。
+ * 死的怪也列（房间模型是静态的）。
  */
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";
@@ -61,8 +52,7 @@ export function useDungeonDecks(userName: string, gameName: string, room: Dungeo
     return entity === undefined ? [] : [{ name, deck: readCards(entity, COMPONENT.Deck) }];
   });
 
-  // 没有本间怪物时 details 是 disabled 的——v5 里 disabled 查询的 `isPending` 恒为 true，
-  // 不能直接并进来，否则开场房会永远停在「加载中…」。
+  // details 被 disabled 时 `isPending` 恒为 true，不能直接并进来（否则开场房永远「加载中…」）
   const monstersPending = monsterNames.length > 0 && details.isPending;
 
   return {

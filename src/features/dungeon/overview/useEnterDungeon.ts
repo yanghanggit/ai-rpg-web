@@ -1,15 +1,8 @@
 /**
- * 进入副本（`POST /api/home/enter_dungeon/v1/`）。
+ * 进入副本（`POST .../enter_dungeon/v1/`）：**同步**接口，没有 job_id。
  *
- * **同步**接口：后端就地完成「创建副本实体 → 组建队伍 → 传送到第一关」并返回 `message`，
- * 没有 job_id，所以走 `useMoveItem` / `useRosterAction` 那条线，不用 `useTask`。
- *
- * 成功后世界状态变了两处：玩家的场景（传送到副本第一关）与队伍标记
- * （玩家与名单成员都被挂上 `PartyMemberComponent`），另外会追加一条传送叙事，
- * 所以失效口径用 `invalidateHomeState`（场景 + 叙事）+ `invalidateDungeons`（副本状态）。
- *
- * 返回的是原生 mutation：调用方（页面）用 `mutate(name, { onSuccess })` 接自己的后续动作
- * （跳转到副本房间页），与 `lobby/useStartGame` 的用法一致。
+ * 成功后玩家场景与队伍标记都变了、并追加传送叙事，所以失效 `invalidateHomeState` +
+ * `invalidateDungeons`。返回原生 mutation，调用方用 `mutate(name, { onSuccess })` 接跳转。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../../api/client";

@@ -1,20 +1,10 @@
 export type OpeningActions = ReturnType<typeof useOpeningActions>;
 
 /**
- * 开场房间的三个动作：初始化、生成奖励（Spoils）、领卡（全部是**任务接口**）。
+ * 开场房间的三个动作：初始化、生成奖励、领卡（都是任务接口）。
  *
- * 三步走的「等待 + 失效」由 `src/api/useJobAction.ts` 统一负责，这里只提供三个请求与
- * 共同的失效口径：副本状态（`/room` 的 `initialized`、`/state`）+ 实体（牌组 / 奖励）
- * + 叙事（三个动作都会产出叙事与提示消息）。
- *
- * 合成一个 hook 而不是三个，是因为三者共用**同一条后端管道与同一把玩家锁**：
- * 界面上一次只应放行一个动作，所以 `isBusy` 必须合起来看。
- *
- * 后端把「领取奖励」拆成 umbrella（`PickSpoilsAction`）与子操作（`pick_card`），
- * 接口路径 `pick_spoils/pick_card` 即这一分层；这里对应 `pickCard`。
- *
- * **只允许一个实例**（`isBusy` 必须合起来看）：所以它由页面持有，再把整个返回对象传给正文
- * ——页面要的是「初始化」（本间的主行动图标），正文要的是奖励（角色卡上那颗三态按钮）。
+ * 合成一个 hook 是因为三者共用后端同一条管道与同一把玩家锁，`isBusy` 必须合起来看。
+ * **只允许一个实例**：由页面持有，再把返回对象传给正文。等待与失效交给 `useJobAction`。
  */
 import type { QueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../../api/client";

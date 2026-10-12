@@ -1,26 +1,8 @@
 /**
- * 任务等待：SSE `GET /api/tasks/v1/watch/{job_id}`，直到任务进入终态。
+ * 等待任务到终态：SSE `GET /api/tasks/v1/watch/{job_id}`。
  *
- * 背景：后端绝大多数「动作」接口（advance / player_action / craft / combat ...）返回的是
- * `job_id` 而**不是**新状态，真正的状态变化发生在任务（procrastinate）里。
- * 所以「触发 → 等待 → 刷新状态」是通用范式，本 hook 提供中间那一步。
- *
- * 传输层与 TUI 的 `watch_task_until_done()`（`tui/server_client.py`）保持一致：
- * 建一条到 `/watch/{job_id}` 的 SSE 长连接，逐条读取 `TaskSnapshot`，到终态即结束。
- * **超时由服务端判定**（`timeout_seconds` 透传给后端 SSE 生成器），前端不再自建定时器：
- * - 终态 `succeeded` → `isCompleted`
- * - 终态 `failed`    → `isFailed`，并带出后端 `error`
- * - `{"error":"timeout"}` → `isTimedOut`
- * - 其它 `{"error": ...}`（如 `task_not_found`）/ 连接失败 / 流在终态前结束 → `streamError`
- *   （与 TUI 的 `TimeoutError` / `TaskFailedError` 分支一一对应）
- *
- * 放在 `src/api/` 而非 `src/features/`：job 是 API 契约的一部分
- * （见 docs/conventions.md 三「与契约有关 → 下沉 api/」），
- * 这样各个 feature 也无需互相依赖。
- *
- * 与后端契约（OpenAPI）对齐：
- * - `job_id` 是整数（procrastinate 的自增 id）。
- * - 任务状态直接用 procrastinate 的原始枚举，后端不做任何映射。
+ * 动作接口返回 `job_id`、状态变化发生在任务里，所以「触发 → 等待 → 刷新」是通用范式。
+ * 超时由服务端判定（`timeout_seconds` 透传），前端不自建定时器。
  */
 import { useEffect, useState } from "react";
 import { fillPath } from "./client";
@@ -34,10 +16,7 @@ type TaskStatus = Schemas["Status"];
 type TaskSnapshot = Schemas["TaskSnapshot"];
 
 /**
- * 终态：到了就可以断开连接。
- *
- * 只认 `succeeded` / `failed`，与后端 `/watch` 的终止条件一致；
- * 后端从不 cancel/abort，故不处理 cancelled/aborted。
+ * 终态：到了就可以断开连接。只认 `succeeded` / `failed`，与后端 `/watch` 的终止条件一致。
  */
 function isTerminal(status: TaskStatus | undefined): boolean {
   return status === "succeeded" || status === "failed";
@@ -46,8 +25,7 @@ function isTerminal(status: TaskStatus | undefined): boolean {
 /**
  * 正常的状态事件（`TaskSnapshot` 有 `status`）。
  *
- * 注意：不能用「有没有 `error` 字段」来区分错误事件——`TaskSnapshot` 本身就有
- * `error`（失败文本，成功时为 `null`），所以必须认 `status`。
+ * 不能用「有没有 `error`」区分错误事件——`TaskSnapshot` 本身就有 `error`（失败文本，成功为 `null`）。
  */
 function isTaskSnapshot(data: unknown): data is TaskSnapshot {
   return (

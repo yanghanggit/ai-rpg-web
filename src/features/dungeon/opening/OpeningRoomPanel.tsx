@@ -12,53 +12,13 @@ import type { DungeonParty, DungeonPartyMember } from "../useDungeonParty";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
 import type { OpeningActions } from "./useOpeningActions";
+
 /**
  * 开场房间的房间主体（`room.type === "opening"`）。
  *
- * 三块内容，对应玩家的实际流程「初始化 → 生成奖励 → 领卡 → 结束本间」：
- * - **场景卡**（横置、固定大小，`StageCard`）：环境叙述（当前场景的 `EnvironmentComponent`）。
- *   初始化中显示「进行中…」、失败显示原因且**点整张卡重试**、好了就显示叙述且**点整张卡看全文**
- *   （弹 `StageInfoDialog`）——**开场房的初始化三态只在这一处表达**（标题行没有第二颗 ↻）；
- * - 场景卡右边那张「回到地图」卡：本间的下一步（初始化完成后才出现）；
- * - **队伍**（**没有可见标题**：卡上写着名字，“队伍”是废话）：竖着的角色卡，一张挨一张横排
- *   （顺序即后端给的队伍顺序，玩家在前）——卡面是「名字 + 属性（`hp x/y · attack n · defense m`）+ 卡组张数」，
- *   整卡可点开角色信息浮窗；卡底那颗按钮是
- *   本成员的奖励入口，**三态**：生成奖励 → 获取奖励 → 查看奖励（见下）。卡片的形状与牌组 /
- *   奖励里的**卡面同一套**（窄而高的矩形），横排就是「队伍站位」的 UX 雏形。
- *   **卡上不再有「查看牌组」**：牌组已由标题行的「牌组」入口统一提供（`RoomScaffold`，同一份
- *   `useDungeonParty`），不在房间里再开一个口子——两个入口会各自演化出两份卡面。
- *
- * **卡片是这一屏的基调**：横置的场景卡（横 = 场景 / 进度）、旁边一张横置的「回到地图」卡，
- * 下面一排竖置的角色卡（竖 = 人）。
- *
- * **本层没有工具栏**：本间的两个动作都在正文里——「结束本间」是场景行右边那张「回到地图」卡
- * （更好点、更好观察），初始化三态都在场景卡上。所以标题行只留三个「副本入口」，`RoomScaffold`
- * 的 `roomAction` 槽位在开场房是空的（同一件事只留一个入口）。
- *
- * **初始化自动跑一次**：进入开场房间后，若 `room.initialized === false` 就自动发一次初始化任务
- * （在页面里做，按房间标识做一次性 guard）；失败**不自动重试**，改由场景卡手动重试
- * （失败时点整张卡；服务端要求先初始化才能推进 / 退出）。
- *
- * **本间是一扇单向门**：「回到地图」卡一旦按下就回地图，而**已结束的房间进不去**（地图上不再提供
- * "进入房间"）。奖励候选本来就挂在队伍成员身上、只有当前还是开场房时才能领
- * （`activate_pick_spoils_card` 要求 `is_current_room_dungeon_opening`），所以没领的卡就永久
- * 留在那里——这是设计上要的惩罚，所以只**提醒不阻止**（提醒就在卡上那颗按钮）。
- *
- * 这里**只放开场房间独有的东西**——标题、地图、叙事入口、离开副本属于外层框架
- * （`OpeningRoomPage` 的 `RoomScaffold`），不在这一层重复。「进入下一间」属于地图
- * （`map/DungeonMapPanel`）：推进是整局副本的前进动作，不是某个房间的动作。
- *
- * 注意这一层的「叙事」二字指场景环境叙述（现在写在场景卡里），与按钮打开的
- * 「全部叙事」（会话事件流，外层 `NarrativeButton`）不是同一份数据。
- *
- * **奖励渐进式披露**：不摊在页面上，角色卡上只留那一颗三态按钮，点开才展开候选卡。「挑选」
- * 不做二次确认，防误触靠卡片上的显式按钮（与队伍名单的「加入 / 移出」同一套心智）。
- *
- * **「生成奖励」是整队一次的动作，所以它长在每张卡上却只算一件事**：后端 `activate_generate_spoils`
- * 一次给全队挂 `SpoilsComponent`，所以点**任何**一张卡上的「生成奖励」都是同一次调用，
- * 生成后每张卡一起从「生成奖励」变成「获取奖励」（按钮的 `title` 也这么写，免得看成单人生成）。
- * 领取 / 查看才是按成员各自的（`pick_spoils/pick_card` 带 `actor_name`），所以三态里只有第一态是共用的。
- * 未初始化时那颗按钮**在但不可点**（服务端硬前置）：把"下一步是什么"提前告诉玩家，而不是凭空少一个按钮。
+ * 三块：横置的场景卡（初始化三态：进行中 → 失败可点重试 → 就绪可点看全文）、右侧「回到地图」卡
+ * （初始化完成后才出现）、下面一排竖置的角色卡（整卡开角色信息，卡底按钮是奖励入口，三态：
+ * 生成奖励 → 获取奖励 → 查看奖励）。初始化与「结束本间」都只在这层有入口，标题行不重复。
  */
 export default function OpeningRoomPanel({
   userName,
@@ -75,16 +35,13 @@ export default function OpeningRoomPanel({
   actions: OpeningActions;
   /** 本次副本固化的队伍与奖励（页面取一次传下来）：角色卡的内容。 */
   party: DungeonParty;
-  /** 本间的结束动作（回地图 / 离开副本）：这张「回到地图」卡就是它在本屏的**唯一入口**。 */
+  /** 本间的结束动作（回地图 / 离开副本），这张「回到地图」卡是它在本屏的唯一入口。 */
   finish: { caption: string; hint: string; onActivate: () => void };
 }) {
   const stage = useStageEntity(userName, gameName, room.stage.name);
 
-  // 正在看场景全文（非空即打开场景信息浮窗）
   const [isStageOpen, setIsStageOpen] = useState(false);
-  // 正在看奖励的成员（原始名）；非空即打开奖励浮窗
   const [spoilsMember, setSpoilsMember] = useState<string | null>(null);
-  // 正在看角色信息的成员（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
 
   const stageEntity = firstEntity(stage.data?.entities ?? {});
@@ -92,17 +49,14 @@ export default function OpeningRoomPanel({
 
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 
-  // 还有人没领奖励 → 「回到地图」卡也变成提醒色：那一步一按，没领的卡就永久失去了
-  // （与角色卡上那颗按钮同一份判据，见 `hasUnclaimedRewards`）
+  // 未领奖励在结束本间后永久失去，所以「回到地图」与角色卡按钮用同一判据变提醒色
   const unclaimed = party.party.some(hasUnclaimedRewards);
 
-  // 场景卡的三态：未初始化 = 还在跑 / 跑失败；初始化完成 = 叙述可看（全文点开）
   const stageState: StageCardState = !room.initialized
     ? actions.init.error === null
       ? "running"
       : "failed"
     : "ready";
-  // 卡面正文：三种状态共用同一条位置（卡片骨架不变形）；叙述可能已生成但还没取回来
   const stageBody =
     stageState === "failed"
       ? `初始化失败：${actions.init.error}`
@@ -110,7 +64,7 @@ export default function OpeningRoomPanel({
         ? "进行中…"
         : stageNarrativeBody(narrative, stage);
 
-  /** 某张角色卡上那颗按钮现在该写什么：生成奖励 → 获取奖励 → 查看奖励。 */
+  /** 角色卡按钮的文案：生成奖励 → 获取奖励 → 查看奖励。 */
   function spoilsLabel(member: DungeonPartyMember): string {
     if (member.spoils === null) {
       return actions.spoils.isBusy ? "生成中…" : "生成奖励";
@@ -120,9 +74,6 @@ export default function OpeningRoomPanel({
 
   return (
     <>
-      {/* 场景行：**横置**的场景卡（固定大小，叙述超出三行就省略）+ 右侧「回到地图」卡。
-          这两张卡（横 = 场景 / 进度）与下面竖置的角色卡（竖 = 人）构成这一屏的卡片基调。
-          卡上的状态就是初始化三态的唯一表达：初始化中 → 失败可点重试 → 就绪可点看全文。 */}
       <section className="stage-row" aria-label="场景描述">
         <StageCard
           state={stageState}
@@ -133,8 +84,7 @@ export default function OpeningRoomPanel({
           }
         />
 
-        {/* 初始化完成后才出现：本间的下一步（回到地图 / 最后一间则是离开副本）。这是「结束本间」的
-            唯一入口（标题行不再重复）；还有候选卡未领时它也变提醒色、后果写进 title。 */}
+        {/* 初始化完成后才出现：本间结束动作的唯一入口 */}
         {room.initialized ? (
           <button
             type="button"
@@ -152,19 +102,16 @@ export default function OpeningRoomPanel({
           </button>
         ) : null}
 
-        {/* 初始化失败已写在场景卡里（那颗 ↻ 也变红），这里只说奖励那一支；领卡失败在奖励浮窗内显示 */}
+        {/* 初始化失败已写在场景卡里，这里只说生成奖励那一支；领卡失败在奖励浮窗内显示 */}
         {actions.spoils.error ? (
           <p className="error">生成奖励失败：{actions.spoils.error}</p>
         ) : null}
       </section>
 
-      {/* 这一块**不超可见标题**（卡上写着名字，「队伍」是废话）——靠与上面环境叙述的距离分组，
-          留个无障碍名让读屏器与测试还能指认它。 */}
       <section className="party-section" aria-label="队伍">
         {party.isPending ? <p className="muted">加载中…</p> : null}
         {party.isError ? <p className="error">无法获取队伍状态：{String(party.error)}</p> : null}
 
-        {/* 竖着的角色卡一张挨一张横排：顺序沿用后端给的队伍顺序（玩家在前），就是「站位」的 UX 雏形 */}
         <div className="cards cards--party">
           {party.party.map((member) => (
             <ActorCard
@@ -173,17 +120,12 @@ export default function OpeningRoomPanel({
               badge={member.player ? "玩家" : undefined}
               stats={member.stats}
               extra={`卡组 ${member.deck.length}`}
-              // 整卡可点开角色信息（与场景卡同一交互）
               onOpenInfo={() => setInfoActor(member.name)}
             >
-              {/* 卡上唯一一颗按钮 = 本成员的奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励。
-                  生成是**整队一次**的动作（点哪张卡上的都一样），所以给 button 加 title 说明。
-                  「还有候选卡未领」不另外占一行页面提示：它就是第二态本身，
-                  所以把提醒做到按钮上（提醒色 + 「!」），后果写进 title。 */}
+              {/* 卡上唯一一颗按钮 = 本成员奖励入口；「生成奖励」是整队一次的动作 */}
               {member.spoils === null ? (
                 <button
                   type="button"
-                  // 生成需要开场已初始化（服务端硬前置）：未初始化时按钮在，但不可点
                   disabled={!room.initialized || actions.isBusy}
                   title="一次为整队生成奖励（点任何一张卡上的它都一样）"
                   onClick={() => actions.spoils.start()}
@@ -219,9 +161,9 @@ export default function OpeningRoomPanel({
           userName={userName}
           gameName={gameName}
           stageName={room.stage.name}
-          // 开场房里「场景内角色」就是这一局的队伍（进副本/推进时被搬进这间场景），不必另取一份
+          // 开场房里「场景内角色」就是这一局的队伍
           actorNames={party.party.map((member) => member.name)}
-          // 同类切换不叠层：点场景里的角色 → 关场景浮窗、换角色浮窗（与家园页同一套）
+          // 同类切换不叠层：关场景浮窗、换角色浮窗
           onSelectActor={(actorName) => {
             setIsStageOpen(false);
             setInfoActor(actorName);

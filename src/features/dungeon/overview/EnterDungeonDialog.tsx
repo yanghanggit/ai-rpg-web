@@ -6,17 +6,9 @@ import { useDungeonList } from "./useDungeonList";
 import { useEnterPreview } from "./useEnterPreview";
 
 /**
- * 进入副本前的最终确认浮窗（一级浮窗，与「地图」互斥）。
- *
- * 出征这一步是**不可逆**的：后端 `enter_dungeon` 会把玩家与队伍名单里的成员都挂上
- * `PartyMemberComponent`，并传送到副本第一关；之后队伍名单在退出副本前不能再改
- * （家园接口一律要求玩家在家园）。所以确认框要把「最终会带上谁」「背包里有什么」
- * 摊开给玩家看，而不是让他点一下就出发。
- *
- * 队伍里有 `DeathComponent` 的成员会让后端断言失败（500），
- * 因此这里提前禁用确认按钮并说明原因——错误提示挡在提交之前。
- *
- * 取数全部交给 `useEnterPreview`（一次 details），浮窗本身不写请求逻辑。
+ * 进入副本前的最终确认浮窗（一级）：把「最终带谁」「背包有什么」摊开——出征不可逆，
+ * 队伍在退出副本前不能再改。队伍里有死亡成员会让后端断言失败，所以提前禁用确认并说明原因。
+ * 取数交给 `useEnterPreview`（一次 details）。
  */
 export default function EnterDungeonDialog({
   userName,
@@ -43,7 +35,7 @@ export default function EnterDungeonDialog({
 }) {
   const preview = useEnterPreview(userName, gameName, playerActor);
 
-  // 起点房间与「地图」浮窗同源：从列表缓存里按名字取，不额外发请求
+  // 起点房间与「地图」浮窗同源：从列表缓存里取
   const dungeons = useDungeonList();
   const dungeon = dungeons.data?.find((item) => item.name === dungeonName);
   const entryRoom = dungeon ? readDungeonInfo(dungeon).rooms[0] : undefined;
@@ -93,7 +85,7 @@ export default function EnterDungeonDialog({
         <p className="muted">背包是空的。进去前可以先回总览整理行装。</p>
       ) : (
         <ul className="plain">
-          {/* 道具行用 features/items 的 ItemRow：和道具管理里长得完全一样 */}
+          {/* 与道具管理里长得一样 */}
           {preview.inventory.map((item) => (
             <ItemRow key={item.uuid || item.name} item={item} />
           ))}

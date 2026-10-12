@@ -21,38 +21,13 @@ import NarrativeButton from "../features/session/NarrativeButton";
 import StageInfoDialog from "../features/stage/StageInfoDialog";
 
 /**
- * 家园概览页：一屏看全局。
- *
- * 页面只有两块内容——**功能按钮**和**场景卡片**：
- *
- * - 顶部按钮：推进 / 角色信息 / 蓝图信息 / 实体浏览器 / 道具管理 / 副本 / 叙事未读 / 返回上一级
- * - 下方卡片：每个 stage 一张，列出其中的 actor（每个 actor 是一个按钮，点开
- *   该角色的信息浮窗），右上角有个小按钮打开场景信息，并带「切换到此场景」按钮；
- *   玩家当前所在卡片高亮标记。卡片与角色按 `IdentityComponent.creation_order` 排序，
- *   位置稳定、不随刷新跳动（见 `features/entities/creationOrder.ts`）
- *
- * 「角色信息」打开 `ActorInfoDialog`，玩家与 NPC 共用：点工具栏按钮等同于点玩家 chip。
- * 浮窗内可穿/脱时装，穿时装时叠出 `StorageCostumeDialog` 选储物箱里的时装。
- * 「蓝图信息」打开 `BlueprintInfoDialog`，只展示蓝图名字 / 战役设定 / 世界系统；
- * 「道具管理」打开 `ItemManagerDialog`，管理背包 / 储物箱道具、工坊合成与穿戴中时装。
- * 「实体浏览器」打开 `EntityBrowserDialog`，把「场景 → 角色」actors_by_stage 一次性摊开，
- * 点名字即可打开对应的场景 / 角色信息浮窗——与点场景卡片等价，只是多一条宏观快捷入口。
- * 「副本」不属于浮窗：它切到 `DungeonOverviewPage`（`/game/:userName/:gameName/dungeon`）单独一屏，
- * 交接副本总览、出征准备与「进入副本」；进入成功后会切到 `/dungeon/room`（副本进行中）。
- * 玩家身份（player_actor）用于判断「当前场景」：优先用 `useStartGame` 预填的缓存，
- * 缺失时回退查询 group 端点（见 `features/identity/usePlayerActor.ts`）。
- *
- * 叙事不在这里展开（历史事件在浮层里看），页面上只留一个通知按钮——与副本房间页共用
- * `NarrativeButton`（带「已看 / 总共」数字，右边大于左边即有新事件未看）。未读基线是
- * 会话级的、跨屏存活的，所以进副本期间产生的事件回家园后仍会点亮这个按钮。
- *
- * 会话来自 URL（/game/:userName/:gameName/home），本页可被直接深链。
+ * 家园概览页：顶部一排功能按钮 + 下面每个 stage 一张场景卡（卡内角色可点开角色信息，卡片按
+ * `creation_order` 稳定排序）。「副本」切到独立一屏；叙事只在浮层里看。会话来自 URL，可深链。
  */
 export default function HomeOverviewPage() {
   const { userName, gameName } = useParams();
 
-  // useParams 的类型是 string | undefined；路由已保证存在，这里做一次显式守卫，
-  // 顺带避免把 undefined 塞进请求路径。守卫在调用任何 hook 之前完成。
+  // 路由已保证参数存在；显式守卫，避免把 undefined 塞进请求路径
   if (!userName || !gameName) {
     return (
       <main className="page">
@@ -71,18 +46,14 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
   });
 
   const actorsByStage = state.data?.actors_by_stage ?? {};
-  // 显示顺序：后端 actors_by_stage 的 key / 列表顺序来自集合迭代，会随增删变化，
-  // 所以再按 IdentityComponent.creation_order 钉死一遍（见 useCreationOrder / creationOrder.ts）。
-  // 卡片位置是玩家的「空间记忆」，切换场景时卡片不能跳；当前场景靠高亮 + 角标表达，
-  // 而不是把它移到最前。请求与判定仍用原始映射（顺序不改变语义）。
+  // 后端顺序随增删变化，再按 creation_order 钉死一遍，卡片位置不跳（判定仍用原始映射）
   const creationOrder = useCreationOrder(userName, gameName);
   const orderedActorsByStage = orderActorsByStage(actorsByStage, creationOrder);
   const stages = Object.entries(orderedActorsByStage);
-  // 后端要求显式传入"要推进的角色"；口径与 TUI 一致：全部场景的全部角色。
+  // 推进要显式传角色：口径为全部场景的全部角色
   const actors = collectActors(actorsByStage);
   const advance = useHomeAdvance(userName, gameName, actors);
   const switchStage = useSwitchStage(userName, gameName);
-  // 玩家角色名用于判断「当前在哪个场景」；缓存未命中时回退查询 group 端点
   const playerActor = usePlayerActor(userName, gameName);
   const currentStage = findStageOfActor(actorsByStage, playerActor.data ?? null);
   const logout = useLogout(userName, gameName);
@@ -93,17 +64,13 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
     advance.isStarting || advance.isRunning || switchStage.isStarting || switchStage.isRunning;
 
   const [isLogoutOpen, setIsLogoutOpen] = useState(false);
-  // 正在查看的角色（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
-  // 正在查看的场景（原始名）；非空即打开场景信息浮窗
   const [infoStage, setInfoStage] = useState<string | null>(null);
-  // 是否叠出「选择时装」的二级浮窗
   const [isCostumeOpen, setIsCostumeOpen] = useState(false);
   const [isBlueprintInfoOpen, setIsBlueprintInfoOpen] = useState(false);
   const [isEntityBrowserOpen, setIsEntityBrowserOpen] = useState(false);
   const [isItemsOpen, setIsItemsOpen] = useState(false);
 
-  // 人数直接写在按钮上，页面上就不再需要那句解释文案
   let buttonLabel = `推进一步 · ${actors.length} 个角色`;
   if (advance.isStarting) {
     buttonLabel = "提交中…";
@@ -181,7 +148,6 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
             {stages.map(([stage, stageActors]) => {
               const isCurrent = stage === currentStage;
               const isSwitching = switchStage.switchingStage === stage;
-              // 当前场景、有动作在跑、玩家身份还没解析出来时不接受切换
               const switchDisabled = isCurrent || isBusy || playerActor.isPending;
               let switchLabel = "切换到此场景";
               if (isCurrent) {
@@ -277,7 +243,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
           gameName={gameName}
           stageName={infoStage}
           actorNames={orderedActorsByStage[infoStage] ?? []}
-          // 点场景里的角色：关掉场景浮窗，换成角色浮窗
+          // 点场景里的角色：关场景浮窗、换角色浮窗
           onSelectActor={(actorName) => {
             setInfoStage(null);
             setInfoActor(actorName);
@@ -289,7 +255,7 @@ function HomeOverview({ userName, gameName }: { userName: string; gameName: stri
       {isEntityBrowserOpen ? (
         <EntityBrowserDialog
           actorsByStage={orderedActorsByStage}
-          // 点名字：关掉浏览器，换成对应的信息浮窗（与场景卡片点击等价）
+          // 点名字：关浏览器，换对应的信息浮窗
           onSelectStage={(stage) => {
             setIsEntityBrowserOpen(false);
             setInfoStage(stage);

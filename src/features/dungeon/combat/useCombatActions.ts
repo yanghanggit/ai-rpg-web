@@ -1,16 +1,8 @@
 /**
- * 战斗房间的五个改变性动作：初始化、抓牌、出牌、使用消耗品、使用装备、过牌。
+ * 战斗房间的七个改变性动作：初始化、抓牌、出牌、用消耗品、用装备、过牌、推进怪物回合。
  *
- * 全部是**任务接口**（只返回 `job_id`），所以「等待 + 失效」统一交给 `src/api/useJobAction.ts`。
- * 失效口径与开场的三个动作一致：副本相关查询（`/room` 的 `combat`、`/state`）+ 实体
- * （血量 / 手牌 / 牌堆 / 战利品）+ 叙事。**场景映射不需要单独失效**——参战者快照走的是
- * 队伍 group + 房间怪物名，两者都在这条口径里。
- *
- * 合成一个 hook 而不是六个，是因为它们共用后端**同一把玩家锁**：界面上一次只应放行一个动作，
- * 所以 `isBusy` 必须合起来看。
- *
- * 结算的「收取战利品」是**同步**接口（直接返回 message，没有 job），不属于这里。
- * 推进（进入下一间）也不在这里：那是地图上的动作（`map/useAdvanceStage`）。
+ * 全是任务接口，等待与失效交给 `useJobAction`。合成一个 hook 是因为共用同一把玩家锁，
+ * `isBusy` 必须合起来看。收战利品是同步接口、推进是地图动作，都不在这里。
  */
 import type { QueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../../api/client";
@@ -75,8 +67,7 @@ export function useCombatActions(userName: string, gameName: string) {
     onCompleted,
   });
 
-  // 怪物回合：服务端识别到 actor 是怪物后改走 MonsterPrePlaySystem 自动决策，
-  // 所以 card_name / targets 只作占位（与 TUI `advance_monster_turn` 同一做法）。
+  // 怪物回合：服务端识别到 actor 是怪物后自动决策，card_name / targets 只作占位
   const advance = useJobAction({
     request: async ({ actor }: { actor: string }) =>
       unwrap(

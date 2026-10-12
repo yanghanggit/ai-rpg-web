@@ -16,19 +16,10 @@ const WORKSHOPS: { workshop: Workshop; label: string }[] = [
 ];
 
 /**
- * 道具管理浮窗。
+ * 道具管理浮窗：随身背包 + 储物箱两段，各自勾选后批量移动。
  *
- * 两段内容：
- * - 随身背包：勾选后批量移入储物箱；
- * - 储物箱：顶部是**穿戴中的时装**（`WornCostumeComponent`，脱下来就回归储物箱，
- *   所以视为储物箱里挂出去的一件，只读展示并标注穿戴者），下面是箱内道具。
- *   勾选后可与「移入背包」平级的三个工坊按钮——点开会叠出第二层确认浮窗，
- *   默认填入已勾选材料与最大用量，确认才真正合成。
- *
- * 工坊合成是**可选能力**（`craftEnabled`）：家园页要（默认），副本页不要——
- * 出征前只整理行装，合成必须在家园做。这里刻意**不拆成两个组件**：两种形态的
- * 结构完全相同（两段容器 + 移动按钮），只差一组按钮，拆开会让「行渲染」这类
- * 逻辑出现两份；而 `useCraftItem` 空闲时不发请求，没启用就等于没接。
+ * 储物箱顶部是穿戴中的时装（只读，脱下来回归储物箱）；`craftEnabled` 时储物箱还多三个工坊按钮
+ * （叠出二级确认浮窗）。不拆成两个组件：两种形态结构相同，只差一组按钮。
  */
 export default function ItemManagerDialog({
   userName,
@@ -90,7 +81,7 @@ export default function ItemManagerDialog({
     <Modal
       title="道具管理"
       meta={`背包 ${containers.inventory.length} · 储物箱 ${containers.storage.length}`}
-      // 第二层浮窗开着时，本层的 ESC 不响应（否则会连带关掉整页浮窗）
+      // 第二层浮窗开着时本层 ESC 不响应
       onClose={() => {
         if (!craftRequest) {
           onClose();
@@ -133,7 +124,7 @@ export default function ItemManagerDialog({
 
           <h3>储物箱</h3>
           <ul className="plain">
-            {/* 穿戴中的时装：脱下来就回归储物箱，所以置顶只读展示 */}
+            {/* 穿戴中的时装退回储物箱，所以置顶只读展示 */}
             {containers.worn.map((worn) => (
               <li key={worn.wearer} className="item-row">
                 <span className="chip">穿戴中（只读）</span>

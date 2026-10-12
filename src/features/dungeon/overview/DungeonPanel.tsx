@@ -2,18 +2,8 @@ import { displayName } from "../../../components/displayName";
 import { useDungeonList } from "./useDungeonList";
 
 /**
- * 「可用副本」卡片区（静态模型数据）。
- *
- * 为什么用卡片而不是列表：这是**宏观信息**，卡片的边界让每个副本一眼可分，
- * 也避免在页面里开一个小窗口去滚动找内容。整体设定超出卡片高度就截断显示 `…`，
- * 点卡片主体打开 `DungeonMapDialog`（地图）看全文——与场景卡片「点开看详情」同一套心智。
- *
- * 卡片是「容器 + 主体按钮 + 操作行」：主体按钮占满剩余宽度（点哪里都能看详情），
- * 「进入副本」是**平级的兄弟按钮**——HTML 不允许 `button` 嵌套 `button`，
- * 所以不能让进入按钮长在主体按钮里面（与 `RosterPanel` 的角色卡片同一做法）。
- *
- * 栅格沿用全项目的响应式规则（`minmax(min(320px, 100%), 1fr)`）：
- * 窄屏单列、宽屏自动多列（见 docs/conventions.md「布局与响应式」）。
+ * 「可用副本」卡片区（静态模型数据）：卡片主体点开 `DungeonMapDialog`，「进入副本」是平级兄弟按钮
+ * （HTML 不允许 button 嵌套 button）。整体设定超出卡片高度就截断。
  */
 export default function DungeonPanel({
   onSelect,

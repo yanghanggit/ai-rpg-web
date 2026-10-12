@@ -1,9 +1,5 @@
 /**
- * REST 请求的唯一入口：openapi-fetch 客户端。
- *
- * 类型全部由 `schema.d.ts` 推导——方法、路径、path/query 参数、请求体、响应
- * 都由 openapi-fetch 自动推导，无需手写封装，也没有泛型/断言。
- * 认证、日志等横切逻辑通过 middleware 统一处理。
+ * REST 请求的唯一入口：openapi-fetch 客户端。类型全部由 `schema.d.ts` 推导；认证 / 日志走 middleware。
  */
 import createClient, { type Middleware } from "openapi-fetch";
 import type { paths } from "./schema";
@@ -24,10 +20,7 @@ export class ApiError extends Error {
 }
 
 /**
- * 认证头：JWT 接入后由登录流程写入 localStorage。
- *
- * REST 走下面的 middleware；SSE 不走 openapi-fetch（见 `src/api/sse.ts`），
- * 复用同一份实现，避免两处各写一遍导致漂移。
+ * 认证头：JWT 接入后由登录流程写入 localStorage。REST 走 middleware，SSE 复用同一份实现。
  */
 export function authHeaders(): Record<string, string> {
   const token = globalThis.localStorage?.getItem("ai-rpg-token");
@@ -35,8 +28,7 @@ export function authHeaders(): Record<string, string> {
 }
 
 /**
- * 认证中间件：token 统一在此注入（后端 auth 依赖已预留），
- * 业务代码不需要感知 Authorization 头。
+ * 认证中间件：token 统一在此注入，业务代码不需要感知 Authorization 头。
  */
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -59,8 +51,7 @@ const loggerMiddleware: Middleware = {
 
 export const client = createClient<paths>({
   baseUrl: API_BASE_URL,
-  // 延迟解析 globalThis.fetch，而不是在模块加载时锁定它。
-  // 这样单测可用 vi.fn 注入，MSW 的 setupServer 也能正常拦截。
+  // 延迟解析 globalThis.fetch（不在模块加载时锁定），方便单测注入与 MSW 拦截
   fetch: (input: Request) => globalThis.fetch(input),
 });
 client.use(authMiddleware);
@@ -83,11 +74,7 @@ export function apiUrl(path: string): string {
 }
 
 /**
- * 用参数填充 OpenAPI 路径模板（`/a/{id}/b` → `/a/1/b`）。
- *
- * 模板必须是生成契约里的路径字面量（`keyof paths`），端点写错或后端删掉该路径时
- * 编译期就会报错——这是 SSE / 静态资源等不走 openapi-fetch、无法自动替换 path 参数的
- * 场景下，避免手拼字符串脱离契约的兜底。
+ * 用参数填充 OpenAPI 路径模板（`/a/{id}/b` → `/a/1/b`）。模板必须是 `keyof paths`，端点写错会编译报错。
  */
 export function fillPath(template: keyof paths, params: Record<string, string | number>): string {
   return template.replace(/\{([^}]+)\}/g, (_match, key: string) => {

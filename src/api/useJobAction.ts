@@ -1,14 +1,8 @@
 /**
- * 「触发 → 等任务 → 失效刷新」：job 模式动作的**唯一实现**。
+ * 「触发 → 等任务 → 失效刷新」：job 模式动作的唯一实现。
  *
- * 后端绝大多数动作接口（advance / switch_stage / craft / 副本的 init、生成奖励、领卡、退出……）
- * 只返回 `job_id` 而**不是**新状态，真正的状态变化发生在任务里。所以每个动作都是同样三步，
- * 且失败有四种来源（提交失败 / 任务失败 / 任务超时 / SSE 断开）。这段逻辑以前在
- * `useHomeAdvance`、`useSwitchStage`、`useCraftItem`、`useGenerateDungeon`、`useExitDungeon`
- * 里各写了一遍——现在收在这里一份，各领域只提供「怎么发请求」「完事失效什么」。
- *
- * 放在 `src/api/` 而非 `src/features/`：job 是 API 契约的一部分
- * （见 docs/conventions.md 三「与契约有关 → 下沉 api/」），这样各 feature 也无需互相依赖。
+ * 各领域只提供「怎么发请求」`request` 与「完事失效什么」`onCompleted`；等任务（`useTask`）与四种
+ * 失败来源（提交 / 任务 / 超时 / SSE）的合并都在这里。放在 `api/` 因为 job 属于契约。
  */
 import { type QueryClient, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
@@ -36,12 +30,11 @@ export function useJobAction<Variables = void>({
 
   const trigger = useMutation({
     mutationFn: request,
-    // 这里只拿到 job_id；结果由下面的 useTask 负责等待
+    // 这里只拿到 job_id，结果由 useTask 负责等待
     onSuccess: (result) => setJobId(result.job_id),
   });
 
-  // 任务进入终态后失效查询。同一个 job 只失效一次——
-  // 否则 isCompleted 期间每次渲染都会再触发一轮请求。
+  // 同一个 job 只失效一次，否则 isCompleted 期间每次渲染都会再触发一轮请求
   const invalidatedJob = useRef<number | null>(null);
   useEffect(() => {
     if (jobId === null || !task.isCompleted || invalidatedJob.current === jobId) {
@@ -66,7 +59,7 @@ export function useJobAction<Variables = void>({
   return {
     start: (variables: Variables) => {
       trigger.reset();
-      setJobId(null); // 清掉上一轮的终态，避免按钮闪回「已完成」
+      setJobId(null); // 清掉上一轮终态，避免按钮闪回「已完成」
       trigger.mutate(variables);
     },
     /** 正在提交请求（还没拿到 job_id）。 */

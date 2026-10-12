@@ -1,17 +1,8 @@
 /**
- * 生成默认玩家名。
+ * 生成默认玩家名：`player-YYYYMMDD-HHmmss-<8位随机十六进制>`。
  *
- * 格式：`player-YYYYMMDD-HHmmss-<8位随机十六进制>`，例：`player-20260911-130123-9f8e7d6c`
- *
- * 两个刻意的选择：
- * 1. 随机后缀用 `crypto.getRandomValues`，**不用** `crypto.randomUUID()`。
- *    randomUUID 只在安全上下文（https / localhost）存在；局域网 `http://192.168.x.x`
- *    下它是 `undefined`，会直接抛错。getRandomValues 在所有上下文都可用（已实测）。
- * 2. 后缀用 8 位（32 bit）而非完整 UUID。玩家名会进入 URL 路径
- *    （`/game/:userName/:gameName/home`），完整 UUID 会把 URL 拖到 60+ 字符；
- *    结合秒级时间戳，8 位随机已足够避免重名。
- *
- * 后端尚无玩家账号体系；将来接入真实身份后，此函数应被用户身份取代。
+ * 用 `crypto.getRandomValues` 而不是 `randomUUID`（后者只在安全上下文存在，局域网 http 下会抛错）；
+ * 8 位后缀是为了不让 URL 变长。后端接入真实身份后此函数应被取代。
  */
 
 /** 随机后缀的十六进制位数（每 2 位 1 字节）。 */

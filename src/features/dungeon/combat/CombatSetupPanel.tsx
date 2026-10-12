@@ -13,25 +13,11 @@ import { type Combatant, roleLabel } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
 /**
- * 战斗**开始之前**的那一屏（`init` / `round_start` 两个 phase 共用）。
+ * 战斗开始前的那一屏（`init` / `round_start` 共用）：上面敌人、中间场景卡 + 「开始」卡、下面队伍。
+ * 卡面与开场房共用 `StageCard` / `ActorCard`。
  *
- * 布局对齐「横 = 场景 / 竖 = 人」：上面一排**敌人**卡、中间**场景卡 + 开始卡**、下面一排**队伍**卡。
- * 卡面与开场房间**共用同一对组件**（`dungeon/StageCard`、`dungeon/ActorCard`），所以横竖同尺寸、
- * 措辞同来源；场景卡与开场房一样可点开「场景信息」全文。
- *
- * **进入战斗房间自动初始化一次**（与开场房间同一套）：用 ref 记住已触发过的战斗，StrictMode 下
- * effect 跑两次、或轮询重渲染都不会重复发任务；失败不自动重试——「开始」那颗按钮就是重试入口。
- * 所以本屏会先短暂显示「准备中…」，初始化成功后变成「开始」。
- *
- * **开始卡是本屏唯一的动作**：初始化完成后点它开启**第一回合**（`draw`）。若 init 还没成功
- * （失败后重试那条路），点它会先补 `init`、成功后由 `startRequested` effect 接上 `draw`——总之
- * 一次点击落到第一回合；开局后（已有回合）它改成「开始新回合」，同一个动作、继续下一轮。
- *
- * 卡片只留**必要信息**：名字 + 身份 + 一行 `hp / attack / defense`。能量 / 手牌 / 格挡在开局前全是 0，
- * 先不显示——行动面板那张卡的第二行（`能量 · 手牌 · 总格挡`）就是从这里接下来的，两屏的第一行
- * 因此是**同一份数字**（`characterStatsText(stats, true)`）。**敌人卡与队伍卡一样整卡可点开角色信息浮窗**
- * （`ActorInfoDialog`，副本内不提供穿 / 脱时装）——怪物也是可查阅的实体（身份 / 属性；没有外观
- * 组件就显示占位）。
+ * 进入房间自动初始化一次（不重试）；「开始」是唯一动作：点它开第一回合（init 未成则先补 init 再开）。
+ * 卡片只留名字 + 身份 + 一行 `hp/attack/defense`；敌我双方整卡都可开角色信息浮窗。
  */
 export default function CombatSetupPanel({
   userName,
@@ -63,8 +49,7 @@ export default function CombatSetupPanel({
   const initStart = actions.init.start;
   const draw = actions.draw.start;
 
-  // 自动初始化只对「本战场」触发一次：ref 记住已触发过的战斗，StrictMode 下 effect 跑两次、
-  // 或轮询导致重渲染都不会重复发任务；失败后不自动重试，改由「开始」那颗按钮手动重试。
+  // 自动初始化只对本战场触发一次（ref 挡住 StrictMode 双跑与轮询重渲染）；失败不重试
   const autoInitRoom = useRef<string | null>(null);
   useEffect(() => {
     if (combat.state === COMBAT_STATE.ONGOING || autoInitRoom.current === combat.name) {
@@ -74,8 +59,7 @@ export default function CombatSetupPanel({
     initStart();
   }, [combat.name, combat.state, initStart]);
 
-  // 点过一次「开始」但 init 还没落地：init 成功（state 变 ONGOING）后由下面的 effect 补发 draw。
-  // 用 ref 记住"玩家想开局"这个意图，而不是让按钮连点两次。
+  // 点过「开始」但 init 还没落地：init 成功后再补发 draw（记住意图，而不是让按钮连点两次）
   const startRequested = useRef(false);
   useEffect(() => {
     if (!startRequested.current || combat.state !== COMBAT_STATE.ONGOING) {
@@ -119,7 +103,7 @@ export default function CombatSetupPanel({
               name={combatant.name}
               badge={roleLabel(combatant)}
               stats={combatant.stats}
-              // 还没开打：对方的攻 / 防直接影响"先打谁 / 要不要打"，所以这一屏连它一起给
+              // 开局前也显示攻防（决定先打谁）
               showAttackDefense
               onOpenInfo={() => setInfoActor(combatant.name)}
             />
@@ -127,7 +111,7 @@ export default function CombatSetupPanel({
         </section>
 
         <section className="stage-row" aria-label="场景描述">
-          {/* 与开场房共用同一张场景卡：就绪态点整张卡看全文（场景信息浮窗） */}
+          {/* 与开场房共用同一张场景卡 */}
           <StageCard
             state="ready"
             name={stageName}
@@ -153,7 +137,7 @@ export default function CombatSetupPanel({
               name={combatant.name}
               badge={roleLabel(combatant)}
               stats={combatant.stats}
-              // 还没开打：对方的攻 / 防直接影响"先打谁 / 要不要打"，所以这一屏连它一起给
+              // 开局前也显示攻防（决定先打谁）
               showAttackDefense
               onOpenInfo={() => setInfoActor(combatant.name)}
             />

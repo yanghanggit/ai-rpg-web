@@ -5,26 +5,11 @@ import { readCardMarks } from "./cardMarks";
 import type { Card, CardTargetType } from "./types";
 
 /**
- * 卡牌 · 客户端设计语言（唯一实现）
+ * 卡牌 · 客户端设计语言（唯一实现）。
  *
- * 后端 `models/card.py::Card` 的字段分三类，卡面据此分三块，**同类用同一种视觉**：
- * - **身份**：`name`（卡名）/ `uuid`；`source` 单独一行。
- *   **叙述 `description` 不进卡面**：卡面上留给数值与标记，全文在卡牌详情（`CardDetailDialog`）
- *   的「说明」一节里读——牌面上那句话只够塞下两行，读起来又占掉半张卡。
- * - **数值**：`cost` / `damage` / `hit_count` / `block` / `target_type` / `self_target` → 一行 `statsText`，
- *   `hit_count` 写在 `目标` 之后（`段数 ×N`），且**只在多段（`hit_count > 1`）时出现**——
- *   单段是绝大多数牌的常态，写出来只是噪声；省掉它，多段牌才一眼可辨。它是**显式数值**，不占
- *   标记行——标记行只放"某时机触发的词缀"与"要留意的布尔属性"。
- * - **标记（词缀）** → 一律是 chip（`.affix-chip`），排在同一行 `.card-tile-marks`：
- *   三种时机的自由文本词缀（绿 / 红 / 黄）与五个布尔属性（橙 / 蓝 / 紫 / 灰 / 青）。
- *   两者在 `cardMarks.ts` 里合成同一个 `CardMark` 形状，所以**卡面、tooltip、详情右栏
- *   用的是同一份列表**——不会出现"某一处漏了一枚"。
- *
- * **点标记 = 问"这是什么"**（`onMarkClick` 不给时）：弹一枚 `CardMarkTip` 说明它。
- * 布尔与时机词缀行为完全一致——以前只有时机词缀可点、布尔没反应，是不统一的来源。
- *
- * **`transferable` 是"牌属性"，`【塞牌】` 是"牌与持有者的关系"**：后者不进卡面（此时主体就是这张卡），
- * 只挂在 ActorCard 一侧。`source` 只在"不是持有者的牌"时才显示，且用 `--transfer` 色强调。
+ * 卡面分三块：身份（名字 / `source`）、数值行（`statsText`）、标记行——三种时机词缀与五个布尔属性
+ * 都渲染成同一排 chip，`description` 不进卡面（全文在 `CardDetailDialog`）。点标记弹 `CardMarkTip`
+ * （`onMarkClick` 不给时）。`transferable` 是牌属性，`【塞牌】` 不进卡面，只挂在角色卡一侧。
  */
 
 /** 目标类型 → 界面说法；`self_target` 的卡不看这个（统一显示「自身」）。 */

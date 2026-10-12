@@ -1,19 +1,9 @@
 /**
- * 会话消息（叙事）的增量拉取。
+ * 会话消息（叙事）的增量拉取：记住已收到的最大 `sequence_id` 作游标，用 `/since` 只拉新增，
+ * 再 `mergeSessionMessages` 合并（重复 / 乱序都安全）。
  *
- * 契约：`GET /api/session_messages/v1/{user_name}/{game_name}/since?last_sequence_id=N`
- * 返回 `sequence_id > N` 的消息。客户端记住已收到的最大 `sequence_id` 作为游标，
- * 每轮只拉新增部分，再用 `mergeSessionMessages` 合并——因此重复、乱序都不会出错。
- *
- * 同步策略（与 TUI 一致）：
- * - 会话消息是「可增量、幂等、有水位线」的拉取型资源，用一次性 `/since` 端点即可，
- *   不需要 SSE 长连接（旧 `/stream` 端点已从后端移除）。
- * - 无操作时用 `refetchInterval` 定时兜底；任务到终态（如 `useHomeAdvance` 的成功点）
- *   用 `invalidateQueries` 立即拉一次，不必等定时器到点。
- *
- * 注意：游标进了 queryKey（`[method, path, params]`），所以每前进一次会产生一个新的
- * 缓存条目（旧的由 gcTime 回收）。想按"整个会话消息资源"失效时，用
- * `["get", SESSION_MESSAGES_PATH]` 做前缀匹配。
+ * 无操作时靠 `refetchInterval` 兜底，任务终态由调用方 `invalidateQueries` 立即拉一次。
+ * 游标在 queryKey 里，按资源失效用前缀 `["get", SESSION_MESSAGES_PATH]`。
  */
 import { useEffect, useState } from "react";
 import { $api } from "../../api/query";
@@ -33,12 +23,9 @@ export function useSessionMessages(
   gameName: string,
   pollIntervalMs: number = DEFAULT_POLL_INTERVAL_MS,
 ) {
-  // 累积的消息连同"属于哪个会话"一起存：切换会话时下面的 messages 自动回到空数组，
-  // 于是游标归零、重新拉全量历史——不需要额外 effect 去清空（渲染期派生，React 推荐写法）。
-  //
-  // `hasLoaded` 表示"当前会话的累积已经吸收过至少一次响应"。不能拿 `isPending` 代替：
-  // 合并是在下面的 effect 里完成的，所以 `isPending` 变 false 的那一帧 messages 还是空的，
-  // 调用方（如未读计数）会据此把基线记错。
+  // 累积消息连同「属于哪个会话」一起存：切会话时自动归零、重拉全量（渲染期派生，无需清空 effect）。
+  // `hasLoaded` 不能拿 `isPending` 代替：合并发生在 effect 里，isPending 变 false 的那一帧 messages
+  // 还是空的，调用方会把未读基线记错。
   const session = sessionKey(userName, gameName);
   const [accumulated, setAccumulated] = useState<{
     session: string;

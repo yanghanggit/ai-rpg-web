@@ -46,12 +46,8 @@ function RoundFacts({ index, round }: { index: number; round: Schemas["Round"] }
 }
 
 /**
- * 一阵营一段名单（只读）：名字**横着排、自动换行**，战死的名字置灰 + 挂一颗「已战死」。
- *
- * 宏观信息只要"谁在场、谁死了"——名字 + 生死标记就够，**不铺血量攻防 / 能量 / 牌堆那一套**
- * （那是行动面板的事，而且每回合都在变）。也**不标"当前行动"**：下面「全部回合」里那条
- * `当前行动` 本来就从 `Round` 读出来，再挂一个会过期的说法是同一个信息说两遍。
- * 没人就不出这一段（与「牌组一览」同）。
+ * 一阵营一段只读名单：名字横排自动换行，战死的置灰 + 挂「已战死」。
+ * 只讲「谁在场、谁死了」，不铺血量攻防；也不标「当前行动」（下面 `Round` 里已有）。
  */
 function CampSection({ label, members }: { label: string; members: Combatant[] }) {
   if (members.length === 0) {
@@ -76,23 +72,10 @@ function CampSection({ label, members }: { label: string; members: Combatant[] }
 }
 
 /**
- * 「战斗信息」浮窗：把战斗的宏观状态、**双方参战者**与**全部回合**的 `Round` 数据一次列出来
- * （字段对齐 `models/combat.py::Round`），对应 TUI `/round` 的逐回合视角。
+ * 「战斗信息」浮窗：战斗宏观状态 + 双方参战者 + 全部回合的 `Round`。
  *
- * 由战斗房 ⚙「副本操作」菜单里的「战斗信息」一行打开（`RoomActionsDialog` 回调 → `RoomScaffold`
- * 的 `pane` 切到这层）。战斗的宏观状态原本是战斗页顶部的一排 chip，现在收进菜单里，战斗页本身
- * 只留"现在该做什么"；**初始化 / 回合开始 / 行动 / 结算哪个 phase 都能开**（只依赖战斗数据在不在）。
- *
- * 参战者按**阵营**分两段，一段一行：名字 + 是否战死。这不只是分组——`DeathComponent` 在数据里
- * 只是有无之分，谁死谁活要对着名单读，而"死了几只"正是复盘第一眼要看的。所以这里**刻意不筛掉
- * 死者**（行动面板那份要筛）。
- *
- * 快照自己取（`useCombatScene`，与房间页同一个 query key，所以命中缓存、不会多发一次请求）：
- * 这一层挂在 `RoomScaffold` 上，而快照的持有者 `CombatRoomPanel` 在它的 `children` 里，
- * 拿不到——所以由浮窗自己问，而不是把参战者从下面往上提。
- *
- * 它自己就是一层浮窗：菜单点它时已经关了菜单再开它（对照 docs/pages.md「同类切换不叠第三层」），
- * 所以这里不需要 `DeckBrowserDialog` 那种关层守卫。
+ * 由战斗房 ⚙「副本操作」的「战斗信息」一行打开，任何 phase 都能开。参战者按阵营分两段，
+ * 刻意不筛死者（行动面板那份才筛）。快照自己取（与房间页同一 query key，命中缓存）。
  */
 export default function CombatInfoDialog({
   userName,
@@ -109,8 +92,7 @@ export default function CombatInfoDialog({
   const scene = useCombatScene(userName, gameName, room);
   const combat = room.combat;
 
-  // 阵营判据与 `classifyFaction` 一致（玩家 / NPC → 我方，怪物 → 敌方）。认不出的那些也算我方：
-  // 分错了只是排错段，被藏起来才会真丢信息，所以两边用「非怪物 / 是怪物」而不是正反两个枚举。
+  // 阵营判据与 `classifyFaction` 一致：认不出的算我方（分错只是排错段，藏起来才会丢信息）
   const camps = [
     {
       label: "我方",
@@ -144,7 +126,7 @@ export default function CombatInfoDialog({
         <p className="error">无法获取参战者：{describeApiError(scene.error)}</p>
       ) : null}
       {scene.combatants.length === 0 ? (
-        // 名单还没回来（或这一间确实没人）：说法与别处的参战者名单一致
+        // 名单还没回来（或这间确实没人）
         <p className="muted">{scene.isPending ? "加载参战者…" : "场景内暂无参战者。"}</p>
       ) : (
         camps.map((camp) => (

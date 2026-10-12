@@ -15,14 +15,8 @@ export const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
 const FLAG_GROUP = "标记";
 
 /**
- * 布尔标记：`hint` 是**前端自带的展示文案**。
- *
- * 后端 `models/card.py` 只有 `true/false`，说明文字留在字段注释与
- * `BUILD_CARD_FIELD_DESCRIPTION` 里、不下发；所以这份文案是**镜像**，不是规则实现
- * ——后端改了机制就回来对齐（对齐一次的成本远低于为此改接口）。
- *
- * 极性**逐项写死**，不用一张「布尔 → 标签」的表：`playable` 是 false 才标（它是"出不了牌"的
- * 警告），其余四个是 true 才标；用表会把这个差异藏起来。
+ * 布尔标记：`hint` 是前端自带文案（后端只下发 `true/false`，说明写在字段注释里，后端改了机制要回来对齐）。
+ * 极性逐项写死：`playable` 是 `false` 才标，其余四个是 `true` 才标。
  */
 const FLAG_SPECS: {
   key: string;
@@ -69,14 +63,8 @@ const FLAG_SPECS: {
 ];
 
 /**
- * 卡面上的一个**标记**：chip 要的那份 + 说明要的那份。
- *
- * 布尔标记与时机词缀合成同一个形状，这样卡面、tooltip、卡牌详情右栏三处**用的是同一份列表**
- * ——哪一处漏了、两处叫法不同，都会在类型上直接暴露，而不是靠肉眼比对。
- *
- * **命中段数（`hit_count`）不是标记**：它是数值，写在卡面数值行（`CardItem::statsText`）的
- * `目标` 之后（**单段省略，只有多段才写**），不占词缀 / 布尔那排 chip
- * （那是"某时机触发"与"要留意的属性"的地盘）。
+ * 卡面上的一个标记：chip 与说明共用同一份（卡面 / tooltip / 详情右栏）。
+ * `hit_count` 不是标记——它在数值行。
  */
 export interface CardMark {
   /** 稳定标识：卡面与详情右栏算出来必须一致，详情据此定位高亮。 */
@@ -91,12 +79,7 @@ export interface CardMark {
   hint: string;
 }
 
-/**
- * 这张卡身上**全部**要显示的标记：布尔在前、三种时机词缀在后（顺序就是卡面的顺序）。
- *
- * 布尔只列**"开了"的那些**——它们是"要留意的事"，不是收益，没开就不该占位置。
- * （命中段数不在这个列表里，它属于数值行。）
- */
+/** 这张卡身上全部要显示的标记：布尔在前、三种时机词缀在后（即卡面顺序）。 */
 export function readCardMarks(card: Card): CardMark[] {
   const flags: CardMark[] = FLAG_SPECS.filter((spec) => spec.shown(card)).map((spec) => ({
     id: `flag:${spec.key}`,

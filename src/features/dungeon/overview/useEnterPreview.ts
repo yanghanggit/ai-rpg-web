@@ -1,18 +1,8 @@
 /**
- * 「进入副本」确认浮窗的取数编排。
+ * 「进入副本」确认浮窗的取数编排：队伍 + 背包 + 名单都在一次 details 里取。
  *
- * 点验需要三样东西，而它们**在一次 details 里就能全拿到**（后端 `serialize_entities`
- * 返回实体的全部组件）：
- * - 队伍：玩家 + `PartyRosterComponent.members` 逐个角色实体 → `features/roster` 的 `readPartyMember`；
- * - 背包：玩家实体的 `InventoryComponent`；
- * - 名单本身：`features/roster` 的 `usePartyRoster`。
- *
- * details 的实体名依赖名单，所以等名单查询成功后再发（与 `items/useItemContainers`
- * 等储物箱名字解析出来再查 details 是同一个模式），避免用空名单先发一次无用请求。
- *
- * 道具的读取复用 `features/items` 的 `readItems`：`InventoryComponent` 的解析规则
- * 只该有一份，复制第二份等于把「读组件的 `data`」这件事写错两次的机会翻倍
- * （单向依赖，items 不依赖 dungeon，不构成环）。见 docs/conventions.md 三。
+ * details 依赖名单，所以等名单查询成功后再发。道具解析复用 `features/items` 的 `readItems`，
+ * 不复制第二份。玩家排在队伍最前。
  */
 import { $api } from "../../../api/query";
 import { COMPONENT } from "../../entities/componentNames";
@@ -37,7 +27,7 @@ export function useEnterPreview(userName: string, gameName: string, playerActor:
     { enabled: roster.isSuccess },
   );
 
-  // 保持「玩家 → 名单顺序」，不重新排序；查不到的实体直接跳过（名字失效时页面还能用）
+  // 保持「玩家 → 名单顺序」，查不到的实体跳过
   const byName = new Map(
     resolveEntities(details.data?.entities ?? {}).map((entity) => [entity.name, entity]),
   );

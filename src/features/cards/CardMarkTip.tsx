@@ -6,21 +6,11 @@ const MARGIN = 8;
 const GAP = 8;
 
 /**
- * 标记说明小浮层（tooltip）：点卡面上的**词缀或布尔标记**时回答"这是什么"。
+ * 标记说明小浮层（tooltip）：点卡面的词缀 / 布尔标记时说明它。
  *
- * **为什么不用 CSS 气泡（`:hover::after`）**：战斗手牌在 `overflow-x: auto` 里、外面那层
- * `.combat-hand` 还 `overflow: hidden`——挂在 chip 上的气泡会被**裁掉**。所以这里走
- * `position: fixed` + 量出来的坐标，天然不受祖先裁剪影响（代价是要自己管关闭时机）。
- *
- * 位置：优先贴在标记**上方**（上方放不下就翻到下方），水平以标记为轴居中、再夹进视口。
- * 宽度得等渲染出来才知道，所以先渲染到 `(0,0)`、在 `useLayoutEffect` 里量到再摆：
- * layout effect 在浏览器绘制**之前**跑完，所以不会真的闪一下（也不需要 `visibility` 先去隐）。
- *
- * 关闭时机：点浮层外部 / ESC / 页面滚动（含手牌那条横向滚动）。它只是"看一眼"的东西，
- * 不该在页面上粘住——所以由 `CardItem` 持状态，不上升成浮窗层级。
- *
- * 外部关闭听的是 **`mousedown`** 而不是 `click`：它比 click 早一步，所以"点另一枚 chip"会
- * 先关旧的、再由那枚 chip 的 onClick 开新的，不需要额外判"这是不是自己人"。
+ * 走 `position: fixed` + 量出的坐标，避免被手牌那层 `overflow` 裁掉。优先贴上、放不下翻下方，
+ * 水平夹进视口。点外部 / ESC / 滚动即关；外部关闭听 `mousedown`（早于 click），
+ * 这样点另一枚 chip 会先关旧的、再开新的。
  */
 export default function CardMarkTip({
   id,
@@ -65,8 +55,7 @@ export default function CardMarkTip({
         onClose();
       }
     };
-    // 点浮层之外的地方即关。用 `mousedown`（早于 click）：这样点**另一枚 chip** 时，
-    // 先关掉旧的、再由那枚 chip 自己的 onClick 开新的，不必在这里判"是不是同一张卡"。
+    // 点浮层之外即关。用 `mousedown`（早于 click）：点另一枚 chip 会先关旧的、再开新的
     const handleMouseDown = (event: MouseEvent) => {
       const target = event.target;
       if (target instanceof Node && tipRef.current?.contains(target)) {

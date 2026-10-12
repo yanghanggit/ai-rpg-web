@@ -17,24 +17,10 @@ import ItemManagerDialog from "../features/items/ItemManagerDialog";
 import RosterPanel from "../features/roster/RosterPanel";
 
 /**
- * 副本总览页：**宏观阅览副本 + 做准备 + 决定是否进入**，不承担副本内的流程。
+ * 副本总览页（备战）：生成副本、查阅静态模型、整理队伍与行装，决定是否进入。
  *
- * 所以这里只有三类事：生成副本、查阅副本的静态模型数据、出征前的准备
- * （队伍名单、整理行装）。「进入副本」是这一步的**终点**——发起成功即切到**副本地图**
- * （`/dungeon/map`，**房间之间那一站**：刚进入副本、以及某个房间结束后都落在那里），页面的职责到此为止。
- *
- * 内容：
- * - 「生成新副本」→ `POST /api/home/generate_dungeon/v1/`（异步 job，等任务完成再刷新列表）；
- * - 「可用副本」卡片 → `GET /api/home/dungeon-list/v1/`（磁盘上的静态模型数据）：
- *   点卡片主体打开 `DungeonMapDialog`（地图）查阅（对应 TUI 的 `/list-dungeons` + `/dungeon @名`），
- *   点「进入副本」打开 `EnterDungeonDialog` 做最终确认（队伍 + 背包 + 确认）；
- * - 队伍名单 → `PartyRosterComponent` 的 add / remove；**点角色名打开 `ActorInfoDialog`**，
- *   与家园页「点角色 chip 看信息」是同一套流程（连穿/脱时装的两级浮窗也一并接上）；
- * - 「道具管理」→ `ItemManagerDialog` 的**移动版**（`craftEnabled={false}`）：
- *   出征前只整理行装（背包 ↔ 储物箱），不合成——合成必须在家园做。
- *
- * 页面是组合层：玩家名、浮窗开关、「进入成功后跳哪」都由页面接线
- * （features 之间不互相依赖，`onSelectActor` / `onConfirm` 都是回调）。
+ * 「进入副本」是终点——成功即切到地图（房间之间那一站）。页面只做组合与接线（浮窗开关、进入成功后
+ * 跳哪），features 之间不互相依赖。副本进行中时本页只剩一个回房间的兜底入口。
  */
 export default function DungeonOverviewPage() {
   const { userName, gameName } = useParams();
@@ -62,20 +48,16 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
 
   // 正在查阅的副本（原始名）；非空即打开「地图」浮窗
   const [infoDungeon, setInfoDungeon] = useState<string | null>(null);
-  // 正在确认进入的副本（原始名）；非空即打开进入确认浮窗
   const [enterTarget, setEnterTarget] = useState<string | null>(null);
-  // 正在查看的角色（原始名）；非空即打开角色信息浮窗
   const [infoActor, setInfoActor] = useState<string | null>(null);
-  // 是否叠出「选择时装」的二级浮窗
   const [isCostumeOpen, setIsCostumeOpen] = useState(false);
-  // 是否打开「道具管理」浮窗
   const [isItemsOpen, setIsItemsOpen] = useState(false);
 
-  // 生成副本与其他家园动作共用同一条 pipeline，同一时间只允许一个在跑
+  // 生成副本与其他家园动作共用同一条 pipeline
   const isBusy = generate.isStarting || generate.isRunning;
   const costumeBusy = costume.isStarting || costume.isRunning;
   const dungeonRun = run.data ?? null;
-  // 浮窗是纯展示组件，副本对象由页面给：从列表缓存里按名字取（后端没有「查单个副本」的接口）
+  // 浮窗是纯展示组件，副本对象由页面从列表缓存里按名字取（后端没有「查单个副本」接口）
   const infoDungeonData = dungeons.data?.find((item) => item.name === infoDungeon) ?? null;
 
   let generateLabel = "生成新副本";
@@ -90,11 +72,7 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
       <h1>副本</h1>
 
       <div className="toolbar">
-        {/* 副本进行中时，第一优先是回到那一屏，而不是再发起新的进入 */}
-        {/* 副本进行中时总览页其实无事可做（家园接口全被拒、生成副本也被 setup 挡住），
-            这个入口只是“异常落点”的兜底：玩家用返回键/地址栏才能站在这里。
-            落点是**队伍所在的那间房**：房间在“位置”上是只读的，但它可能就是你还站着领战利品 /
-            候选奖励的那一间；要前进再去它自己的结束动作（-> 地图）。 */}
+        {/* 副本进行中时总览页无事可做，这个入口只是异常落点的兜底（返回键 / 地址栏）；落点是队伍所在的那间房 */}
         {dungeonRun?.active ? (
           <button
             type="button"
@@ -155,9 +133,7 @@ function DungeonOverview({ userName, gameName }: { userName: string; gameName: s
           error={enterDungeon.isError ? describeApiError(enterDungeon.error) : null}
           onConfirm={() => {
             enterDungeon.mutate(enterTarget, {
-              // 成功即离开本页：玩家的场景已经变成副本第一关，这里已经没有可做的事。
-              // 落点是**地图**（房间之间那一站）：先看到"本次副本有哪几间"，再自己走进第 1 间。
-              // 用 replace：副本内没有“后退”（见 DungeonMapPanel）
+              // 成功即离开本页，落点地图；replace：副本内没有后退
               onSuccess: () =>
                 navigate(`/game/${userName}/${gameName}/dungeon/map`, { replace: true }),
             });

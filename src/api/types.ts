@@ -1,9 +1,6 @@
 /**
- * 从 OpenAPI 生成物（schema.d.ts）派生"可命名类型"的工具类型。
- *
- * 说明：请求/响应类型现在由 openapi-fetch / openapi-react-query 在调用点自动推导，
- * 这里只保留确实需要显式命名的场合（组件 props、领域函数签名）。
- * 不留无人使用的工具类型：需要时再加回来是一行的事。
+ * 从 OpenAPI 生成物派生的工具类型：只保留需要显式命名的场合（组件 props / 领域函数签名）。
+ * 请求 / 响应类型由 openapi-fetch 在调用点自动推导。
  */
 import type { components, paths } from "./schema";
 

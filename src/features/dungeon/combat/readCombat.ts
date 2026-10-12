@@ -1,15 +1,9 @@
 /**
- * 战斗房间的战斗单位读取（纯函数，无 React / 网络）。
+ * 战斗单位读取（纯函数）。
  *
- * 战场状态不是一条接口直接给出来的：`Round` 只记「发生了什么」（日志 / 叙事 / 行动顺序），
- * 血量、能量、手牌、格挡、牌堆都挂在**实体组件**上（队伍从 `PartyMemberComponent` 取、
- * 怪物从房间场景取，再 `entities/v1/.../details` 取组件）。
- *
- * 组件的存在性 / 字段读取 / 属性解析统一走 `features/entities/ecs`；这里只保留
- * 「战斗界面要看哪些字段」的领域选择（阵营 / 手牌 / 牌堆 / 格挡）与展示口径，对齐 TUI：
- * - 阵营 `classify_faction`（`cmd_combat.py`）：玩家 / NPC → 我方，怪物 → 敌方；
- * - 总格挡 `compute_hand_block`（`models/utils.py`）：手牌 `block` 求和；
- * - 牌堆**内容**（不只张数）：抽牌堆浮窗要列出这一撑到底是哪些牌。
+ * `Round` 只记「发生了什么」，血量 / 能量 / 手牌 / 格挡 / 牌堆都挂在实体组件上（队伍走
+ * `PartyMemberComponent`、怪物走房间场景）。组件访问走 `features/entities/ecs`，这里只做战斗
+ * 界面的领域选择与展示口径：阵营、手牌、牌堆、格挡。
  */
 import type { Schemas } from "../../../api/types";
 import { readCards } from "../../cards/readCards";
@@ -30,13 +24,8 @@ export type Faction = "party" | "monster" | "unknown";
 export type CombatPileKind = "draw" | "discard" | "exhaust";
 
 /**
- * 三个牌堆里的牌（空堆 = 空数组）。
- *
- * 存的是**整张卡**而不是张数：界面上的三个牌堆都是按钮，点开要列出这一撑的牌，
- * 张数由 `cards.length` 直接得出（不再单独存一份计数，两者就不会对不上）。
- *
- * 顺序照抄服务端给的数组——抽牌堆是 **FIFO**（第一张就是下一张会摸到的），
- * 弃牌 / 消耗堆是追加顺序（最近进的排最后）。
+ * 三个牌堆里的牌（空堆 = 空数组）。存整张卡而不是张数，张数由 `cards.length` 得出。
+ * 顺序照抄服务端：抽牌堆是 FIFO，弃牌 / 消耗堆是追加顺序。
  */
 export type CombatPiles = Record<CombatPileKind, Card[]>;
 
@@ -97,12 +86,7 @@ export function countOnHitAffixes(combatant: Combatant): number {
   return combatant.hand.reduce((total, card) => total + card.on_hit_affixes.length, 0);
 }
 
-/**
- * 一张牌是不是「**我方塞到敌方手里**」的：持牌者是敌方（怪物），而 `source` 是我方成员。
- *
- * 我方成员自己手里的牌（哪怕 `source` 也是我方）**不算**——那是本家牌，不是
- * "塞牌"（界面标 [塞牌]）。这是给当前决策者看的一个信号：对手手里有没有、有几张是我方塞过去的。
- */
+/** 一张牌是不是「我方塞到敌方手里」的：持牌者是怪物、`source` 是我方成员。 */
 export function isTransferredCard(card: Card, owner: Combatant, combatants: Combatant[]): boolean {
   if (owner.faction !== "monster") {
     return false;
@@ -116,16 +100,8 @@ export function countTransferredCards(combatant: Combatant, combatants: Combatan
 }
 
 /**
- * 选中的这张牌、在名单里该被"压下"（选中）的目标（原始名）。
- *
- * - `self_target` → 出牌者自己；
- * - `single` → 玩家点中的那一个锚点；
- * - `all`（阵营全体）/ `spread`（阵营散射）→ **锚点所在阵营的全体存活者**。
- *
- * `all` / `spread` 的“阵营”与服务端 `resolve_targets` 里 `_expand_camp_members` 同一口径
- * （取锚点的 `PartyMemberComponent` / `MonsterComponent`）：所以客户端能**提前把整个阵营算出来**，
- * 直接给整阵营挂上选中态；发请求时仍只发那一个锚点（服务端要求恰好一个锚点）。
- * `spread` 与 `all` 的差别只在结算（命中在阵营内随机）与文案，不在选中集合。
+ * 选中的牌在名单里该被「压下」的目标（原始名）：`self_target` → 自己；`single` → 锚点；
+ * `all` / `spread` → 锚点所在阵营的全体存活者。`spread` 与 `all` 的差别只在结算与文案。
  */
 export function readTargetNames(
   card: Card,

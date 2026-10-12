@@ -1,13 +1,6 @@
 /**
- * 离开副本（`POST /api/dungeon/exit/v1/`）。
- *
- * **任务接口**：只返回 `job_id`，真正的退出由后端任务完成（`execute_exit_dungeon_task`）——
- * 队伍被传回家园场景、`PartyMemberComponent` 摘掉、满血恢复、死亡组件移除，
- * 最后 `teardown_dungeon` 把 `world.dungeon` 重置回空副本。
- * **「回家」发生在任务内部**，所以页面只要在终态后跳家园页——拿到 `job_id` 不等于已退出。
- *
- * 等待与失效交给 `src/api/useJobAction.ts`（见 docs/api-layer.md 六）；
- * 终态后要由页面跳转，所以额外给出 `isExited`。
+ * 离开副本（`POST /api/dungeon/exit/v1/`）：任务接口，只返回 `job_id`。真正的退出（队伍回家园、
+ * 副本拆掉）在任务内部完成，所以页面在终态后跳家园页。
  */
 import { client, unwrap } from "../../api/client";
 import { useJobAction } from "../../api/useJobAction";
@@ -23,8 +16,7 @@ export function useExitDungeon(userName: string, gameName: string) {
         }),
       ),
     onCompleted: (queryClient) => {
-      // 副本这一侧：副本已被拆掉（状态回到空副本、当前房间没了）；
-      // 家园这一侧：队伍成员已被传回家园场景，并追加了退出叙事。
+      // 副本已被拆掉，队伍已被送回家园
       invalidateDungeons(queryClient);
       invalidateHomeState(queryClient, userName, gameName);
     },
@@ -40,5 +32,5 @@ export function useExitDungeon(userName: string, gameName: string) {
   };
 }
 
-/** 这个 hook 的形状（页面持有它、传给 `RoomScaffold`，顺便也给房间的结束动作调 `start`）。 */
+/** 这个 hook 的形状（页面持有它，传给 `RoomScaffold`）。 */
 export type ExitDungeon = ReturnType<typeof useExitDungeon>;

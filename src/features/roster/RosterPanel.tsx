@@ -4,20 +4,10 @@ import { useRosterAction } from "./useRosterAction";
 import { useRosterCandidates } from "./useRosterCandidates";
 
 /**
- * 「队伍名单」面板（队伍编成领域 `features/roster` 的展示入口）。
+ * 「队伍名单」面板（roster 领域的展示入口）：当前队伍在上、可加入的同伴在下，同一卡片栅格。
  *
- * 名单是进入副本前的预选同伴（`PartyRosterComponent`，挂在玩家实体上），为空即独自冒险。
- * 候选口径是「持 `NPCComponent` 且不是玩家」——玩家的蓝图类型往往也是 NPC，
- * 所以候选查询带了 `none_of=PlayerComponent`。
- *
- * 两段内容**上下排**：当前队伍在上、可加入的同伴在下（与「道具管理」的
- * 背包 / 储物箱同一思路），而不是左右两栏——左右分栏会让两侧长度不均衡。
- *
- * 两段都用**同一种卡片栅格**（尺寸与「可用副本」卡片一致）：窄屏单列、宽屏一行多张。
- *
- * 卡片主体是**名字按钮**，点它打开角色信息浮窗（`ActorInfoDialog`）——与家园页
- * 「点角色 chip 看信息」是同一套流程；「加入 / 移出」是独立的操作按钮，不嵌套在名字里。
- * 具体打开哪个浮窗由页面负责（`features/` 之间不互相依赖，`onSelectActor` 是回调）。
+ * 名单是 `PartyRosterComponent`；候选是「持 `NPCComponent` 且不是玩家」。卡片主体是名字按钮
+ * （回调交给页面开角色信息浮窗），「加入 / 移出」是独立按钮。
  */
 export default function RosterPanel({
   userName,

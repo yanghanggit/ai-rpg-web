@@ -3,27 +3,12 @@ import { characterStatsText } from "../characterStatsText";
 import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } from "./readCombat";
 
 /**
- * **行动面板（turn）的**参战者一览（横向滚动）：一格里放身份 / 名字 + 两行数字 + 卡底一个入口。
- * 数字两行与**开局准备屏**（`CombatSetupPanel`）刻意读成同一张卡：
- * 1. `hp x/y · attack n · defense m`（`characterStatsText(stats, true)`，与准备屏同一个出口）；
- * 2. `能量 n · 手牌 n · 总格挡 n`（第二行只有这一屏有——准备屏时这三个都是 0，不值得占行）。
- * 卡底那颗按钮 = `[被动] N`（敌方再加 `[塞牌] M`）：手牌数已经上了第二行，所以词缀槽就是这颗
- * 按钮的"图标"，点它看这个角色的手牌明细。
- * （结算页那份紧凑只读名单是 `CombatRoster`，两处**故意分开**：turn 的名单要承担排序与选目标，
- * 结算页暂时保持原样、后续再单独演化。）
+ * 行动面板（turn）的参战者一览（横向滚动）：一格里放身份 / 名字 + 两行数字 + 卡底入口。
  *
- * **名单本身就是行动顺序**：给了 `order`（当前回合的 `action_order`）就按它排——已行动
- * （`completed`）置灰、当前行动加绿框、其余读作「待行动」，所以不再单独画一条顺序条。
- *
- * 两个动作、两层含义：
- * - **整张卡**用铺满卡面的透明按钮实现（与 `ActorCard` 的 `actor-card-open` 同一手法）：
- *   选目标态（`picking`）下点卡 = 选中 / 取消它作为手牌目标（**不直接出牌**）；其余时候点卡 = 开角色信息（`onOpenInfo`）。
- *   被选中命中集里的卡（`targets`，`all` / `spread` 是整阵营）**下移**，与手牌选中时的**上移**成对（"提牌、压目标"）。
- * - **卡底那行平铺的文本**（没有按钮外框，词缀槽也不带 chip 圆角底色，仍整行可点）= 看这个角色的手牌（`onOpenHand`）：
- *   `[被动] N`（手牌里「被命中时」词缀的条数）+（仅敌方）`[塞牌] M`（手牌里来自我方阵营的牌数），
- *   保留红 / 青的文字色；具体是哪张、什么词缀，点开手牌细看。
- *
- * 名字显示走 `displayName`（`怪物.石像鬼` → `石像鬼`），但 key / 比较一律用原始名。
+ * 第一行数字与开局准备屏同一份（`characterStatsText(stats, true)`），第二行是本屏独有的
+ * `能量 · 手牌 · 总格挡`。名单按 `order`（当前回合 `action_order`）排，本身就是行动顺序：
+ * 已行动置灰、当前绿框、其余待行动。整卡点击 = 选目标（`picking`）或开角色信息；卡底那行
+ * = 看该角色手牌（`[被动] N`，敌方另加 `[塞牌] M`）。名字显示走 `displayName`，key 用原名。
  */
 export default function CombatActionRoster({
   combatants,
@@ -121,8 +106,7 @@ export default function CombatActionRoster({
                 能量 {combatant.energy} · 手牌 {combatant.hand.length} · 总格挡 {combatant.block}
               </span>
             </p>
-            {/* 卡底常驻按钮：看这个角色的手牌（明细点开细看）。手牌数已经上了第二行，
-                所以这里只剩词缀槽——它们就是这颗按钮的"图标"；「[塞牌]」只有敌方才有意义。 */}
+            {/* 卡底常驻按钮：看该角色手牌；手牌数已在第二行，词缀槽就是它的「图标」 */}
             <button
               type="button"
               className="combatant-card-hand"

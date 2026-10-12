@@ -1,25 +1,8 @@
 /**
- * 按 `IdentityComponent.creation_order` 给实体排序（纯函数）。
+ * 按 `IdentityComponent.creation_order` 给实体名排序（纯函数）。
  *
- * ## 为什么需要它
- *
- * `StagesStateResponse.actors_by_stage` 只给「场景 → 角色名」两组名字，**不带顺序**。
- * 后端这一层是从 `Set[Entity]` 摊出来的，集合迭代顺序会随增删变化，于是同一局游戏里
- * 每次刷新（推进 / 切换场景）卡片与角色 chip 都可能悄悄换位——玩家靠位置记空间，
- * 这是纯粹的显示事故。
- *
- * 后端给每个实体挂了 `IdentityComponent`，其中 `creation_order` 是创建序号，**不随
- * 增删变化**。所以前端拿到「实体名 → creation_order」后，就能把展示顺序钉死。
- *
- * ## 数据从哪来
- *
- * 后端没有单独的「顺序」接口，但 `group?all_of=IdentityComponent` 返回所有挂 Identity
- * 的实体（世界 / 场景 / 角色），每个都带 `creation_order`——查询入口见 `useCreationOrder`。
- *
- * ## 读不到就退回去
- *
- * `creation_order` 缺失（旧数据 / 未命中 mock）时**不猜测**：保留调用方给的原始相对顺序，
- * 只是把它们排在已知顺序的实体之后，让界面至少稳定、不报错。
+ * `actors_by_stage` 不带顺序、后端集合迭代顺序会变，所以用创建序号把展示顺序钉死；
+ * 读不到顺序的名字排在末尾并保持原相对顺序。
  */
 import { COMPONENT } from "./componentNames";
 import { type EntitiesData, getComponentData, readNumber, resolveEntities } from "./ecs";
@@ -39,12 +22,7 @@ export function readCreationOrder(entities: EntitiesData): CreationOrder {
   return order;
 }
 
-/**
- * 按 `creation_order` 升序排序实体名。
- *
- * 读不到顺序的名字统一排在末尾，并保持它们在 `names` 里的原始相对顺序；读得到顺序的
- * 则严格按序号排（序号相同再按原始位置）。返回新数组，不修改入参。
- */
+/** 按 creation_order 升序；未知顺序的沉底并保持原相对顺序。返回新数组，不修改入参。 */
 export function sortByCreationOrder(names: readonly string[], order: CreationOrder): string[] {
   return names
     .map((name, position) => ({ name, position, rank: order.get(name) }))

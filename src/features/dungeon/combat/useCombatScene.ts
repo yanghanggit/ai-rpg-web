@@ -1,15 +1,8 @@
 /**
- * 战斗房间的「场景快照」：参战者名单 + 各人的战斗数据。
+ * 战斗房间的场景快照：参战者名单 + 各人战斗数据 + 玩家战利品。
  *
- * 两步取数（与 `useDungeonParty` 同一手法，不需要新接口）：
- * 1. group 端点按 `PartyMemberComponent` 拿到**副本内的队伍**（进副本时固化，含玩家）；
- * 2. 参战者名单 = 队伍名 + 当前房间场景里的怪物名（`room.stage.actors` 里 `type=Monster`）。
- *    一次 details 把全部组件取回，再交给 `readCombatant` 解析。
- *
- * 为什么用「队伍 + 房间怪物名」而不是查 `stages/v1/state` 再找玩家所在场景：
- * 房间对象本身已经给出怪物，队伍查询又被 `invalidateEntitiesAndMessages` 覆盖，两者都随
- * 战斗动作刷新；而场景映射在 `advance_stage` 后并不会失效，直接依赖它会读到旧场景。
- * 参数名一律用**原始实体名**（比较 / API / key 都用原值，显示才走 `displayName`）。
+ * 参战者 = 队伍（`PartyMemberComponent`，进副本时固化）+ 当前房间的怪物名，再一次 details 解析。
+ * 用房间对象取怪物（而不是查 stages/state），因为场景映射在 `advance_stage` 后不会失效。
  */
 import { $api } from "../../../api/query";
 import type { Schemas } from "../../../api/types";
@@ -35,8 +28,7 @@ export function useCombatScene(userName: string, gameName: string, room: Schemas
     { select: (data) => Object.keys(data.entities) },
   );
 
-  // 战斗房间的 stage.actors 可能同时含队伍与怪物（后端会把参战者都挂到场景上），
-  // 这里只取怪物，队伍一律以 group 的 PartyMemberComponent 为准，避免重复。
+  // 房间的 stage.actors 可能同时含队伍与怪物，这里只取怪物（队伍一律以 group 的 PartyMember 为准）
   const monsterNames = room.stage.actors
     .filter((actor) => actor.type === "Monster")
     .map((actor) => actor.name);
@@ -62,7 +54,7 @@ export function useCombatScene(userName: string, gameName: string, room: Schemas
     return entity === undefined ? [] : [readCombatant(entity)];
   });
 
-  // 结算页要看的玩家战利品（`LootComponent`）挂在玩家实体上，顺手从同一份 details 里读出来。
+  // 结算页要看的战利品（`LootComponent`）挂在玩家实体上，顺手从同一份 details 里读出
   const playerEntity = resolveEntities(details.data?.entities ?? {}).find((entity) =>
     hasComponent(entity, COMPONENT.Player),
   );

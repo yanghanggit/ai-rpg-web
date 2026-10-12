@@ -1,20 +1,9 @@
 /**
- * **本次副本的队伍**：每个成员的战斗属性（`CharacterStatsComponent`）、牌组（`DeckComponent`）
- * 与奖励（`SpoilsComponent`）。
+ * 本次副本的队伍：每个成员的战斗属性（`CharacterStatsComponent`）、牌组（`DeckComponent`）、
+ * 奖励（`SpoilsComponent`）。
  *
- * 属于**副本**而不是"开场房"：队伍在进副本那一刻固化，开场房用它（角色卡上的属性 / `卡组 N` /
- * 奖励），标题行的「牌组」入口（`DeckBrowserDialog` 经 `useDungeonDecks`）在任何一屏都用它
- * ——所以它留在顶层。
- * 奖励只有开场房有（`SpoilsComponent` 只在开场房挂上），其余时候解析出来是 `null`。
- *
- * 两步取数（与 `useEnterPreview` 同一手法，不需要新接口）：
- * 1. group 端点按 `PartyMemberComponent` 拿到**副本内的队伍**——进副本那一刻固化，含玩家自己，
- *    之后不会变（家园接口在副本进行中一律被拒）；
- * 2. 一次 details 把各成员的全部组件取回，再按组件名解析出牌组与奖励。
- *
- * 牌组 / 奖励的解析复用 `features/cards`（「卡牌长什么样」的唯一实现，与 `features/items` 同构）。
- * 奖励用 `null` 表示**尚未生成**（组件不存在），与「生成了但是空的」区分开——界面据此决定
- * 还能不能点「生成奖励」。
+ * 队伍在进副本那一刻固化，标题行的「牌组」入口在任何一屏都用它，所以留在顶层。两步取数：
+ * group 按 `PartyMemberComponent` 拿到队伍名 → details 取组件。奖励 `null` 表示尚未生成。
  */
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";

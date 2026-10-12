@@ -1,15 +1,8 @@
 /**
- * SSE（Server-Sent Events）读取器：流式 `fetch` + 手动解析 `data:` 行。
+ * SSE 读取器：流式 `fetch` + 手动解析 `data:` 行。
  *
- * 为什么不用浏览器原生 `EventSource`：
- * - `EventSource` 不能携带 `Authorization` 头，JWT 接入后无法鉴权；本项目约定
- *   认证头只在 `client.ts` 的 `authHeaders()` 注入，这里复用同一份。
- * - 它自带断线重连语义，而后端唯一的 SSE 端点 `watch` 是「等到任务终态即正常结束」
- *   的一次性流。自动重连会把「正常结束」当成断线反复重连，反而要额外代码把它关掉。
- * - 单测环境是 jsdom（没有 `EventSource`）+ MSW；流式 `fetch` 才能被 MSW 拦截与断言。
- *
- * 因此与 TUI（`tui/server_client.py` 的 `client.stream` + `aiter_lines`）保持一致：
- * 用流式 `fetch`，逐行读取，只认 `data:` 行。
+ * 不用原生 `EventSource`：它不能带 `Authorization` 头，且自带的断线重连不适合 `watch` 这种
+ * 「到终态即结束」的一次性流；这里复用 `client.ts` 的 `authHeaders()`。
  */
 import { ApiError, apiUrl, authHeaders } from "./client";
 
@@ -49,7 +42,7 @@ export async function* streamSseData(
         break;
       }
       buffer += decoder.decode(value, { stream: true });
-      // 一行一行地消费；最后一段可能是不完整行，留在 buffer 里等下一次 chunk
+      // 一行一行消费；末段可能是不完整行，留在 buffer 里等下一次 chunk
       let newline = buffer.indexOf("\n");
       while (newline !== -1) {
         const data = readDataLine(buffer.slice(0, newline));
