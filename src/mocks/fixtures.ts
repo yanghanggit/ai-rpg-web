@@ -85,7 +85,7 @@ export const blueprintFixture: Schemas["Blueprint"] = {
                 type: "ConsumableItem",
                 description: "（mock）装在粗陶小瓶里、带着草药苦味的暗绿色药液。",
                 count: 2,
-                on_use_prompt: ["（mock）恢复 4 点 HP。"],
+                modifiers: ["（mock）恢复 4 点 HP。"],
                 resources: [],
               },
             ],
@@ -287,7 +287,7 @@ export const runtimeInventoryFixture: Record<string, unknown>[] = [
     type: "ConsumableItem",
     description: "（mock）装在粗陶小瓶里、带着草药苦味的暗绿色药液。",
     count: 2,
-    on_use_prompt: ["（mock）恢复 4 点 HP。"],
+    modifiers: ["（mock）恢复 4 点 HP。"],
     resources: [],
   },
 ];

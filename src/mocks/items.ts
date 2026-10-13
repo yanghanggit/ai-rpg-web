@@ -5,7 +5,7 @@
  * 角色 `WornCostumeComponent`），由 move / craft 动作改写；mock 里直接改这几份数组，
  * 让 `pnpm dev:mock` 下「移动 / 合成后列表变化」可见。行为对齐后端：
  * - 移动按名字逐个搬；
- * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 效果提示词，装备/时装不堆叠；
+ * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 修正规则，装备/时装不堆叠；
  * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物按同一规则并入储物箱。
  */
 import { COMPONENT } from "../features/entities/componentNames";
@@ -31,7 +31,7 @@ const CRAFTED_ITEMS: Record<Workshop, RawItem> = {
     type: "ConsumableItem",
     description: "（mock）工坊合成的回气药剂，饮下后能立刻缓过一口气。",
     count: 1,
-    on_use_prompt: ["（mock）恢复少量体力。"],
+    modifiers: ["（mock）恢复少量体力。"],
     resources: [],
   },
   gear: {
@@ -65,14 +65,14 @@ function clone<T>(value: T): T {
 
 /**
  * 堆叠身份键：对齐后端 `models/utils.py::_item_stack_key`。
- * 材料按名称，消耗品按名称 + 效果提示词；其余（装备 / 时装）不堆叠，返回 `undefined`。
+ * 材料按名称，消耗品按名称 + 修正规则；其余（装备 / 时装）不堆叠，返回 `undefined`。
  */
 function stackKey(item: RawItem): string | undefined {
   if (item.type === "MaterialItem") {
     return JSON.stringify(["MaterialItem", item.name]);
   }
   if (item.type === "ConsumableItem") {
-    const prompt = Array.isArray(item.on_use_prompt) ? item.on_use_prompt : [];
+    const prompt = Array.isArray(item.modifiers) ? item.modifiers : [];
     return JSON.stringify(["ConsumableItem", item.name, prompt]);
   }
   return undefined;
