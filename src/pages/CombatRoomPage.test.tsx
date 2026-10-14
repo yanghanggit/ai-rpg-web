@@ -51,15 +51,26 @@ function currentCombatant(): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
-  it("角色卡：准备屏写全 HP · attack · defense · speed；turn 名单卡改用四角数值 + 立绘 + 词条", async () => {
+  it("角色卡：准备屏与 turn 名单卡是同一副《怪物火车》牌面（立绘 + 四角数值）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 准备屏：敌人与队伍都写全（还没开打，要看清双方多硬）
-    expect(await screen.findByText("HP 9/9 · attack 3 · defense 1 · speed 5")).toBeInTheDocument();
-    expect(screen.getByText("HP 12/15 · attack 3 · defense 1 · speed 4")).toBeInTheDocument();
+    // 准备屏：上下两排也是同一副牌面——外/内框 + 立绘区 + 名字横幅 + 底排（盾 / 定性 / 心）
+    const monsterCard = (await screen.findByText("石像鬼")).closest("article");
+    if (!(monsterCard instanceof HTMLElement)) {
+      throw new Error("准备屏上没有石像鬼那张卡");
+    }
+    expect(monsterCard).toHaveClass("combatant-card", "actor-card");
+    expect(monsterCard.querySelector(".combatant-art")).toBeInTheDocument();
+    expect(monsterCard.querySelector(".combatant-chip--hp")).toHaveTextContent("9");
+    // HP 只显当前值，全长挂在悬停说明上
+    expect(monsterCard.querySelector(".combatant-chip--hp")).toHaveAttribute("title", "HP 9/9");
+    expect(monsterCard.querySelector(".combatant-role")).toHaveTextContent("怪物");
+    // 准备屏**没有词条区**（立绘区吃满剩余高度），攻 / 防 / 速也不在卡上
+    expect(monsterCard.querySelector(".combatant-keywords")).toBeNull();
+    expect(screen.queryByText(/attack 3/)).not.toBeInTheDocument();
 
-    // 开打后：名单卡换成《怪物火车》式牌面——四角数值 + 中间立绘 + 名字横幅 + 词条区
+    // 开打后：名单卡同一副牌面，只是多出词条区
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
     const roster = screen.getByRole("list", { name: "参战者" });
@@ -78,7 +89,7 @@ describe("副本房间 · 战斗房间", () => {
 
     // 我方不再标「你」，但怪物定性仍写「怪物」（正下那排）
     expect(within(youCard).queryByText("你")).not.toBeInTheDocument();
-    expect(within(roster).getAllByText("怪物")).toHaveLength(4);
+    expect(within(roster).getAllByText("怪物")).toHaveLength(3);
 
     // 词条区那颗按钮：手牌 / 被动 / 塞牌（我方也照样有 [塞牌]，只是为 0），点开看手牌
     const handButton = within(youCard).getByRole("button", { name: "查看手牌：无名" });
@@ -87,28 +98,37 @@ describe("副本房间 · 战斗房间", () => {
     expect(handButton).toHaveTextContent("[塞牌] 0");
   });
 
-  it("开局准备：三排卡片（敌人 / 场景 + 开始 / 队伍），上下的排法与战斗房名单同一套", async () => {
+  it("开局准备：左边 3 敌 / 3 我（中间一条分隔线），右边一条同高的场景栏（叙述 + 开始）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 版面就是三排，顺序即读到的顺序
+    // 两栅：卡阵在前、场景栅在后
     const enemies = await screen.findByRole("region", { name: "敌人" });
-    const scene = screen.getByRole("region", { name: "场景描述" });
     const party = screen.getByRole("region", { name: "队伍" });
-    expect(enemies.compareDocumentPosition(scene) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(scene.compareDocumentPosition(party) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const scene = screen.getByRole("region", { name: "场景描述" });
+    expect(enemies.compareDocumentPosition(party) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(party.compareDocumentPosition(scene) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 
-    // 上 / 下两排共用同一套排法（一个类，居中 + 横滑都写在它上面；实际几何 jsdom 量不到）
+    // 上下两排共用同一套排法（一个类，居中 + 横滑都写在它上面；实际几何 jsdom 量不到）。
+    // 上排**最多 3 只怪**（后续一局战斗就是 3v3）；下排是这一局的队伍
     expect(enemies).toHaveClass("cards", "cards--party");
     expect(party).toHaveClass("cards", "cards--party");
-    // 中间那排是一张横置卡牌那么高的一条，里面就场景卡 + 「开始」卡
-    expect(scene).toHaveClass("stage-row");
-    expect(within(scene).getByRole("button", { name: /查看场景/ })).toHaveClass("stage-card");
+    // 上排**最多 3 只怪**（后续一局战斗就是 3v3）——卡是异步读来的，等到齐
+    expect(await within(enemies).findAllByText("怪物")).toHaveLength(3);
+    // 测试里名单为空 → 队伍只有玩家自己（3v3 的另一个 3 由名单提供）
+    expect(await within(party).findAllByText("玩家")).toHaveLength(1);
+
+    // 场景栅：叙述整块可点（看全文），底下压着大「开始」
+    expect(within(scene).getByRole("button", { name: /查看场景/ })).toHaveClass(
+      "combat-setup-narrative",
+    );
     // 「开始」要等自动初始化落地才从「准备中…」变成它
-    expect(await within(scene).findByRole("button", { name: "开始!" })).toHaveClass("stage-next");
+    expect(await within(scene).findByRole("button", { name: "开始!" })).toHaveClass(
+      "combat-setup-start",
+    );
   });
 
-  it("进入战斗房间是准备阶段：上面敌人 / 中间开始卡 / 下面队伍，开始后落到玩家回合", async () => {
+  it("进入战斗房间是准备阶段：先摆卡阵，开始后落到玩家回合", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
@@ -117,10 +137,10 @@ describe("副本房间 · 战斗房间", () => {
     // 进入战斗房间自动初始化；成功后开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByText(/抓牌以开启第一回合/)).not.toBeInTheDocument();
-    // 参战者：队友不入队时只有玩家 + 四个怪物
+    // 参战者：队友不入队时只有玩家 + 三个怪物
     expect(await screen.findByText("石像鬼")).toBeInTheDocument();
     expect(screen.getByText("腐沼巨蜥")).toBeInTheDocument();
-    expect(screen.getAllByText("怪物")).toHaveLength(4);
+    expect(screen.getAllByText("怪物")).toHaveLength(3);
 
     // 开始 = 抓牌：直接落到玩家回合（第一回合有了；初始化是自动跑的）
     fireEvent.click(screen.getByRole("button", { name: "开始!" }));
@@ -239,11 +259,11 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(within(menu).getByRole("button", { name: "战斗信息" }));
     const info = await screen.findByRole("dialog", { name: "战斗信息" });
 
-    // 我方一个没死、敌方四只全死——一眼读出战果
+    // 我方一个没死、敌方三只全死——一眼读出战果
     const party = await within(info).findByRole("heading", { name: "我方" });
     expect(party.parentElement).not.toHaveTextContent("已战死");
     const monsters = within(info).getByRole("heading", { name: "敌方" });
-    expect(monsters.parentElement?.querySelectorAll(".badge--dead")).toHaveLength(4);
+    expect(monsters.parentElement?.querySelectorAll(".badge--dead")).toHaveLength(3);
   });
 
   it("「战斗信息」不挑 phase：还没开始（第 0 回合）时 ⚙ 菜单里就有这一行", async () => {
@@ -586,7 +606,7 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
 
-    const monsters = ["石像鬼", "腐沼巨蜥", "提线木偶", "缚灵"];
+    const monsters = ["石像鬼", "腐沼巨蜥", "提线木偶"];
     const targetTiles = () =>
       monsters.map((name) =>
         screen.getByRole("button", { name: `选择目标：${name}` }).closest("li"),
@@ -600,7 +620,7 @@ describe("副本房间 · 战斗房间", () => {
     }
     // 我方不被选中；提示把整个阵营列出来
     expect(currentCombatant()).not.toHaveClass("combatant-card--target");
-    expect(screen.getByText(/目标：石像鬼、腐沼巨蜥、提线木偶、缚灵/)).toBeInTheDocument();
+    expect(screen.getByText(/目标：石像鬼、腐沼巨蜥、提线木偶/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "取消" }));
 
@@ -613,7 +633,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByText(/（随机命中）/)).toBeInTheDocument();
   });
 
-  it("过牌推进到怪物；四只怪物推完后回到开始新回合", async () => {
+  it("过牌推进到怪物；三只怪物推完后回到开始新回合", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -622,8 +642,8 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
     await waitFor(() => expect(within(currentCombatant()).getByText("石像鬼")).toBeInTheDocument());
 
-    // 依次推完四只怪物：等行动者真的换了再点下一颗，避免点到忙碌中的按钮
-    for (const name of ["腐沼巨蜥", "提线木偶", "缚灵"]) {
+    // 依次推完剩下两只怪物：等行动者真的换了再点下一颗，避免点到忙碌中的按钮
+    for (const name of ["腐沼巨蜥", "提线木偶"]) {
       fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
       await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
     }

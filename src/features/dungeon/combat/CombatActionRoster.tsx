@@ -1,4 +1,5 @@
 import { displayName } from "../../../components/displayName";
+import ActorChip from "../ActorChip";
 import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } from "./readCombat";
 
 /**
@@ -143,23 +144,13 @@ export default function CombatActionRoster({
                 </button>
               </div>
 
-              {/* 左下：总格挡（盾形底） */}
-              <span className="combatant-chip combatant-chip--block" title="总格挡">
-                <svg className="combatant-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
-                  <path d="M50 5 L91 21 V51 C91 76 72 91 50 97 C28 91 9 76 9 51 V21 Z" />
-                </svg>
-                <span className="combatant-chip-value">{combatant.block}</span>
-              </span>
-
-              {/* 右下：HP（心形底，只显当前值） */}
-              <span className="combatant-chip combatant-chip--hp" title="HP">
-                <svg className="combatant-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
-                  <path d="M50 90 C20 68 7 51 7 35 C7 20 18 9 32 9 C41 9 47 14 50 20 C53 14 59 9 68 9 C82 9 93 20 93 35 C93 51 80 68 50 90 Z" />
-                </svg>
-                <span className="combatant-chip-value">
-                  {combatant.stats === null ? "—" : combatant.stats.hp}
-                </span>
-              </span>
+              {/* 左下总格挡（盾形底）/ 右下 HP（心形底，只显当前值）：与 `ActorCard` 同一份图形 */}
+              <ActorChip kind="block" value={combatant.block} title="总格挡" />
+              <ActorChip
+                kind="hp"
+                value={combatant.stats === null ? "—" : combatant.stats.hp}
+                title="HP"
+              />
 
               {/* 正下：定性（阵营 / 身份） */}
               <span className="combatant-role">{roleLabel(combatant)}</span>

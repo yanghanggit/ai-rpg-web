@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
 import { firstEntity } from "../../entities/ecs";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
@@ -7,17 +8,18 @@ import StageInfoDialog from "../../stage/StageInfoDialog";
 import { stageNarrativeBody } from "../../stage/stageNarrativeBody";
 import { useStageEntity } from "../../stage/useStageEntity";
 import ActorCard from "../ActorCard";
-import StageCard from "../StageCard";
 import { COMBAT_STATE } from "./combatPhase";
 import { type Combatant, roleLabel } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
 /**
- * 战斗开始前的那一屏（`init` / `round_start` 共用）：上面敌人、中间场景卡 + 「开始」卡、下面队伍。
- * 卡面与开场房共用 `StageCard` / `ActorCard`。
+ * 战斗开始前的那一屏（`init` / `round_start` 共用）：
+ * 左边是 **3 敌 / 3 我**的卡阵（中间一条分隔线——一局战斗最多 3v3），右边一条与卡阵**同高**的
+ * 场景栏（顶上是环境叙述、底下是大「开始」）。卡面与开场房共用 `ActorCard`。
  *
  * 进入房间自动初始化一次（不重试）；「开始」是唯一动作：点它开第一回合（init 未成则先补 init 再开）。
- * 卡片只留名字 + 身份 + 一行 `hp/attack/defense`；敌我双方整卡都可开角色信息浮窗。
+ * 卡片与战斗名单**同一套语言**：立绘区（占最大面积，没有词条区）+ 名字横幅 + 底排
+ * （定性 / HP 心）；总格挡要等抓了牌才有，攻防速不在卡上（点卡开角色信息浮窗看）。
  */
 export default function CombatSetupPanel({
   userName,
@@ -86,7 +88,7 @@ export default function CombatSetupPanel({
   const party = combatants.filter((combatant) => combatant.faction !== "monster");
   const hasRound = combat.rounds.length > 0;
   const error = actions.init.error ?? actions.draw.error;
-  const sceneBody = stageNarrativeBody(narrative, stage);
+  const sceneBody = stageNarrativeBody(narrative, stage, "。。。。。。");
 
   return (
     <>
@@ -96,52 +98,57 @@ export default function CombatSetupPanel({
       {error ? <p className="error">开始战斗失败：{error}</p> : null}
 
       <section className="combat-setup">
-        <section className="cards cards--party" aria-label="敌人">
-          {monsters.map((combatant) => (
-            <ActorCard
-              key={combatant.name}
-              name={combatant.name}
-              badge={roleLabel(combatant)}
-              stats={combatant.stats}
-              // 开局前也显示攻防速（决定先打谁、谁先手）
-              showCombatStats
-              onOpenInfo={() => setInfoActor(combatant.name)}
-            />
-          ))}
-        </section>
+        {/* 左：上 3 敌 / 下 3 我（一局战斗最多 3v3），两排之间一条分隔线 */}
+        <div className="combat-setup-field">
+          <section className="cards cards--party" aria-label="敌人">
+            {monsters.map((combatant) => (
+              <ActorCard
+                key={combatant.name}
+                name={combatant.name}
+                badge={roleLabel(combatant)}
+                stats={combatant.stats}
+                onOpenInfo={() => setInfoActor(combatant.name)}
+              />
+            ))}
+          </section>
 
-        <section className="stage-row" aria-label="场景描述">
-          {/* 与开场房共用同一张场景卡 */}
-          <StageCard
-            state="ready"
-            name={stageName}
-            body={sceneBody}
-            onActivate={() => setIsStageOpen(true)}
-          />
+          <hr className="combat-setup-divider" />
+
+          <section className="cards cards--party" aria-label="队伍">
+            {party.map((combatant) => (
+              <ActorCard
+                key={combatant.name}
+                name={combatant.name}
+                badge={roleLabel(combatant)}
+                stats={combatant.stats}
+                onOpenInfo={() => setInfoActor(combatant.name)}
+              />
+            ))}
+          </section>
+        </div>
+
+        {/* 右：与卡阵同高的一条——叙述在上（整块可点看全文、文字居中），「开始」压在底 */}
+        <section className="combat-setup-scene" aria-label="场景描述">
           <button
             type="button"
-            className="stage-next stage-next--start"
+            className="combat-setup-narrative"
+            aria-label={`查看场景：${displayName(stageName)}`}
+            title="点这里看完整的场景信息（全文在浮窗里）"
+            onClick={() => setIsStageOpen(true)}
+          >
+            <span className="combat-setup-narrative-label">场景描述</span>
+            {/* 叙述还没长出来就先占位六个点，不写「加载中」那种解释性的话 */}
+            <span className="combat-setup-narrative-text">{sceneBody}</span>
+          </button>
+
+          <button
+            type="button"
+            className="combat-setup-start"
             disabled={actions.isBusy}
             onClick={handleStart}
           >
-            <span className="stage-next-caption">
-              {actions.isBusy ? "准备中…" : hasRound ? "开始新回合" : "开始!"}
-            </span>
+            {actions.isBusy ? "准备中…" : hasRound ? "开始新回合" : "开始!"}
           </button>
-        </section>
-
-        <section className="cards cards--party" aria-label="队伍">
-          {party.map((combatant) => (
-            <ActorCard
-              key={combatant.name}
-              name={combatant.name}
-              badge={roleLabel(combatant)}
-              stats={combatant.stats}
-              // 开局前也显示攻防速（决定先打谁、谁先手）
-              showCombatStats
-              onOpenInfo={() => setInfoActor(combatant.name)}
-            />
-          ))}
         </section>
       </section>
 

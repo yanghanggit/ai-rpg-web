@@ -93,7 +93,7 @@ describe("seedMockFromUrl", () => {
     const round = readMockCombat().rounds[0];
     // 玩家先手，过牌一次后轮到第一个怪物
     expect(round?.current_actor).toBe("怪物.石像鬼");
-    // 座位交错：我 / 敌 / 我 / 敌…（怪物多出来的那个接在最后）
+    // 座位交错：我 / 敌 / 我 / 敌…（3v3，一局战斗最多 3 个敌人）
     expect(round?.action_order).toEqual([
       "角色.无名",
       "怪物.石像鬼",
@@ -101,7 +101,6 @@ describe("seedMockFromUrl", () => {
       "怪物.腐沼巨蜥",
       "角色.麻雀",
       "怪物.提线木偶",
-      "怪物.缚灵",
     ]);
   });
 

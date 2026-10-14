@@ -491,13 +491,22 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.getAllByRole("button", { name: "获取奖励" })).toHaveLength(1);
   });
 
-  it("角色卡上不再有「查看牌组」；属性用统一措辞、卡组另起一行", async () => {
+  it("角色卡上不再有「查看牌组」；HP 走右下心形角徽、卡组另起一行", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    // 属性行只有 HP（attack / defense / speed 在角色信息浮窗里看）；卡组张数另起一行
-    expect(await screen.findByText("HP 12/15")).toBeInTheDocument();
+    // HP 只在右下那枚心形角徽里（只显当前值，全长 12/15 挂在悬停说明上）；
+    // attack / defense / speed 与战斗名单同一口径，不在卡上（在角色信息浮窗里看）
+    const hp = await waitFor(() => {
+      const chip = document.querySelector(".actor-card .combatant-chip--hp");
+      if (!(chip instanceof HTMLElement)) {
+        throw new Error("角色卡上还没有右下那枚 HP 角徽");
+      }
+      return chip;
+    });
+    expect(hp).toHaveTextContent("12");
+    expect(hp).toHaveAttribute("title", "HP 12/15");
     expect(screen.queryByText(/attack 3/)).not.toBeInTheDocument();
     // 卡上只留「卡组 N」这行状态，卡底那颗按钮就是奖励入口
     expect(await screen.findByText("卡组 9")).toBeInTheDocument();

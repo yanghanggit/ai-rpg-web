@@ -483,12 +483,6 @@ export const dungeonFixture: Schemas["Dungeon"] = {
           { hp: 7, max_hp: 7, attack: 2, defense: 0, speed: 4 },
           "（mock）一具提线木偶，关节用麻绳系着，走起来哔哒作响。",
         ),
-        dungeonActor(
-          "怪物.缚灵",
-          "Monster",
-          { hp: 12, max_hp: 12, attack: 4, defense: 1, speed: 8 },
-          "（mock）悬在半空的缚灵，脚不沾地，脖颈勒出一道乌痕。",
-        ),
       ]),
     },
   ],
@@ -833,13 +827,6 @@ export const monsterDeckFixtures: Record<string, Record<string, unknown>[]> = {
     cardFixtures.ward,
     cardFixtures.shroud,
     cardFixtures.paper,
-  ],
-  "怪物.缚灵": [
-    cardFixtures.nail,
-    cardFixtures.bell,
-    cardFixtures.chant,
-    cardFixtures.mirror,
-    cardFixtures.ward,
   ],
 };
 

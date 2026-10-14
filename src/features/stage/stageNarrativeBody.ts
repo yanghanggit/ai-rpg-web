@@ -10,12 +10,20 @@ import { describeApiError } from "../../api/describeApiError";
 export function stageNarrativeBody(
   narrative: string | null,
   load: { isPending: boolean; isError: boolean; error: unknown },
+  /**
+   * 「还没生成」时（请求中 / 请求空手而归）统一写这一句；不给就按加载中 / 真的空各写一句。
+   * 战斗开局屏只要一句占位（`。。。。。。`），所以由调用方给。
+   */
+  waiting?: string,
 ): string {
   if (narrative !== null) {
     return narrative;
   }
   if (load.isError) {
     return `无法获取环境叙述：${describeApiError(load.error)}`;
+  }
+  if (waiting !== undefined) {
+    return waiting;
   }
   if (load.isPending) {
     return "加载中…";

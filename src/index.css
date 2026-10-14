@@ -39,6 +39,11 @@
      `ul.card-tiles--deck`），而不是把卡面压矮去迁就屏幕：卡片的形状是设计语言，`--card-short`
      是卡牌的**宽**，拿它当卡面的高就变成正方形了。 */
   --card-list-h: calc(var(--card-rows) * var(--card-tall) + var(--card-list-gaps-h));
+  /* 卡面区右侧留给**滚动条**的槽：滚动条是压在内容上画的，不留这一条，最后一列卡的右边就被
+     那条滑块挤花（卡是固定宽，不能自己缩）。注意可见间距 = 槽宽 − 滚动条自身宽度，所以槽
+     要明显宽过滚动条（macOS / Windows 的常显滚动条 10～17px），留出来的才是真的"距离"。
+     槽计入面板宽度，所以三列卡的宽度不变。 */
+  --card-list-gutter: 1.75rem;
   /* 卡面上的**文字级**：角色卡与牌面共用同一套——同一张卡片上"名字 / 数值 / 标记"三块的层级与
      字号不该因为它是角色卡还是牌而变，两张卡并排时字号不一致最扎眼。 */
   --card-font-name: 1.05rem;
@@ -582,11 +587,11 @@ ul.camp-names li {
   width: min(100%, 26rem);
 }
 
-/* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）：以**卡牌为度量**的固定宽度（`--card-list-w` = 三张卡）。
-   卡数不再影响宽度（网格永远三列），所以不必再 fit 着内容算——打开哪个牌堆都是同一个框。
-   高度写在卡面区自己身上：面板还有标题行，多高不必在这算。 */
+/* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）：以**卡牌为度量**的固定宽度（`--card-list-w` = 三张卡，
+   再加右侧那条滚动条槽）。卡数不再影响宽度（网格永远三列），所以不必再 fit 着内容算——
+   打开哪个牌堆都是同一个框。高度写在卡面区自己身上：面板还有标题行，多高不必在这算。 */
 .overlay-panel--cards {
-  width: calc(var(--card-list-w) + 2 * var(--overlay-pad-x) + 2px);
+  width: calc(var(--card-list-w) + var(--card-list-gutter) + 2 * var(--overlay-pad-x) + 2px);
 }
 
 /* 内容多的浮窗（地图：整份房间与敌人清单）：比默认宽一档，一屏读得下 */
@@ -1164,36 +1169,81 @@ li.dungeon-room--current {
   color: var(--warn);
 }
 
-/* 战斗开始前那一屏：上面敌人、中间场景卡 + 开始卡、下面队伍，三排同宽同距。 */
+/* 战斗开始前那一屏：左边 3 敌 / 3 我 的卡阵（中间一条分隔线——一局战斗最多 3v3），
+   右边一条与卡阵**同高**的场景栏（叙述在上、大「开始」在下）。
+   窄了就把场景栏挤到下一行（`flex-wrap`），不会把卡压矮。 */
 .combat-setup {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
   gap: 2rem;
   margin-top: 1.5rem;
 }
 
-/* 三排的间距由上面的 `gap` 统一给，去掉 `.cards` / `.stage-row` 自带的 `margin-top` */
-.combat-setup .cards,
-.combat-setup .stage-row {
+/* 卡阵：两排各 3 张，同宽居中（宽度由内容定，两排自然一样宽）；排间距用 `gap` 统一给，
+   所以要把 `.cards` 自带的 `margin-top` 去掉 */
+.combat-setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.combat-setup .cards {
   margin: 0;
 }
 
-/* 「开始」卡：开局前唯一的动作，比「回到地图」卡更重一些（它是进入对局，不是收尾） */
-.stage-next--start {
-  width: 8rem;
+.combat-setup-divider {
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--border);
 }
 
-.stage-next--start .stage-next-caption {
+/* 场景栏：**与卡阵同高**（`align-items: stretch` 拉的）；叙述占满上半，开始压在底 */
+.combat-setup-scene {
+  display: flex;
+  flex: 0 1 24rem;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-width: 17rem;
+}
+
+/* 环境叙述：整块可点（看全文）。文字**居中**，盒子在剩余高度里居中——短句不趴在顶边 */
+.combat-setup-narrative {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.1rem 1.25rem;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.combat-setup-narrative-label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.combat-setup-narrative-text {
+  margin: auto 0;
+  line-height: 1.6;
+}
+
+/* 「开始」：开局前唯一的动作，占满场景栏宽度、压在底（比一般按钮高一号） */
+.combat-setup-start {
+  flex: 0 0 auto;
+  min-height: 3rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  color: var(--fg);
   font-size: 1.15rem;
   font-weight: 600;
-  color: var(--fg);
 }
 
-/* 队伍 / 敌人那排角色卡：**竖着的矩形卡牌**（短 × 长，就是场景卡足迹转 90°；也是牌组 / 奖励卡面
-   的形状语言）。
+/* 队伍 / 敌人那排角色卡：尺寸、外/内框、立绘区、底排盾/心全部走 `.combatant-card` 那一套
+   （与战斗名单**同一副牌面**），这里只管排法。
    排法与战斗房的参战者名单（`.combat-action-roster`）**同一套**：一行、**重心居中**、放不下就
-   横滑。原先是 `auto-fill` 栅格——从左往右铺，人少时整排贴在左边，与中间那排不是同一条中线。
-   卡宽在 flex 里要写死（不写就按内容撞大），仍是 `--card-short`，所以尺寸与场景卡仍然对得上。 */
+   横滑。原先是 `auto-fill` 栅格——从左往右铺，人少时整排贴在左边，与中间那排不是同一条中线。 */
 .cards--party {
   display: flex;
   flex-wrap: nowrap;
@@ -1207,29 +1257,9 @@ li.dungeon-room--current {
   margin-top: 2.5rem;
 }
 
-.cards--party .card {
-  flex: 0 0 var(--card-short);
-  min-height: var(--card-tall);
-  padding: 1.1rem 1.25rem;
-  border-radius: 12px;
-}
-
-/* 卡面属性：一行一项（横排会被卡宽挤断，"DEF" 与数字拆两行更难看）。
-   字号与牌面的数值行同级（见 `--card-font-*`）。 */
-.actor-card-stats {
-  display: grid;
-  gap: 0.15rem;
-  margin: 0;
-  font-size: var(--card-font-stats);
-}
-
 /* 队伍成员卡：**整卡可点**（开角色信息，与场景卡同一交互）。卡面铺一层透明按钮盖住内容，
    卡底动作按钮再抬到它上面——点卡片任何地方开角色信息，点奖励按钮只干奖励的事。
    横排卡片就是「队伍站位」的 UX 雏形。 */
-.actor-card {
-  position: relative;
-}
-
 .actor-card-open {
   position: absolute;
   /* 铺满整卡（含内边距）：这条就是「整卡可点」的全部 */
@@ -1245,15 +1275,24 @@ li.dungeon-room--current {
   border-color: var(--fg);
 }
 
-/* 卡内按钮并排（覆盖 .card-actions 的整行按钮） */
-.actor-card .card-actions {
+.actor-card-extra {
+  flex: 0 0 auto;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--card-font-stats);
+  text-align: center;
+}
+
+/* 卡内动作区：**不给就整块不渲染**，立绘区顺势吃掉全部剩余高度（准备屏就是这样：没有词条区，
+   立绘最大）。给了就是卡底那排按钮，宽度统一铺满卡宽（不随文案长短变化）。 */
+.actor-card-actions {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-/* 卡底按钮：宽度统一铺满卡宽（不随文案长短变化）——同一排的角色卡底部按钮因此一样宽 */
-.actor-card .card-actions button {
+.actor-card-actions button {
   width: 100%;
   flex: 1 1 0;
   /* 抬到「整卡可点」那层之上：奖励按钮自己的点击自己收下 */
@@ -1577,11 +1616,13 @@ ul.card-tiles--deck {
   align-content: start;
   /* body 里唯一的弹性项：窗口矮时缩到能给的高度（而不是被裁），滚动条始终只有一条 */
   flex: 0 1 auto;
-  width: var(--card-list-w);
+  /* 宽度 = 三列卡 + 右侧滚动条槽，槽用右内边距留出来（滚动条占的是内边距那一段，
+     所以卡不会被它压住） */
+  width: calc(var(--card-list-w) + var(--card-list-gutter));
   height: var(--card-list-h);
   min-height: 0;
   margin: 0;
-  padding: 0;
+  padding: 0 var(--card-list-gutter) 0 0;
   list-style: none;
   overflow-y: auto;
 }
@@ -1592,7 +1633,8 @@ ul.card-tiles--deck {
   display: grid;
   place-items: center;
   flex: 0 1 auto;
-  width: var(--card-list-w);
+  /* 空态与卡面区同一块面积（含右侧那条滚动条槽），字才能落在框的正中 */
+  width: calc(var(--card-list-w) + var(--card-list-gutter));
   height: var(--card-list-h);
   min-height: 0;
   margin: 0;
@@ -1898,6 +1940,13 @@ ul.combat-action-roster {
   border: 1px solid var(--border);
   border-radius: 12px;
   background: color-mix(in srgb, var(--fg) 3%, transparent);
+}
+
+/* 没有词条区时，内框的最后一个内容（名字横幅 / 动作按钮）会直接贴到框底，被那排心 / 定性
+   （2.3rem 高，压在框沿上）盖住。把内框底部垫出它们占的那一段再多半行，内容就不进那个坑了
+   （`ActorCard` 的立绘区少长一点，换底部干净）。 */
+.actor-card .combatant-inner {
+  padding-bottom: 2rem;
 }
 
 /* 「你」：与队友 / 怪物分开（不是绿框——绿只留给卡外的「当前行动」进度条） */

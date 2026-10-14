@@ -41,12 +41,12 @@ src/features/<domain>/   # 领域组件、hook、纯函数
   dungeon/overview/DungeonPanel.tsx  overview/EnterDungeonDialog.tsx  overview/useDungeonList.ts  overview/useGenerateDungeon.ts
   dungeon/overview/useEnterDungeon.ts  overview/useEnterPreview.ts
   dungeon/map/DungeonMapPanel.tsx  map/useAdvanceStage.ts
-  dungeon/ActorCard.tsx  dungeon/StageCard.tsx  dungeon/characterStatsText.ts
+  dungeon/ActorCard.tsx  dungeon/ActorChip.tsx  dungeon/StageCard.tsx
   dungeon/opening/OpeningRoomPanel.tsx  opening/SpoilsDialog.tsx  opening/hasUnclaimedRewards.ts
   dungeon/opening/useOpeningActions.ts
   roster/RosterPanel.tsx  roster/readPartyMember.ts  roster/readPartyRoster.ts  roster/usePartyRoster.ts  roster/useRosterCandidates.ts  roster/useRosterAction.ts  roster/invalidateRoster.ts
   dungeon/combat/CombatRoomPanel.tsx  combat/CombatSetupPanel.tsx  combat/CombatTurnPanel.tsx  combat/CombatPostPanel.tsx
-  dungeon/combat/CombatRoster.tsx  combat/CombatRoundLog.tsx  combat/CombatInfoDialog.tsx  combat/combatPhase.ts
+  dungeon/combat/CombatActionRoster.tsx  combat/CombatRoundLog.tsx  combat/CombatInfoDialog.tsx  combat/combatPhase.ts
   dungeon/combat/readCombat.ts  combat/useCombatScene.ts  combat/useCombatActions.ts  combat/useCollectLoot.ts
   entities/ecs.ts  entities/componentNames.ts  entities/invalidateEntities.ts
   cards/CardItem.tsx  cards/CardDetailDialog.tsx  cards/readCard.ts  cards/readCards.ts  cards/readAffixLabel.ts  cards/types.ts
