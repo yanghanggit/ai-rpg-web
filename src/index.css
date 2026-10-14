@@ -17,10 +17,11 @@
   --unplayable: #475569;
   --border: #e5e7eb;
   --bg: #ffffff;
-  /* 卡片足迹（dungeon）：短边 = 角色卡的宽 = 场景卡的高，长边 = 角色卡的高 = 场景卡的宽。
-     角色卡 / 场景卡 / 牌面共用这一对，所以「横（场景）」就是「竖（角色）」转 90°。 */
-  --card-short: 13rem;
-  --card-tall: 17rem;
+  /* 卡片足迹（**全游戏统一标准**）：短边 = 角色卡的宽 = 场景卡的高，长边 = 角色卡的高 = 场景卡的宽。
+     比例对齐《怪物火车》的竖长牌面（≈ 0.57）；角色卡 / 场景卡 / 牌面共用这一对，
+     所以「横（场景）」就是「竖（角色）」转 90°。 */
+  --card-short: 11rem;
+  --card-tall: 19.5rem;
   /* 两个**卡形块**之间的距离：每一条卡片横排都用它（敌人 / 队伍 / 手牌 / 牌堆 / 场景行 /
      中间那一条……）。差个零点几 rem，两排并排时就看得出不齐。 */
   --card-gap: 0.9rem;
@@ -1724,18 +1725,20 @@ ul.combat-action-roster {
   list-style: none;
 }
 
+/* 参战者卡：牌面思路对齐《怪物火车》的竖长牌——中段是**立绘区**（先空着）、
+   名字横幅、词条区，四角 + 正上是数值（左上格挡 / 正上手牌 / 左下攻击 / 右下 HP），
+   正下是定性（阵营 / 身份）。尺寸与 ActorCard / 手牌 CardItem 共用同一副足迹（短 × 长）。 */
 .combatant-card {
   position: relative;
   display: flex;
   flex: 0 0 var(--card-short);
   flex-direction: column;
-  /* 与 ActorCard / 手牌 CardItem 共用同一副卡足迹（短 × 长）+ 同一套内边距 + 同一个内部间距，
-     视觉成族（尺寸实测也完全一致：208×272） */
-  gap: 0.5rem;
+  gap: 0.4rem;
   min-height: var(--card-tall);
-  padding: 1.1rem 1.25rem;
+  /* 底部留出压在立绘上的那排数值（左：总格挡 / 中：定性 / 右：HP） */
+  padding: 0.7rem 0.7rem 3.4rem;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   transition: transform 0.12s ease;
 }
 
@@ -1744,11 +1747,12 @@ ul.combat-action-roster {
   border-color: color-mix(in srgb, var(--fg) 35%, transparent);
 }
 
+/* 已行动：整张卡压暗 */
 .combatant-card--done {
   opacity: 0.55;
 }
 
-/* 已选中的目标（“出列”的卡）：整张卡**下移**（与手牌选中时的上移成对）+ 加一圈特殊色描边。
+/* 已选中的目标（“出列”的卡）：整张卡**下移**（与手牌选中时的上移成对）+ 一圈特殊色描边。
    选目标态不再给所有卡上色（ALL / SPREAD 会让整排都黄，等于没标），只标真正出列的那些。 */
 .combatant-card--target {
   transform: translateY(var(--pick-shift));
@@ -1758,65 +1762,142 @@ ul.combat-action-roster {
     0 0 0 3px color-mix(in srgb, var(--warn) 25%, transparent);
 }
 
-/* 卡底动作按钮：一行三枚计数（[手牌] H / [被动] N / [塞牌] M）。锚在卡底（`margin-top: auto`），
-   并向左右各撑出去一点（负外边距，热区更大）；给一层底 + 描边，比原先那行裸文本好点也好认。
-   字号略收，三枚计数才能在一行内排下。抬到「整卡可点」那层之上。 */
-.combatant-card-hand {
+/* 立绘区（先空着）：吃掉中段所有剩余高度，四角的数值压在它上面 */
+.combatant-art {
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: 10px;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--fg) 10%, transparent), transparent),
+    color-mix(in srgb, var(--fg) 4%, transparent);
+  pointer-events: none;
+}
+
+/* 名字横幅：名字 + 当前行动 / 已行动 并排居中（状态不再另占一个角） */
+.combatant-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  font-size: var(--card-font-name);
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.combatant-name-state {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.combatant-name-state--current {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+/* 词条区：手牌 / 被动 / 塞牌。点它看该角色手牌（= 旧卡底那颗按钮），抬到「整卡可点」那层之上 */
+.combatant-keywords {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
   gap: 0.3rem;
-  width: calc(100% + 1.2rem);
-  min-height: 2.75rem;
-  margin: auto -0.6rem 0;
-  padding: 0.55rem 1.3rem 0.55rem 0.65rem;
+  min-height: 1.5rem;
+  padding: 0.3rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--fg) 5%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
   color: inherit;
-  font-size: 0.72rem;
-  text-align: left;
+  font-size: 0.68rem;
   cursor: pointer;
   transition:
     border-color 0.12s ease,
     background 0.12s ease;
 }
 
-/* 这一行里的计数槽不带 chip 外框（就是平铺的词），但保留槽色文字
-   （`.affix-chip--hand` 粉 / `--hit` 红 / `--transfer` 青） */
-.combatant-card-hand .affix-chip {
+.combatant-keywords .affix-chip {
   padding: 0;
   border: 0;
   background: none;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
 }
 
-/* 箭头贴按钮右侧居中 */
-.combatant-card-hand-chevron {
+.combatant-keywords:hover {
+  border-color: color-mix(in srgb, var(--fg) 35%, transparent);
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
+}
+
+/* 左下 / 右下的大数值：**两副不同外形 + 不同底色**（盾 / 心，不再都是圆）。
+   `pointer-events: none`，点击落到整卡按钮。 */
+.combatant-chip {
   position: absolute;
-  top: 50%;
-  right: 0.6rem;
-  transform: translateY(-50%);
-  color: var(--muted);
+  z-index: 2;
+  bottom: 0.3rem;
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.8rem;
+  pointer-events: none;
+}
+
+.combatant-chip-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.combatant-chip-value {
+  position: relative;
+  color: var(--bg);
+  font-size: 1.05rem;
+  font-weight: 700;
   line-height: 1;
 }
 
-/* 三枚计数强制一行（不折行）；宁可缩字号，也不让按钮长成两行高 */
-.combatant-card-hand-text {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 0.3rem;
-  min-width: 0;
-  line-height: 1.5;
+/* 总格挡（左下）：盾形 */
+.combatant-chip--block {
+  left: 0.3rem;
 }
 
-/* 悬停提示：整颗按钮（含箭头）微微提亮，描边加重 */
-.combatant-card-hand:hover {
-  color: var(--fg);
-  border-color: color-mix(in srgb, var(--fg) 35%, transparent);
-  background: color-mix(in srgb, var(--fg) 9%, transparent);
+.combatant-chip--block .combatant-chip-bg {
+  fill: var(--retain);
+}
+
+/* HP（右下）：心形 */
+.combatant-chip--hp {
+  right: 0.3rem;
+}
+
+.combatant-chip--hp .combatant-chip-bg {
+  fill: var(--err);
+}
+
+/* 正下：定性（阵营 / 身份） */
+.combatant-role {
+  position: absolute;
+  z-index: 2;
+  bottom: 0.85rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.15rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .badge--dead {
