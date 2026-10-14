@@ -68,13 +68,18 @@ describe("CardDetailDialog", () => {
     expect(within(row("被命中时", 0)).getByText(/命中的段数越多/)).toBeInTheDocument();
   });
 
-  it("目标 + 段数合成的那枚 pill 在左栏词条区，不占右栏标记那几节", () => {
+  it("目标 + 段数的 pill 也在右栏「目标」一节里展开；点它定位过去", () => {
     render(<CardDetailDialog card={CARD} onClose={() => {}} />);
 
-    // CARD 单体 + 2 段：单体不标，只留 x2
+    // CARD 单体 + 2 段：单体不标，pill 只留 x2
     expect(within(face()).getByText("x2")).toHaveClass("affix-chip--target");
-    // 右栏是「每一枚标记」的地盘，段数不在这里
-    expect(screen.queryByRole("region", { name: "命中段数" })).not.toBeInTheDocument();
+    // 与词缀同样落进右栏：细看就来这里（左栏只给 pill）
+    expect(within(row("目标", 0)).getByText("x2")).toBeInTheDocument();
+    expect(within(row("目标", 0)).getByText("这张牌会命中 2 次。")).toBeInTheDocument();
+
+    // 点左栏这枚 pill → 右栏对应那条被选中
+    fireEvent.click(within(face()).getByRole("button", { name: "x2" }));
+    expect(row("目标", 0)).toHaveClass("card-detail-mark--active");
   });
 
   it("点左栏某枚标记 → 右栏对应那条被选中（不弹 tooltip）；再点一次取消", () => {

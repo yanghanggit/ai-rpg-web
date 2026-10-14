@@ -1,5 +1,20 @@
 import { readAffixLabel, readAffixParts } from "./readAffixLabel";
-import type { Card } from "./types";
+import type { Card, CardTargetType } from "./types";
+
+/** 目标类型 → 界面说法；**单体是默认，不标**（只有多目标才值得占一枚 pill）。 */
+const TARGET_LABELS: Partial<Record<CardTargetType, string>> = {
+  all: "全体",
+  spread: "散射",
+};
+
+/**
+ * 词条区里「目标 + 段数」合一的那枚 pill：`全体` / `散射` / `自身`（单体不写），
+ * `hit_count > 1` 时后缀 `xN`。两者都为空（单段单体）就返回空串，卡面不渲染这一枚。
+ */
+function targetText(card: Card): string {
+  const label = card.self_target ? "自身" : (TARGET_LABELS[card.target_type] ?? "");
+  return `${label}${card.hit_count > 1 ? `x${card.hit_count}` : ""}`;
+}
 
 /** 三种触发时机的词缀字段名。 */
 export type AffixKey = "on_play_affixes" | "on_hit_affixes" | "on_turn_end_affixes";
@@ -64,7 +79,7 @@ const FLAG_SPECS: {
 
 /**
  * 卡面上的一个标记：chip 与说明共用同一份（卡面 / tooltip / 详情右栏）。
- * `hit_count` 不是标记——它在数值行。
+ * 「目标 + 段数」那枚 pill 也算一枚（`tone: "target"`），与词缀 / 布尔走同一套机制。
  */
 export interface CardMark {
   /** 稳定标识：卡面与详情右栏算出来必须一致，详情据此定位高亮。 */
@@ -79,8 +94,33 @@ export interface CardMark {
   hint: string;
 }
 
-/** 这张卡身上全部要显示的标记：布尔在前、三种时机词缀在后（即卡面顺序）。 */
+/** 目标 / 段数那枚 pill 的说明：先一句「打哪」，再一句「几段」（都没有就不出现）。 */
+function readTargetMark(card: Card): CardMark | null {
+  const label = targetText(card);
+  if (label === "") {
+    return null;
+  }
+  const where = card.self_target
+    ? "以自己为目标。"
+    : card.target_type === "all"
+      ? "命中目标阵营里的所有人。"
+      : card.target_type === "spread"
+        ? "在目标阵营里随机命中。"
+        : "";
+  const hits = card.hit_count > 1 ? `这张牌会命中 ${card.hit_count} 次。` : "";
+  return {
+    id: "target",
+    group: "目标",
+    label,
+    tone: "target",
+    hint: `${where}${hits}`,
+  };
+}
+
+/** 这张卡身上全部要显示的标记：目标 pill 在前，然后布尔，最后三种时机词缀（即卡面顺序）。 */
 export function readCardMarks(card: Card): CardMark[] {
+  const target = readTargetMark(card);
+
   const flags: CardMark[] = FLAG_SPECS.filter((spec) => spec.shown(card)).map((spec) => ({
     id: `flag:${spec.key}`,
     group: FLAG_GROUP,
@@ -103,5 +143,5 @@ export function readCardMarks(card: Card): CardMark[] {
     }),
   );
 
-  return [...flags, ...affixes];
+  return [...(target === null ? [] : [target]), ...flags, ...affixes];
 }

@@ -32,7 +32,7 @@ function PileButton({
     <li className="combat-pile">
       <button
         type="button"
-        className="res res--pile"
+        className={`res res--pile res--pile-${kind}`}
         aria-label={`查看${label}（${cards.length} 张）`}
         title={`查看${label}`}
         onClick={onOpen}
@@ -154,27 +154,19 @@ export default function CombatTurnPanel({
         />
 
         <div className="combat-action-area">
-          {/* 左列：当前行动者的资源 */}
-          <ul className="combat-resources" aria-label="行动者资源">
-            <li className="res res--hp">
-              <span className="res-value">
-                hp {current.stats === null ? "—" : `${current.stats.hp}/${current.stats.max_hp}`}
-              </span>
-              <span className="res-sub">
-                {current.stats === null
-                  ? ""
-                  : `attack ${current.stats.attack} · defense ${current.stats.defense} · speed ${current.stats.speed}`}
-              </span>
-            </li>
-            <li className="res res--energy">
-              <span className="res-gem">{current.energy}</span>
-              <span className="res-label">能量</span>
-            </li>
-            <li className="res res--block">
-              <span className="res-gem">{current.block}</span>
-              <span className="res-label">总格挡</span>
-            </li>
+          {/* 左列：三个牌堆（三角布局——抽牌 / 消耗牌堆在上，弃牌堆居中在下），每个一色 */}
+          <ul className="combat-piles" aria-label="牌堆">
             <PileButton kind="draw" cards={current.piles.draw} onOpen={() => setPile("draw")} />
+            <PileButton
+              kind="exhaust"
+              cards={current.piles.exhaust}
+              onOpen={() => setPile("exhaust")}
+            />
+            <PileButton
+              kind="discard"
+              cards={current.piles.discard}
+              onOpen={() => setPile("discard")}
+            />
           </ul>
 
           {/* 中间：出牌状态条 + 手牌横滑 */}
@@ -271,9 +263,14 @@ export default function CombatTurnPanel({
             )}
           </div>
 
-          {/* 右列：本回合的收尾动作 + 两个牌堆 */}
-          <ul className="combat-piles" aria-label="牌堆">
-            <li className="combat-piles-action">
+          {/* 右列：能量 + 过牌（正方形对角——能量在左上、过牌在右下），两颗都用大方块。
+              hp / 总格挡已经在上方参战者卡上，这里不重复。 */}
+          <ul className="combat-resources" aria-label="行动者资源">
+            <li className="res res--energy">
+              <span className="res-gem">{current.energy}</span>
+              <span className="res-label">能量</span>
+            </li>
+            <li className="combat-pass-slot">
               <button
                 type="button"
                 className="combat-pass"
@@ -284,28 +281,14 @@ export default function CombatTurnPanel({
                   isMonster ? actions.advance.start(current.name) : actions.pass.start(current.name)
                 }
               >
-                <span className="combat-pass-icon" aria-hidden="true">
+                <span className="combat-pass-orb" aria-hidden="true">
                   »
                 </span>
-                {isMonster
-                  ? actions.advance.isBusy
-                    ? "推进中…"
-                    : "推进"
-                  : actions.pass.isBusy
-                    ? "过牌中…"
-                    : "过牌"}
+                <span className="res-label">
+                  {(isMonster ? actions.advance.isBusy : actions.pass.isBusy) ? "PASS…" : "PASS"}
+                </span>
               </button>
             </li>
-            <PileButton
-              kind="exhaust"
-              cards={current.piles.exhaust}
-              onOpen={() => setPile("exhaust")}
-            />
-            <PileButton
-              kind="discard"
-              cards={current.piles.discard}
-              onOpen={() => setPile("discard")}
-            />
           </ul>
         </div>
 

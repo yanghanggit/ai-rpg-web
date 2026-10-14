@@ -49,6 +49,12 @@
   /* 选中位移：手牌**上移**与目标卡**下移**共用这一个值（上下对称）。
      幅度受两侧滚动容器的 padding 托底，所以不会盖住中列的内容（出牌条 / 手牌） */
   --pick-shift: 1.25rem;
+  /* 行动区左右两列里每个部件的**方块 / 圆钮足迹**。牌堆用方块；能量 / 过牌用圆钮（两者等大）。
+     两列按方块同宽（`--combat-box`），中间手牌才不会偏 */
+  --combat-tile: 8.5rem;
+  --combat-orb: 6.5rem;
+  --combat-gap: 0.75rem;
+  --combat-box: calc(2 * var(--combat-tile) + var(--combat-gap));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -2061,56 +2067,68 @@ ul.combat-action-roster {
   color: var(--err);
 }
 
-/* 行动区三栏：左资源 / 中手牌 / 右收尾动作 + 牌堆。
-   中间列顶部空出 `--card-short`（= 一张**横置场景卡**的高度），所以左右两列用 `center`
-   相对这整列的重心对齐——不是各自贴顶，否则中间被抬高后两列会显得沉在下面。 */
+/* 行动区三栏：左牌堆 / 中手牌 / 右能量 + 过牌。
+   两列的**上沿**对齐到「未选中的手牌卡」上沿（见下面的 `margin-top`），所以这里用 `start`。 */
 .combat-action-area {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 1.25rem;
-  align-items: center;
+  align-items: start;
   margin-top: 1.5rem;
 }
 
-/* 行动区左右两列都以手牌卡的足迹高度（--card-tall）为基准高，整行左右两侧读成同一条 */
+/* 行动区左右两列都是 **2×2 的方块阵**：左列 3 个牌堆摆成**三角**（两张在上、弃牌堆居中在下），
+   右列能量 + 过牌摆成**对角**（能量右上、过牌左下）。
+   两列同宽（`--combat-box`），中间手牌才不会偏；上沿 = 未选中的手牌卡上沿：
+   手牌条（`--card-short`）+ 中列行距（0.6rem）+ 手牌列表顶部的选中位移留白（`--pick-shift`）。 */
+.combat-piles,
 .combat-resources {
-  /* 左列 2×2：HP / 能量 / 总格挡 / 抽牌堆 */
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  justify-items: center;
-  align-content: space-evenly;
-  gap: 0.5rem;
-  width: 11.5rem;
-  min-height: var(--card-tall);
-  margin: 0;
+  justify-content: center;
+  gap: var(--combat-gap);
+  width: var(--combat-box);
+  margin: calc(var(--card-short) + 0.6rem + var(--pick-shift)) 0 0;
   padding: 0;
   list-style: none;
 }
 
+/* 左列（牌堆）用方块 */
 .combat-piles {
-  /* 右列也是 2×2（与左列同宽）：上排「过牌」（接近方块的块状按钮）+ 消耗牌堆，下排弃牌堆 */
+  grid-template-columns: repeat(2, var(--combat-tile));
+  grid-auto-rows: var(--combat-tile);
+}
+
+/* 三角的下尖：弃牌堆横跨两列并居中 */
+.combat-piles > .combat-pile:last-child {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+/* 右列：能量 / 过牌 —— 两颗圆钮摆成对角（行高按圆钮 + 名字） */
+.combat-resources {
+  grid-template-columns: repeat(2, var(--combat-orb));
+  grid-auto-rows: auto;
+}
+
+/* 对角：能量在右上 */
+.combat-resources > .res--energy {
+  grid-area: 1 / 2;
+}
+
+/* 对角：过牌在左下 */
+.combat-pass-slot {
+  grid-area: 2 / 1;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  align-content: space-evenly;
-  justify-items: center;
-  gap: 0.5rem;
-  width: 11.5rem;
-  min-height: var(--card-tall);
-  margin: 0;
-  padding: 0;
-  list-style: none;
+  place-items: center;
 }
 
-.combat-piles-action {
-  width: 100%;
-}
-
-/* 资源部件：突出当前行动者的关键数值。形状语言 = 面板（HP）/ 星（能量）/ 六边形（格挡）/ 圆柱（牌堆） */
+/* 资源 / 牌堆部件的公共骨架：形状在上、名字在下 */
 .res {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.2rem;
+  justify-content: center;
+  gap: 0.35rem;
   font-size: 0.72rem;
   color: var(--muted);
   text-align: center;
@@ -2121,27 +2139,35 @@ ul.combat-action-roster {
   color: var(--muted);
 }
 
+/* 能量：与 CardItem 左上角那枚**费用角徽**同一套——实心警黄圆 + 深色数字 */
 .res-gem {
   display: grid;
   place-items: center;
-  width: 4rem;
-  height: 4rem;
-  font-size: 1.1rem;
+  width: var(--combat-orb);
+  height: var(--combat-orb);
+  border-radius: 50%;
+  background: var(--warn);
+  color: var(--bg);
+  font-size: 1.9rem;
   font-weight: 700;
-  color: var(--fg);
+}
+
+/* 能量 / 过牌那列的名字也跟上大块（与数字 / 图标一起读得重） */
+.combat-resources .res-label {
+  font-size: 0.9rem;
 }
 
 .res-cylinder {
   position: relative;
   display: grid;
   place-items: center;
-  width: 4.5rem;
-  height: 3rem;
-  font-size: 1.1rem;
+  width: 4.8rem;
+  height: 3.2rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: var(--fg);
-  background: color-mix(in srgb, var(--ok) 20%, transparent);
-  border: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--pile-tone) 20%, transparent);
+  border: 1px solid color-mix(in srgb, var(--pile-tone) 45%, transparent);
   border-radius: 50% / 0.65rem;
 }
 
@@ -2152,70 +2178,44 @@ ul.combat-action-roster {
   inset: 0 0 auto;
   height: 0.9rem;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--ok) 35%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--ok) 40%, transparent);
+  background: color-mix(in srgb, var(--pile-tone) 38%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--pile-tone) 45%, transparent);
 }
 
-/* 牌堆 = 按钮（点开看这一摞到底是哪些牌）。它与同列的 HP / 能量 / 格挡不同，是可点的，
-   所以独占一颗**完整的描边**（其余只画各自的形状）——「可点」与「只读」在同一列里一眼分得开。 */
+/* 牌堆 = 按钮（点开看这一摞到底是哪些牌）。它与只读的能量不同，是可点的，
+   所以独占一颗**完整的描边**（能量只画自己的圆）——「可点」与「只读」在同一列里一眼分得开。 */
 .combat-pile {
   display: grid;
   place-items: center;
 }
 
 .res--pile {
-  padding: 0.35rem 0.55rem;
-  border-color: color-mix(in srgb, var(--ok) 30%, transparent);
+  /* 每个牌堆一色：抽 = 绿（还能抓）、消 = 橙（永久移出）、弃 = 蓝（这回合用过） */
+  --pile-tone: var(--ok);
+  width: var(--combat-tile);
+  height: var(--combat-tile);
+  padding: 0.3rem 0.4rem;
+  border-color: color-mix(in srgb, var(--pile-tone) 35%, transparent);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--ok) 6%, transparent);
+  background: color-mix(in srgb, var(--pile-tone) 8%, transparent);
+}
+
+.res--pile-draw {
+  --pile-tone: var(--ok);
+}
+
+.res--pile-exhaust {
+  --pile-tone: var(--exhaust);
+}
+
+.res--pile-discard {
+  --pile-tone: var(--retain);
 }
 
 .res--pile:hover:not(:disabled),
 .res--pile:focus-visible {
-  border-color: var(--ok);
-  background: color-mix(in srgb, var(--ok) 16%, transparent);
-}
-
-/* HP：唯一的长方形部件（名字 + 大号数值 + 攻防小字） */
-.res--hp {
-  align-items: stretch;
-  gap: 0.1rem;
-  padding: 0.5rem 0.7rem;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  text-align: left;
-}
-
-.res--hp .res-value {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--fg);
-}
-
-.res--hp .res-sub {
-  font-size: 0.72rem;
-}
-
-/* 能量 = 十角星；总格挡 = 六边形 */
-.res--energy .res-gem {
-  background: color-mix(in srgb, var(--warn) 32%, transparent);
-  clip-path: polygon(
-    50% 0%,
-    61% 35%,
-    98% 35%,
-    68% 57%,
-    79% 91%,
-    50% 70%,
-    21% 91%,
-    32% 57%,
-    2% 35%,
-    39% 35%
-  );
-}
-
-.res--block .res-gem {
-  background: color-mix(in srgb, var(--ok) 30%, transparent);
-  clip-path: polygon(25% 2%, 75% 2%, 100% 50%, 75% 98%, 25% 98%, 0 50%);
+  border-color: var(--pile-tone);
+  background: color-mix(in srgb, var(--pile-tone) 18%, transparent);
 }
 
 /* 中间列：顶部空出一张「横置场景卡」的位置（`--card-short`）放**出牌状态条**，手牌横滑落在它下面 */
@@ -2341,31 +2341,29 @@ button.combat-hand-btn--off {
 }
 
 /* 过牌 / 推进：接近方块的块状按钮（图标在上、短词在下），与左侧资源部件同一副体量 */
+/* PASS（过牌 / 推进）：形制与能量那颗圆钮**完全一致**（圆 + 词在下），只是换成中性色——
+   两颗圆钮等大，摆成对角。 */
 .combat-pass {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 0.35rem;
-  width: 100%;
-  min-height: 4.5rem;
-  padding: 0.5rem 0.35rem;
-  border: 1px solid var(--fg);
-  border-radius: 10px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  background: color-mix(in srgb, var(--fg) 8%, transparent);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  text-align: center;
 }
 
-/* 过牌 / 推进的图标：实心圆底 + 右向双箭头 */
-.combat-pass-icon {
+/* 圆钮本体：与能量的圆同一直径，中间是右向双箭头 */
+.combat-pass-orb {
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  border-radius: 999px;
+  width: var(--combat-orb);
+  height: var(--combat-orb);
+  border-radius: 50%;
   background: var(--fg);
   color: var(--bg);
-  font-size: 0.85rem;
+  font-size: 1.7rem;
   line-height: 1;
 }

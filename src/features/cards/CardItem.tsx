@@ -3,7 +3,7 @@ import { displayName } from "../../components/displayName";
 import CardMarkTip from "./CardMarkTip";
 import type { CardMark } from "./cardMarks";
 import { readCardMarks } from "./cardMarks";
-import type { Card, CardTargetType } from "./types";
+import type { Card } from "./types";
 
 /**
  * 卡牌 · 客户端设计语言（唯一实现）。
@@ -11,27 +11,12 @@ import type { Card, CardTargetType } from "./types";
  * 牌面与参战者卡（`.combatant-card`）同一套「外框 + 内框 + 角落数值」语言：
  * - 左上角：**费用**（圆徽）；左下角：**格挡**（盾）；右下角：**伤害**（三角）。三个角徽**压住内框**。
  * - 内框自上而下：**立绘区**（先空着）→ 名字横幅 → 词条区（目标 / 段数 pill + 三种时机词缀与布尔属性）。
- * - 目标与段数**合成一枚 pill**：`全体` / `散射` / `自身`（单体是默认，不标），多段时后缀 `xN`；
- *   单段单体则不出现。词缀 / 布尔是**带色 chip 按钮**，点它弹 `CardMarkTip`（`onMarkClick`
- *   不给时）。`description` 不进卡面（全文在 `CardDetailDialog`）；`【塞牌】` 只挂在角色卡一侧。
+ * - **词条区里每一枚都是同一套带色 chip 按钮**：目标 / 段数（`tone: "target"`）与词缀 / 布尔走
+ *   同一份 `readCardMarks`，点它弹 `CardMarkTip`（`onMarkClick` 不给时）。“细看”开 `CardDetailDialog`——
+ *   `description` 与每枚标记的全文都在那里，卡面不重述。`【塞牌】` 只挂在角色卡一侧。
  *
  * 手牌没有 `hp` 之说，所以右下角放的是**格挡**而不是血量。
  */
-
-/** 目标类型 → 界面说法；**单体是默认，不标**（只有多目标才值得占一枚 pill）。 */
-const TARGET_LABELS: Partial<Record<CardTargetType, string>> = {
-  all: "全体",
-  spread: "散射",
-};
-
-/**
- * 词条区里「目标 + 段数」合一的那枚 pill：`全体` / `散射` / `自身`（单体不写），
- * `hit_count > 1` 时后缀 `xN`。两者都为空（单段单体）就返回空串，调用方不渲染这一枚。
- */
-function targetText(card: Card): string {
-  const label = card.self_target ? "自身" : (TARGET_LABELS[card.target_type] ?? "");
-  return `${label}${card.hit_count > 1 ? `x${card.hit_count}` : ""}`;
-}
 
 /**
  * 卡牌：**「一张卡长什么样」的唯一实现**，奖励（Spoils）候选、牌组、战斗手牌都用它
@@ -148,12 +133,9 @@ export default function CardItem({
             {claimed ? <span className="badge badge--claimed">已领取</span> : null}
           </div>
 
-          {/* 词条区：目标 / 段数（pill）+ 词缀 / 布尔（带色 chip 按钮）。
-              每一枚词缀都可点——问它"是什么"（或由调用方接管，见 `onMarkClick`）。 */}
+          {/* 词条区：目标 / 段数（pill）+ 词缀 / 布尔（带色 chip 按钮）。二者是同一套：
+              每枚都可点——问它"是什么"（tooltip / 由调用方接管，见 `onMarkClick`）。 */}
           <div className="card-tile-marks">
-            {targetText(card) === "" ? null : (
-              <span className="affix-chip affix-chip--target">{targetText(card)}</span>
-            )}
             {readCardMarks(card).map((mark) => (
               <button
                 key={mark.id}

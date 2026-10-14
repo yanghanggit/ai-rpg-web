@@ -63,7 +63,7 @@ describe("CardItem", () => {
     expect(container.querySelector(".card-chip--block")).toHaveTextContent("0");
   });
 
-  it("目标 + 段数合成一枚 pill：单体多段只剩 xN，且不是可点的标记按钮", () => {
+  it("目标 + 段数合成一枚 pill：单体多段只剩 xN，且与词缀一样可点出说明", () => {
     render(
       <ul>
         <CardItem card={CARD} />
@@ -71,9 +71,15 @@ describe("CardItem", () => {
     );
 
     // CARD 是单体 + 命中 2 段：单体默认不标，只留 x2
-    expect(screen.getByText("x2")).toHaveClass("affix-chip--target");
-    // pill 不是按钮；可点的是词缀 / 布尔那些标记
-    expect(screen.queryByRole("button", { name: /x2/ })).not.toBeInTheDocument();
+    const pill = screen.getByRole("button", { name: "x2" });
+    expect(pill).toHaveClass("affix-chip--target");
+
+    // 与其他词缀同一套机制：点它弹一句初步说明（细看开卡牌详情）
+    fireEvent.click(pill);
+    const tip = screen.getByRole("tooltip");
+    expect(tip).toHaveTextContent("目标");
+    expect(tip).toHaveTextContent("x2");
+    expect(tip).toHaveTextContent("这张牌会命中 2 次。");
   });
 
   it("目标 pill：全体 / 散射 / 自身标出来，单体是默认不标", () => {
