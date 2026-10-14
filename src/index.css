@@ -1254,25 +1254,121 @@ ul.card-tiles {
   list-style: none;
 }
 
-/* 奖励浮窗里竖排：一次只看一个成员的候选，纵向逐张读比并排更好 */
+/* 奖励浮窗里竖排：一次只看一个成员的候选，纵向逐张读比并排更好。
+   卡宽固定为一张竖牌的足迹（`--card-short`）并居中——不拉满整行，牌面才不会被摊平。 */
 ul.card-tiles--stack {
-  grid-template-columns: 1fr;
+  grid-template-columns: var(--card-short);
+  justify-content: center;
 }
 
+/* 卡牌：与参战者卡（`.combatant-card`）同一套「外框 + 内框 + 角徽」语言。
+   `<li>` 只做纵向容器；外框 / 内框 / 角徽都在 `.card-tile-frame` 里。 */
 .card-tile {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  padding: 1.1rem 1.25rem;
+  min-height: var(--card-tall);
+}
+
+/* 外框：留一圈边给内框；三个角徽（费用 / 伤害 / 格挡）压在这圈边上 */
+.card-tile-frame {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0.4rem;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--fg) 4%, var(--bg));
+}
+
+/* 内框：立绘 / 名字 / 词条都收在这一块里；角徽凸出于它 */
+.card-tile-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-height: 0;
+  /* 底部留出二个角徽（伤害 / 格挡）凸出的位置 */
+  margin-bottom: 0.5rem;
+  padding: 0.35rem;
   border: 1px solid var(--border);
   border-radius: 12px;
+  background: color-mix(in srgb, var(--fg) 3%, transparent);
+}
+
+/* 立绘区（先空着）：与参战者卡一样是最大的一块 */
+.card-tile-art {
+  flex: 1.6 1 0;
+  min-height: 0;
+  border-radius: 8px;
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--fg) 10%, transparent), transparent),
+    color-mix(in srgb, var(--fg) 4%, transparent);
+  pointer-events: none;
+}
+
+/* 三个角徽：形状各不相同（费用圆 / 伤害六角 / 格挡盾），都压住内框 */
+.card-chip {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 2.3rem;
+  height: 2.3rem;
+  pointer-events: none;
+}
+
+.card-chip-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.card-chip-value {
+  position: relative;
+  color: var(--bg);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* 左上：费用（圆） */
+.card-chip--cost {
+  top: 0.05rem;
+  left: 0.05rem;
+}
+
+.card-chip--cost .card-chip-bg {
+  fill: var(--warn);
+}
+
+/* 左下：伤害（六角） */
+.card-chip--damage {
+  bottom: 0.05rem;
+  left: 0.05rem;
+}
+
+.card-chip--damage .card-chip-bg {
+  fill: var(--err);
+}
+
+/* 右下：格挡（盾；卡没有血量） */
+.card-chip--block {
+  bottom: 0.05rem;
+  right: 0.05rem;
+}
+
+.card-chip--block .card-chip-bg {
+  fill: var(--retain);
 }
 
 /* 已领取的卡：绿边 + 淡绿底 + 「已领取」徽标，与候选卡一眼分开 */
-.card-tile--claimed {
+.card-tile--claimed .card-tile-frame {
   border-color: var(--ok);
-  border-width: 2px;
   background: color-mix(in srgb, var(--ok) 8%, transparent);
 }
 
@@ -1282,11 +1378,19 @@ ul.card-tiles--stack {
   font-weight: 600;
 }
 
+/* 名字横幅：与参战者卡同一套（名字 + 已领取 徽标，居中） */
 .card-tile-head {
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 1.8rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fg) 8%, transparent);
 }
 
 .card-tile-name {
@@ -1294,20 +1398,27 @@ ul.card-tiles--stack {
   font-weight: 600;
 }
 
-.card-tile-stats {
-  margin: 0;
-  font-size: var(--card-font-stats);
-  line-height: 1.6;
-}
-
-/* 标记行：布尔属性 + 三种时机的词缀，统一 chip；抬到「整卡可点」那层之上 */
+/* 词条区：目标 / 段数（pill）+ 词缀 / 布尔（带色 chip 按钮）。占内框下半，居中。 */
 .card-tile-marks {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem;
   position: relative;
   z-index: 1;
+  display: flex;
+  flex: 1 1 0;
+  flex-wrap: wrap;
+  align-content: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--fg) 4%, transparent);
+  /* 面板本身不挡点击（让整卡可点），只有词缀按钮可点 */
+  pointer-events: none;
+}
+
+.card-tile-marks button.affix-chip {
+  pointer-events: auto;
 }
 
 /* 标记 chip：词缀与布尔属性共用一颗（`cardMarks.ts` 里合成同一个形状）。
@@ -1376,6 +1487,12 @@ ul.card-tiles--stack {
 .affix-chip--unplayable {
   border-color: var(--unplayable);
   color: var(--unplayable);
+}
+
+/* 「目标 + 段数」合一的那枚 pill：中性色，不与词缀 / 布尔的颜色冲突 */
+.affix-chip--target {
+  border-color: var(--muted);
+  color: var(--muted);
 }
 
 /* 标记说明小浮层（`CardMarkTip`）："这是什么"，点一下才出。
@@ -1476,7 +1593,7 @@ ul.card-tiles--deck > .card-tile {
   z-index: 1;
 }
 
-.card-tile--open:hover {
+.card-tile--open:hover .card-tile-frame {
   border-color: var(--fg);
 }
 
@@ -2112,6 +2229,9 @@ ul.combat-hand-list .card-tile {
 /* 被选中待出的手牌：**上移**（"提牌"）+ 绿框（比 hover 更强，且 hover 也保持绿） */
 ul.combat-hand-list .card-tile--selected {
   transform: translateY(calc(-1 * var(--pick-shift)));
+}
+
+ul.combat-hand-list .card-tile--selected .card-tile-frame {
   border-color: var(--ok);
   box-shadow: inset 0 0 0 1px var(--ok);
 }

@@ -7,38 +7,29 @@ import type { Card, CardTargetType } from "./types";
 /**
  * 卡牌 · 客户端设计语言（唯一实现）。
  *
- * 卡面分三块：身份（名字 / `source`）、数值行（`statsText`）、标记行——三种时机词缀与五个布尔属性
- * 都渲染成同一排 chip，`description` 不进卡面（全文在 `CardDetailDialog`）。点标记弹 `CardMarkTip`
- * （`onMarkClick` 不给时）。`transferable` 是牌属性，`【塞牌】` 不进卡面，只挂在角色卡一侧。
+ * 牌面与参战者卡（`.combatant-card`）同一套「外框 + 内框 + 角落数值」语言：
+ * - 左上角：**费用**（圆徽）；左下角：**伤害**（六角）；右下角：**格挡**（盾）。三个角徽**压住内框**。
+ * - 内框自上而下：**立绘区**（先空着）→ 名字横幅 → 词条区（目标 / 段数 pill + 三种时机词缀与布尔属性）。
+ * - 目标与段数**合成一枚 pill**：`全体` / `散射` / `自身`（单体是默认，不标），多段时后缀 `xN`；
+ *   单段单体则不出现。词缀 / 布尔是**带色 chip 按钮**，点它弹 `CardMarkTip`（`onMarkClick`
+ *   不给时）。`description` 不进卡面（全文在 `CardDetailDialog`）；`【塞牌】` 只挂在角色卡一侧。
+ *
+ * 手牌没有 `hp` 之说，所以右下角放的是**格挡**而不是血量。
  */
 
-/** 目标类型 → 界面说法；`self_target` 的卡不看这个（统一显示「自身」）。 */
-const TARGET_LABELS: Record<CardTargetType, string> = {
-  single: "单体",
-  all: "阵营全体",
-  spread: "阵营散射",
+/** 目标类型 → 界面说法；**单体是默认，不标**（只有多目标才值得占一枚 pill）。 */
+const TARGET_LABELS: Partial<Record<CardTargetType, string>> = {
+  all: "全体",
+  spread: "散射",
 };
 
 /**
- * 数值行：`费用 1 · 伤害 2 · 格挡 0 · 目标 单体 · 段数 ×2`（单段时最后一段省略）。
- *
- * `段数`（`hit_count`）放在最后、`目标` 之后：它是数值，和 `费用 / 伤害 / 格挡` 同属一行，
- * **不**去和词缀 / 布尔争标记行（`.card-tile-marks`）的位置。
- *
- * **只在多段时追加**：`hit_count === 1` 是绝大多数牌的默认，写出来只是噪声；省掉它，
- * 「段数 ×N」才会在多段牌上跳出来（这正是要在数值行里一眼看到的差异）。
+ * 词条区里「目标 + 段数」合一的那枚 pill：`全体` / `散射` / `自身`（单体不写），
+ * `hit_count > 1` 时后缀 `xN`。两者都为空（单段单体）就返回空串，调用方不渲染这一枚。
  */
-function statsText(card: Card): string {
-  const parts = [
-    `费用 ${card.cost}`,
-    `伤害 ${card.damage}`,
-    `格挡 ${card.block}`,
-    `目标 ${card.self_target ? "自身" : TARGET_LABELS[card.target_type]}`,
-  ];
-  if (card.hit_count > 1) {
-    parts.push(`段数 ×${card.hit_count}`);
-  }
-  return parts.join(" · ");
+function targetText(card: Card): string {
+  const label = card.self_target ? "自身" : (TARGET_LABELS[card.target_type] ?? "");
+  return `${label}${card.hit_count > 1 ? `x${card.hit_count}` : ""}`;
 }
 
 /**
@@ -107,40 +98,72 @@ export default function CardItem({
 
   const content = (
     <>
-      <div className="card-tile-head">
-        <span className="card-tile-name">{card.name}</span>
-        {claimed ? <span className="badge badge--claimed">已领取</span> : null}
+      <div className="card-tile-frame">
+        {/* 左上：费用 */}
+        <span className="card-chip card-chip--cost" title="费用">
+          <svg className="card-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
+            <circle cx="50" cy="50" r="48" />
+          </svg>
+          <span className="card-chip-value">{card.cost}</span>
+        </span>
+
+        {/* 左下：伤害 */}
+        <span className="card-chip card-chip--damage" title="伤害">
+          <svg className="card-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
+            <polygon points="50 3 93 26 93 74 50 97 7 74 7 26" />
+          </svg>
+          <span className="card-chip-value">{card.damage}</span>
+        </span>
+
+        {/* 右下：格挡（盾牌；卡没有血量） */}
+        <span className="card-chip card-chip--block" title="格挡">
+          <svg className="card-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
+            <path d="M50 5 L91 21 V51 C91 76 72 91 50 97 C28 91 9 76 9 51 V21 Z" />
+          </svg>
+          <span className="card-chip-value">{card.block}</span>
+        </span>
+
+        {/* 内框：立绘 / 名字 / 词条；三个角徽压住它的角 */}
+        <div className="card-tile-inner">
+          <span className="card-tile-art" aria-hidden="true" />
+
+          <div className="card-tile-head">
+            <span className="card-tile-name">{card.name}</span>
+            {claimed ? <span className="badge badge--claimed">已领取</span> : null}
+          </div>
+
+          {/* 词条区：目标 / 段数（pill）+ 词缀 / 布尔（带色 chip 按钮）。
+              每一枚词缀都可点——问它"是什么"（或由调用方接管，见 `onMarkClick`）。 */}
+          <div className="card-tile-marks">
+            {targetText(card) === "" ? null : (
+              <span className="affix-chip affix-chip--target">{targetText(card)}</span>
+            )}
+            {readCardMarks(card).map((mark) => (
+              <button
+                key={mark.id}
+                type="button"
+                className={`affix-chip affix-chip--${mark.tone}`}
+                aria-describedby={tip?.mark.id === mark.id ? tipId : undefined}
+                onClick={(event) => handleMarkClick(mark, event.currentTarget)}
+              >
+                {mark.label}
+              </button>
+            ))}
+          </div>
+
+          {showSource ? (
+            <p
+              className={
+                isForeignSource
+                  ? "card-tile-source card-tile-source--foreign"
+                  : "muted card-tile-source"
+              }
+            >
+              来源：{card.source}
+            </p>
+          ) : null}
+        </div>
       </div>
-
-      <p className="muted card-tile-stats">{statsText(card)}</p>
-
-      {/* 标记行：布尔属性 + 三种时机的词缀，统一 chip；抬到「整卡可点」那层之上。
-          每一枚都可点——问它"是什么"（或由调用方接管，见 `onMarkClick`）。 */}
-      <div className="card-tile-marks">
-        {readCardMarks(card).map((mark) => (
-          <button
-            key={mark.id}
-            type="button"
-            className={`affix-chip affix-chip--${mark.tone}`}
-            aria-describedby={tip?.mark.id === mark.id ? tipId : undefined}
-            onClick={(event) => handleMarkClick(mark, event.currentTarget)}
-          >
-            {mark.label}
-          </button>
-        ))}
-      </div>
-
-      {showSource ? (
-        <p
-          className={
-            isForeignSource
-              ? "card-tile-source card-tile-source--foreign"
-              : "muted card-tile-source"
-          }
-        >
-          来源：{card.source}
-        </p>
-      ) : null}
 
       {action ? <div className="card-actions">{action}</div> : null}
     </>

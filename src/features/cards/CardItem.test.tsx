@@ -50,29 +50,61 @@ describe("CardItem", () => {
     expect(screen.getByText("[余音]")).toHaveClass("affix-chip--turn-end");
   });
 
-  it("命中段数写在数值行「目标」之后，不进词缀 / 布尔那排标记", () => {
+  it("费用 / 伤害 / 格挡是三枚角徽（各一副不同形状）", () => {
+    const { container } = render(
+      <ul>
+        <CardItem card={CARD} />
+      </ul>,
+    );
+
+    expect(container.querySelector(".card-chip--cost")).toHaveTextContent("1");
+    expect(container.querySelector(".card-chip--damage")).toHaveTextContent("2");
+    // 卡没有血量，右下角放的是格挡
+    expect(container.querySelector(".card-chip--block")).toHaveTextContent("0");
+  });
+
+  it("目标 + 段数合成一枚 pill：单体多段只剩 xN，且不是可点的标记按钮", () => {
     render(
       <ul>
         <CardItem card={CARD} />
       </ul>,
     );
 
-    // 数值行以「段数 ×N」结尾（在「目标」之后）
-    expect(screen.getByText(/目标 单体 · 段数 ×2$/)).toBeInTheDocument();
-    // 且不以 chip 形式出现在标记行
-    expect(screen.queryByRole("button", { name: /段数/ })).not.toBeInTheDocument();
+    // CARD 是单体 + 命中 2 段：单体默认不标，只留 x2
+    expect(screen.getByText("x2")).toHaveClass("affix-chip--target");
+    // pill 不是按钮；可点的是词缀 / 布尔那些标记
+    expect(screen.queryByRole("button", { name: /x2/ })).not.toBeInTheDocument();
   });
 
-  it("单段不写「段数」，只有多段才显示（省掉噪声、突出多段）", () => {
-    render(
+  it("目标 pill：全体 / 散射 / 自身标出来，单体是默认不标", () => {
+    const { container, rerender } = render(
       <ul>
-        <CardItem card={{ ...CARD, hit_count: 1 }} />
+        <CardItem card={{ ...CARD, target_type: "all", hit_count: 1 }} />
       </ul>,
     );
+    expect(screen.getByText("全体")).toHaveClass("affix-chip--target");
 
-    // 数值行到「目标」为止，不再拖一段「段数 ×1」
-    expect(screen.getByText(/目标 单体$/)).toBeInTheDocument();
-    expect(screen.queryByText(/段数/)).not.toBeInTheDocument();
+    rerender(
+      <ul>
+        <CardItem card={{ ...CARD, target_type: "spread", hit_count: 3 }} />
+      </ul>,
+    );
+    expect(screen.getByText("散射x3")).toHaveClass("affix-chip--target");
+
+    rerender(
+      <ul>
+        <CardItem card={{ ...CARD, self_target: true, hit_count: 1 }} />
+      </ul>,
+    );
+    expect(screen.getByText("自身")).toHaveClass("affix-chip--target");
+
+    // 单段单体：二者都为空，这枚 pill 不渲染
+    rerender(
+      <ul>
+        <CardItem card={{ ...CARD, target_type: "single", hit_count: 1 }} />
+      </ul>,
+    );
+    expect(container.querySelector(".affix-chip--target")).toBeNull();
   });
 
   it("playable === false 才标「不可出牌」，卡面永远不出现【塞牌】", () => {
@@ -95,9 +127,10 @@ describe("CardItem", () => {
     );
 
     expect(screen.queryByText(/楔进进程的缝/)).not.toBeInTheDocument();
-    // 名字 / 数值行 / 标记行照旧在卡面上（省下来的位置就是那句叙述）
+    // 名字 / 角徽 / 词条照旧在卡面上（省下来的位置就是那句叙述）
     expect(screen.getByText("钉入")).toBeInTheDocument();
-    expect(screen.getByText(/费用 1/)).toBeInTheDocument();
+    expect(screen.getByTitle("费用")).toHaveTextContent("1");
+    expect(screen.getByTitle("伤害")).toHaveTextContent("2");
     expect(screen.getByText("保留")).toBeInTheDocument();
   });
 
