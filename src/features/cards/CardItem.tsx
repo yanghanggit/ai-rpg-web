@@ -8,7 +8,7 @@ import type { Card, CardTargetType } from "./types";
  * 卡牌 · 客户端设计语言（唯一实现）。
  *
  * 牌面与参战者卡（`.combatant-card`）同一套「外框 + 内框 + 角落数值」语言：
- * - 左上角：**费用**（圆徽）；左下角：**伤害**（六角）；右下角：**格挡**（盾）。三个角徽**压住内框**。
+ * - 左上角：**费用**（圆徽）；左下角：**格挡**（盾）；右下角：**伤害**（三角）。三个角徽**压住内框**。
  * - 内框自上而下：**立绘区**（先空着）→ 名字横幅 → 词条区（目标 / 段数 pill + 三种时机词缀与布尔属性）。
  * - 目标与段数**合成一枚 pill**：`全体` / `散射` / `自身`（单体是默认，不标），多段时后缀 `xN`；
  *   单段单体则不出现。词缀 / 布尔是**带色 chip 按钮**，点它弹 `CardMarkTip`（`onMarkClick`
@@ -107,15 +107,15 @@ export default function CardItem({
           <span className="card-chip-value">{card.cost}</span>
         </span>
 
-        {/* 左下：伤害 */}
+        {/* 右下：伤害（三角，尖一些） */}
         <span className="card-chip card-chip--damage" title="伤害">
           <svg className="card-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
-            <polygon points="50 3 93 26 93 74 50 97 7 74 7 26" />
+            <polygon points="50 4 95 93 5 93" />
           </svg>
           <span className="card-chip-value">{card.damage}</span>
         </span>
 
-        {/* 右下：格挡（盾牌；卡没有血量） */}
+        {/* 左下：格挡（盾牌；卡没有血量） */}
         <span className="card-chip card-chip--block" title="格挡">
           <svg className="card-chip-bg" viewBox="0 0 100 100" aria-hidden="true">
             <path d="M50 5 L91 21 V51 C91 76 72 91 50 97 C28 91 9 76 9 51 V21 Z" />

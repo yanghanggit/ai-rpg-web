@@ -1346,24 +1346,29 @@ ul.card-tiles--stack {
   fill: var(--warn);
 }
 
-/* 左下：伤害（六角） */
-.card-chip--damage {
+/* 左下：格挡（盾；卡没有血量） */
+.card-chip--block {
   bottom: 0.05rem;
   left: 0.05rem;
+}
+
+.card-chip--block .card-chip-bg {
+  fill: var(--retain);
+}
+
+/* 右下：伤害（三角，尖一些） */
+.card-chip--damage {
+  bottom: 0.05rem;
+  right: 0.05rem;
 }
 
 .card-chip--damage .card-chip-bg {
   fill: var(--err);
 }
 
-/* 右下：格挡（盾；卡没有血量） */
-.card-chip--block {
-  bottom: 0.05rem;
-  right: 0.05rem;
-}
-
-.card-chip--block .card-chip-bg {
-  fill: var(--retain);
+/* 三角上窄下宽：数字往下坐一点，才落在实处 */
+.card-chip--damage .card-chip-value {
+  transform: translateY(0.28rem);
 }
 
 /* 已领取的卡：绿边 + 淡绿底 + 「已领取」徽标，与候选卡一眼分开 */
