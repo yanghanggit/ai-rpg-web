@@ -5,7 +5,7 @@
  * 角色 `WornCostumeComponent`），由 move / craft 动作改写；mock 里直接改这几份数组，
  * 让 `pnpm dev:mock` 下「移动 / 合成后列表变化」可见。行为对齐后端：
  * - 移动按名字逐个搬；
- * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 修正规则，装备/时装不堆叠；
+ * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 内置卡牌规格，装备/时装不堆叠；
  * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物按同一规则并入储物箱。
  */
 import { COMPONENT } from "../features/entities/componentNames";
@@ -31,7 +31,20 @@ const CRAFTED_ITEMS: Record<Workshop, RawItem> = {
     type: "ConsumableItem",
     description: "（mock）工坊合成的回气药剂，饮下后能立刻缓过一口气。",
     count: 1,
-    modifiers: ["（mock）恢复少量体力。"],
+    cards: [
+      {
+        name: "消耗品.回气药剂",
+        description: "（mock）饮下后缓过一口气。",
+        cost: 0,
+        exhaust: true,
+        retain: false,
+        damage: 3,
+        hit_count: 1,
+        block: 0,
+        target_type: "single",
+        self_target: false,
+      },
+    ],
     resources: [],
   },
   gear: {
@@ -65,15 +78,35 @@ function clone<T>(value: T): T {
 
 /**
  * 堆叠身份键：对齐后端 `models/utils.py::_item_stack_key`。
- * 材料按名称，消耗品按名称 + 修正规则；其余（装备 / 时装）不堆叠，返回 `undefined`。
+ * 材料按名称，消耗品按名称 + 内置卡牌规格；其余（装备 / 时装）不堆叠，返回 `undefined`。
  */
+function cardSignature(card: RawItem): unknown[] {
+  const affixes = (key: string): unknown[] => (Array.isArray(card[key]) ? card[key] : []);
+  return [
+    card.damage ?? 0,
+    card.hit_count ?? 1,
+    card.block ?? 0,
+    card.cost ?? 0,
+    String(card.target_type ?? "single"),
+    card.self_target === true,
+    card.playable !== false,
+    card.exhaust === true,
+    card.retain === true,
+    card.ethereal === true,
+    card.transferable === true,
+    affixes("on_play_affixes"),
+    affixes("on_hit_affixes"),
+    affixes("on_turn_end_affixes"),
+  ];
+}
+
 function stackKey(item: RawItem): string | undefined {
   if (item.type === "MaterialItem") {
     return JSON.stringify(["MaterialItem", item.name]);
   }
   if (item.type === "ConsumableItem") {
-    const prompt = Array.isArray(item.modifiers) ? item.modifiers : [];
-    return JSON.stringify(["ConsumableItem", item.name, prompt]);
+    const cards = Array.isArray(item.cards) ? (item.cards as RawItem[]) : [];
+    return JSON.stringify(["ConsumableItem", item.name, cards.map(cardSignature)]);
   }
   return undefined;
 }
@@ -174,6 +207,20 @@ export function addMockInventoryItems(items: RawItem[]): void {
   for (const item of items) {
     addItem(inventory, item);
   }
+}
+
+/**
+ * 从随身背包按名字移除**整条**消耗品（消耗其全部 count），返回被移除的道具；未命中返回 `null`。
+ * 对齐后端 `models/utils.py::remove_item_by_uuid` + `UseConsumableItemActionSystem`：
+ * 先扣库存、扣成功才物化。
+ */
+export function takeMockInventoryConsumable(name: string): RawItem | null {
+  const index = inventory.findIndex((item) => item.name === name && item.type === "ConsumableItem");
+  if (index === -1) {
+    return null;
+  }
+  const [removed] = inventory.splice(index, 1);
+  return removed ?? null;
 }
 
 /** 按名字逐个消耗储物箱材料（每个名字扣 1），并把产物放回储物箱。 */

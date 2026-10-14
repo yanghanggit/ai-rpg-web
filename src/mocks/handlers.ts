@@ -438,7 +438,7 @@ export const handlers = [
 
   http.post(api("/api/dungeon/combat/use_consumable/v1/"), async ({ request }) => {
     const body = (await request.json()) as ApiBody<"/api/dungeon/combat/use_consumable/v1/">;
-    const result = useMockConsumable(body.item_name, body.targets ?? []);
+    const result = useMockConsumable(body.item_name);
     if (!result.ok) {
       return HttpResponse.json({ detail: result.message }, { status: 400 });
     }

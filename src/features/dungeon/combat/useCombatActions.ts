@@ -38,10 +38,10 @@ export function useCombatActions(userName: string, gameName: string) {
   });
 
   const use = useJobAction({
-    request: async ({ item, targets }: { item: string; targets: string[] }) =>
+    request: async ({ item }: { item: string }) =>
       unwrap(
         await client.POST("/api/dungeon/combat/use_consumable/v1/", {
-          body: { ...body, item_name: item, targets },
+          body: { ...body, item_name: item },
         }),
       ),
     onCompleted,
@@ -96,7 +96,7 @@ export function useCombatActions(userName: string, gameName: string) {
       error: play.error,
     },
     use: {
-      start: (item: string, targets: string[]) => use.start({ item, targets }),
+      start: (item: string) => use.start({ item }),
       isBusy: use.isStarting || use.isRunning,
       error: use.error,
     },

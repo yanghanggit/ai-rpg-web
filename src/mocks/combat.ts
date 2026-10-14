@@ -26,7 +26,7 @@ import {
   monsterDeckFixtures,
   roundFixture,
 } from "./fixtures";
-import { addMockInventoryItems } from "./items";
+import { addMockInventoryItems, takeMockInventoryConsumable } from "./items";
 import { readMockPartyNames } from "./opening";
 
 type RawCard = Record<string, unknown>;
@@ -342,18 +342,45 @@ export function playMockCards(
   return { ok: true, message: "出牌完成" };
 }
 
-/** 使用消耗品：记日志 / 叙事并累加次数（不推进行动权）。 */
-export function useMockConsumable(
-  itemName: string,
-  targets: readonly string[],
-): { ok: boolean; message: string } {
+/**
+ * 使用消耗品：先扣整条库存（消耗其全部 count），再把「每个内置牌 × count」物化进当前行动者手牌。
+ * 不推进行动权，效果结算交给之后的出牌（对应后端 `UseConsumableItemActionSystem`）。
+ */
+export function useMockConsumable(itemName: string): { ok: boolean; message: string } {
   const check = validateTurn();
   if (!check.ok) {
     return { ok: false, message: check.message };
   }
-  const targetLabel = targets.length > 0 ? targets.join("、") : "（自动目标）";
-  check.round.consumable_log.push(`使用『${itemName}』对 ${targetLabel} 生效。`);
-  check.round.consumable_narrative.push(`一股暖流涌入体内，『${itemName}』的效力发挥了作用。`);
+  const actor = battle.get(check.actor);
+  if (actor === undefined) {
+    return { ok: false, message: `找不到当前行动角色 ${check.actor}` };
+  }
+
+  const removed = takeMockInventoryConsumable(itemName);
+  if (removed === null) {
+    return { ok: false, message: `背包中找不到消耗品『${itemName}』` };
+  }
+
+  const specs = Array.isArray(removed.cards) ? (removed.cards as RawCard[]) : [];
+  const count = typeof removed.count === "number" ? removed.count : 1;
+  const materialized: RawCard[] = [];
+  for (const spec of specs) {
+    for (let i = 0; i < count; i += 1) {
+      const card = clone(spec);
+      card.uuid = `mock-consumable-${String(removed.uuid)}-${materialized.length}`;
+      card.source = check.actor;
+      card.exhaust = true;
+      card.retain = true;
+      materialized.push(card);
+    }
+  }
+  actor.hand.push(...materialized);
+
+  const cardNames = materialized.map((card) => String(card.name)).join("、");
+  check.round.consumable_log.push(
+    `[${check.actor} 使用 ${itemName} ×${count}] 生成手牌「${cardNames}」`,
+  );
+  check.round.consumable_narrative.push("（mock）消耗品已物化为手牌，待出牌结算。");
   check.round.consumable_use_count += 1;
   return { ok: true, message: "使用完成" };
 }

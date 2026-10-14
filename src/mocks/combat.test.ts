@@ -122,13 +122,23 @@ describe("回合行动", () => {
     expect(playMockCards(PLAYER, "不存在的卡", [MONSTER_1]).ok).toBe(false);
   });
 
-  it("消耗品 / 装备记日志并累加次数", () => {
+  it("消耗品先扣库存、物化为手牌；装备记日志并累加次数", () => {
     startRound();
-    expect(useMockConsumable("消耗品.回气药剂", [PLAYER])).toMatchObject({ ok: true });
+    expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(5);
+
+    expect(useMockConsumable("消耗品.治疗药水")).toMatchObject({ ok: true });
     expect(equipMockGear("装备.短斧")).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
     expect(round?.consumable_use_count).toBe(1);
     expect(round?.gear_equip_count).toBe(1);
+    expect(round?.consumable_log).toHaveLength(1);
+    // 治疗药水 count=2 → 物化 2 张手牌
+    expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(7);
+  });
+
+  it("背包里没有的消耗品无法使用", () => {
+    startRound();
+    expect(useMockConsumable("消耗品.不存在").ok).toBe(false);
   });
 
   it("过牌推进到下一个角色，全员行动完后结束回合", () => {
