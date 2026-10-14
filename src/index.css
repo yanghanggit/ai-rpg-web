@@ -2275,19 +2275,36 @@ ul.combat-hand-list .card-tile--selected .card-tile-frame {
   text-align: center;
 }
 
-/* 提示矩形：把「已选 / 目标」那段话折行收进一个有边框的块里；宽度给上限，不做成一整条横幅。
-   高度与右边两颗卡状按钮对齐，三个块读成一行。 */
-.combat-hand-hint {
+/* 卡的信息 + 「查看详情」是**同一颗按钮**：这块本来就是那张牌的身份证，点它开卡牌详情
+   （与词条 chip、名单卡一样「点开看全文」）。两行：`已选` 一行、`目标` 一行；
+   左边那枚 `☰` 与大图标按钮同族，提示"点得开"；悬停靠全局 `button:hover` 那层描边。 */
+.combat-hand-info {
   display: flex;
   align-items: center;
-  max-width: 30rem;
+  gap: 0.9rem;
+  width: 18rem;
   min-height: 7.5rem;
-  margin: 0;
   padding: 0.9rem 1.1rem;
-  border: 1px solid var(--border);
   border-radius: 12px;
   text-align: left;
   line-height: 1.6;
+}
+
+.combat-hand-info-glyph {
+  flex: none;
+  font-size: 1.75rem;
+  line-height: 1;
+  color: var(--muted);
+}
+
+.combat-hand-info-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.combat-hand-info:hover:not(:disabled) .combat-hand-info-glyph {
+  color: var(--fg);
 }
 
 /* 卡状按钮：与「回到地图」卡（`.stage-next`）同一副形状（大图标 + 小字），只是缩成方块、小一号 */
@@ -2325,17 +2342,18 @@ ul.combat-hand-list .card-tile--selected .card-tile-frame {
   background: color-mix(in srgb, var(--ok) 12%, transparent);
 }
 
-/* 「不可出牌」：按钮**原位不动、形状与文案不变**（“这里本来能出牌，只是这张牌不行”），
-   只换成灰调 + 禁行图标。它与"正在忙"不是一回事：后者是暂时的，靠全局
-   `button:disabled` 那 45% 淡出就够；这一颗得读得清，所以反而把透明度收回来，
-   用与卡面那枚「不可出牌」chip 同一个色说话。写在 `button:disabled` 之后，避免倒序。 */
+/* 「不可出牌」/「能量不足」/「选择目标」：按钮**原位不动、形状不变**（“这里本来能出牌，只是
+   眼下不行”），只换成灰调 + 禁行图标，理由直接写在按钮的字上（`playState.label`）。
+   它与"正在忙"不是一回事：后者是暂时的，靠全局 `button:disabled` 那 45% 淡出就够；
+   这一颗得读得清，所以反而把透明度收回来，用与卡面那枚「不可出牌」chip 同一个色说话。
+   写在 `button:disabled` 之后，避免倒序。 */
 button.combat-hand-btn--off {
   border-color: var(--border);
   color: var(--unplayable);
   opacity: 1;
 }
 
-.combat-hand-btn--view,
+/* 取消 = 次要（静默灰） */
 .combat-hand-btn--cancel {
   color: var(--muted);
 }

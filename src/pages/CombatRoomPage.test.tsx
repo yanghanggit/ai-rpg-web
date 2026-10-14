@@ -32,6 +32,15 @@ function cardTileOf(cardName: string): HTMLElement {
   return tile;
 }
 
+/** 出牌条（中间那条）：卡面上也有同名词（如「不可出牌」chip），查询要限定在这里。 */
+function handBar(): HTMLElement {
+  const bar = document.querySelector(".combat-hand-bar");
+  if (!(bar instanceof HTMLElement)) {
+    throw new Error("页面上没有出牌条");
+  }
+  return bar;
+}
+
 /** 当前行动者那张参战者卡（名单用 `aria-current` 标出来）。 */
 function currentCombatant(): HTMLElement {
   const el = document.querySelector('[aria-current="true"]');
@@ -324,7 +333,7 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(within(cardTileOf("劈斩")).getByRole("button", { name: "选中手牌：劈斩" }));
     // 选中后名单进入「选目标」态：整卡可点；点一张 = **只选目标**（不直接出牌）
     fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
-    // 两次选择都齐了，才长出「出牌」确认钮
+    // 两次选择都齐了，才把「出牌」转正
     fireEvent.click(screen.getByRole("button", { name: "出牌" }));
 
     // 出牌成功 → 该卡离开手牌
@@ -338,28 +347,28 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(info).getByText(/使用『劈斩』对 怪物.石像鬼/)).toBeInTheDocument();
   });
 
-  it("选牌/选目标都要两次：手牌上移、目标下移，再点各自缩回去；两次都齐才出现「出牌」", async () => {
+  it("选牌/选目标都要两次：手牌上移、目标下移，再点各自缩回去；两次都齐「出牌」才转正", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
     await screen.findByRole("list", { name: "手牌" });
     const cardTile = cardTileOf("劈斩");
-    // 只选了牌（上移）还没选目标：只给提示，没有「出牌」
+    // 只选了牌（上移）还没选目标：「出牌」原位不动，只是灰成「选择目标」
     fireEvent.click(within(cardTile).getByRole("button", { name: "选中手牌：劈斩" }));
     expect(cardTile).toHaveClass("card-tile--selected");
-    expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "选择目标" })).toBeDisabled();
 
-    // 选目标（下移）→ 才长出「出牌」
+    // 选目标（下移）→ 同一颗按钮才转正
     fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
     const paper = screen.getByRole("button", { name: "选择目标：石像鬼" }).closest("li");
     expect(paper).toHaveClass("combatant-card--target");
-    expect(screen.getByRole("button", { name: "出牌" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "出牌" })).toBeEnabled();
 
-    // 再点同一张目标 → 缩回去，「出牌」也收回
+    // 再点同一张目标 → 缩回去，「出牌」跟着退回灰态
     fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
     expect(paper).not.toHaveClass("combatant-card--target");
-    expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "选择目标" })).toBeDisabled();
 
     // 再点手牌 → 取消选中
     fireEvent.click(within(cardTile).getByRole("button", { name: "取消选中：劈斩" }));
@@ -401,18 +410,18 @@ describe("副本房间 · 战斗房间", () => {
     ).toBeInTheDocument();
     expect(document.querySelector(".res--energy .res-gem")).toHaveTextContent("1");
 
-    // 战吼费用 2 > 剩余 1：两次选择照旧能选，但「出牌」按不下去、图标换禁行
+    // 战吼费用 2 > 剩余 1：两次选择照旧能选，但「出牌」按不下去、理由**直接写在字上**
     fireEvent.click(within(cardTileOf("战吼")).getByRole("button", { name: "选中手牌：战吼" }));
     fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
-    const play = screen.getByRole("button", { name: "出牌" });
+    const play = screen.getByRole("button", { name: "能量不足" });
     expect(play).toBeDisabled();
     expect(play).toHaveClass("combat-hand-btn--off");
     expect(within(play).getByText("⊘")).toBeInTheDocument();
-    // 「灰掉」就够，不再另给一句提示（理由在卡上的「费用」与左列的能量星里）
+    // 「灰掉」+ 字面上的理由就够，不再另给一句提示（数值在卡上的「费用」与右列的能量圆钮里）
     expect(play).not.toHaveAttribute("title");
   });
 
-  it("出牌条：提示折行收在一块矩形里，几颗卡状按钮与「回到地图」同族", async () => {
+  it("出牌条：卡的信息与「查看详情」合成一颗按钮（两行），三块常驻、位置不跳", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -422,27 +431,35 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByText("点一张手牌开始出牌。")).toHaveClass("combat-hand-note");
 
     fireEvent.click(within(cardTileOf("劈斩")).getByRole("button", { name: "选中手牌：劈斩" }));
-    // 只选了牌、还没选目标：有「查看」与「取消」，但「出牌」还没长出
-    expect(screen.queryByRole("button", { name: "出牌" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "查看" })).toHaveClass(
-      "combat-hand-btn",
-      "combat-hand-btn--view",
-    );
+    // 只选了牌、还没选目标：三块就都在了，只是「出牌」灰成「选择目标」
+    const info = screen.getByRole("button", { name: "查看卡牌详情：劈斩" });
+    expect(info).toHaveClass("combat-hand-info");
+    // 两行：已选一行、目标一行；那句“点上方角色选择目标”不再出现
+    expect(within(info).getByText("已选：劈斩")).toBeInTheDocument();
+    expect(within(info).getByText("目标：未选择")).toBeInTheDocument();
+    expect(screen.queryByText(/点上方角色/)).not.toBeInTheDocument();
+    const waiting = screen.getByRole("button", { name: "选择目标" });
+    expect(waiting).toBeDisabled();
+    expect(waiting).toHaveClass("combat-hand-btn", "combat-hand-btn--play", "combat-hand-btn--off");
     expect(screen.getByRole("button", { name: "取消" })).toHaveClass(
       "combat-hand-btn",
       "combat-hand-btn--cancel",
     );
 
     fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
+    // 目标齐了：「出牌」转正（绿框、可点），信息那块第二行跟着换
     const play = screen.getByRole("button", { name: "出牌" });
-    // 卡状按钮 = 图标（装饰，不进无障碍名字）+ 词；「出牌」是主行动（绿）
     expect(play).toHaveClass("combat-hand-btn", "combat-hand-btn--play");
+    expect(play).not.toHaveClass("combat-hand-btn--off");
     expect(within(play).getByText("出牌")).toHaveClass("combat-hand-btn-caption");
-    // 「已选 / 目标」那段话折行收在同一个矩形块里
-    expect(screen.getByText(/目标：石像鬼/)).toHaveClass("combat-hand-hint");
+    expect(within(info).getByText("目标：石像鬼")).toBeInTheDocument();
+
+    // 点信息那块 = 看详情（手牌里整卡点击是「选中」，详情只走这一颗）
+    fireEvent.click(info);
+    expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
   });
 
-  it("不可出牌的卡：两次选择照旧，但「出牌」灰掉 + 换禁行图标（取消 / 查看还在）", async () => {
+  it("不可出牌的卡：两次选择照旧，但「出牌」灰掉 + 换禁行图标（信息 / 取消还在）", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -454,21 +471,23 @@ describe("副本房间 · 战斗房间", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
 
-    // 「出牌」还在原位、形状与文案不变，只是按不下去、图标换成禁行
-    const play = screen.getByRole("button", { name: "出牌" });
+    // 「出牌」还在原位、形状不变，只是按不下去：禁行图标 + **字面上就写着为什么**
+    // （卡面上也有同名的「不可出牌」chip，所以要限定在出牌条里找）
+    const play = within(handBar()).getByRole("button", { name: "不可出牌" });
     expect(play).toBeDisabled();
     expect(play).toHaveClass("combat-hand-btn", "combat-hand-btn--play", "combat-hand-btn--off");
     expect(within(play).getByText("⊘")).toHaveClass("combat-hand-btn-glyph");
     expect(play).toHaveAttribute("title", "这张牌写着不可出牌（卡面那枚灰标记）");
 
-    // 只灰主行动：取消与查看照旧可用（所以还退得出去、也看得清为什么不能打）
+    // 只灰主行动：取消与信息那块照旧可用（所以还退得出去、也看得清为什么不能打）
     expect(screen.getByRole("button", { name: "取消" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: "查看" })).toBeEnabled();
-    fireEvent.click(screen.getByRole("button", { name: "查看" }));
+    const info = screen.getByRole("button", { name: "查看卡牌详情：常驻符文" });
+    expect(info).toBeEnabled();
+    fireEvent.click(info);
     expect(await screen.findByRole("dialog", { name: "卡牌" })).toBeInTheDocument();
   });
 
-  it("手牌：点词缀只弹说明浮层；整卡点击是「选中」，看详情要走中间那颗「查看」", async () => {
+  it("手牌：点词缀只弹说明浮层；整卡点击是「选中」，看详情要走中间那块卡信息", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -485,8 +504,8 @@ describe("副本房间 · 战斗房间", () => {
     fireEvent.click(within(cardTileOf("劈斩")).getByRole("button", { name: "选中手牌：劈斩" }));
     expect(screen.queryByRole("dialog", { name: "卡牌" })).not.toBeInTheDocument();
 
-    // 「查看」是手牌里进详情的唯一入口；详情两栏：左卡面 / 右全文
-    fireEvent.click(screen.getByRole("button", { name: "查看" }));
+    // 信息那块是手牌里进详情的唯一入口；详情两栏：左卡面 / 右全文
+    fireEvent.click(screen.getByRole("button", { name: "查看卡牌详情：劈斩" }));
     const detail = await screen.findByRole("dialog", { name: "卡牌" });
     expect(within(detail).getByRole("list", { name: "卡面" })).toBeInTheDocument();
     expect(within(detail).getByText(/命中后可以再摸一张/)).toBeInTheDocument();
@@ -591,7 +610,7 @@ describe("副本房间 · 战斗房间", () => {
     for (const tile of targetTiles()) {
       expect(tile).toHaveClass("combatant-card--target");
     }
-    expect(screen.getByText(/在以上目标中随机/)).toBeInTheDocument();
+    expect(screen.getByText(/（随机命中）/)).toBeInTheDocument();
   });
 
   it("过牌推进到怪物；四只怪物推完后回到开始新回合", async () => {

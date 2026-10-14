@@ -44,10 +44,44 @@ function PileButton({
   );
 }
 
-/** 提示里「目标」的说法：`spread` 多一句「随机命中」（选中集合与 `all` 相同）。 */
+/**
+ * 「已选」下面那一行：目标的说法。自身牌写`自己`（名单不用再点），还没选就写`未选择`
+ * ——那句「点上方角色选择目标」不再出现（名单进入选目标态时会自己亮，"在哪点"不需要用字说）。
+ * `spread` 补一句「随机命中」：它选中的集合与 `all` 相同，差别只在落点。
+ */
 function targetHint(card: Card, targets: string[]): string {
+  if (card.self_target) {
+    return "目标：自己";
+  }
+  if (targets.length === 0) {
+    return "目标：未选择";
+  }
   const list = targets.map(displayName).join("、");
-  return card.target_type === "spread" ? `目标：${list}（在以上目标中随机）` : `目标：${list}`;
+  return card.target_type === "spread" ? `目标：${list}（随机命中）` : `目标：${list}`;
+}
+
+/**
+ * 「出牌」按钮的状态：`label` 是按钮上那句话，`off` 表示按不下去（灰）。
+ * 灰掉时**直接把原因写在字上**，所以这颗按钮位置、形状都不跳，也不用另给一句提示。
+ */
+function readPlayState(
+  card: Card | null,
+  energy: number,
+  targets: string[],
+): { label: string; off: boolean } {
+  if (card === null) {
+    return { label: "出牌", off: true };
+  }
+  if (!card.playable) {
+    return { label: "不可出牌", off: true };
+  }
+  if (card.cost > energy) {
+    return { label: "能量不足", off: true };
+  }
+  if (targets.length === 0) {
+    return { label: "选择目标", off: true };
+  }
+  return { label: "出牌", off: false };
 }
 
 /**
@@ -56,8 +90,10 @@ function targetHint(card: Card, targets: string[]): string {
  * 三块：参战者横滑名单（`CombatActionRoster`，顺序即 `action_order`）、行动区三栏（左 = 当前行动者
  * 资源 / 中 = 手牌横滑 / 右 = 过牌 + 牌堆）、出牌交互。
  *
- * **出牌 = 两次选择 + 一次确认**：点手牌选中、点名单角色选目标，两次都齐中间才长出「出牌」；
- * 自身牌选中后自动指向自己。名单卡另有两个只读入口（整卡开角色信息、卡底文本开手牌），三个牌堆
+ * **出牌 = 两次选择 + 一次确认**：点手牌选中、点名单角色选目标；自身牌选中后自动指向自己。
+ * 中间那条**常驻三块、位置不跳**：卡的信息 + 查看详情合成**一颗按钮**（`已选` / `目标` 两行）、
+ * `出牌`、`取消`。「出牌」灰掉时把原因写在字上（`不可出牌` / `能量不足` / `选择目标`）。
+ * 名单卡另有两个只读入口（整卡开角色信息、卡底文本开手牌），三个牌堆
  * 也是按钮（各自打开 `CardListDialog`）。我方与怪物共用同一版面，怪物手牌只读。
  */
 export default function CombatTurnPanel({
@@ -112,9 +148,9 @@ export default function CombatTurnPanel({
   const picking = !isMonster && selected !== null && !selected.self_target;
   const targets =
     selected === null ? [] : readTargetNames(selected, targetName, actor.name, combatants);
-  // 不可出牌（`playable === false`）或本回合能量不够：都只灰掉「出牌」
+  // 不可出牌（`playable === false`）/ 本回合能量不够 / 还差一个目标：都只灰掉「出牌」
   const unplayable = selected !== null && !selected.playable;
-  const blocked = unplayable || (selected !== null && selected.cost > actor.energy);
+  const playState = readPlayState(selected, actor.energy, targets);
   const handOwner = combatants.find((combatant) => combatant.name === handActor) ?? null;
 
   /** 出一张牌：自身牌自动指向自己，其余用名单里点中的目标。 */
@@ -178,39 +214,39 @@ export default function CombatTurnPanel({
                 <p className="muted combat-hand-note">点一张手牌开始出牌。</p>
               ) : (
                 <>
-                  <p className="combat-hand-hint">
-                    已选：{selected.name}
-                    {targets.length === 0
-                      ? " · 点上方角色选择目标"
-                      : ` · ${targetHint(selected, targets)}`}
-                  </p>
-                  {/* 手牌里整卡点击是「选中」，看详情另给一颗按钮 */}
+                  {/* 卡的信息 + 「查看详情」合成**一颗按钮**：这块本来就是那张牌的身份证，
+                      点它开卡牌详情（与词条 chip、名单卡一样「点开看全文」）。两行：已选 / 目标。 */}
                   <button
                     type="button"
-                    className="combat-hand-btn combat-hand-btn--view"
+                    className="combat-hand-info"
+                    aria-label={`查看卡牌详情：${selected.name}`}
+                    title="查看卡牌详情"
                     onClick={() => setViewCard(selected)}
                   >
-                    <span className="combat-hand-btn-glyph" aria-hidden="true">
+                    <span className="combat-hand-info-glyph" aria-hidden="true">
                       ☰
                     </span>
-                    <span className="combat-hand-btn-caption">查看</span>
+                    <span className="combat-hand-info-text">
+                      <span>已选：{selected.name}</span>
+                      <span>{targetHint(selected, targets)}</span>
+                    </span>
                   </button>
-                  {/* 两次选择都齐了才长出「出牌」 */}
-                  {targets.length === 0 ? null : (
-                    <button
-                      type="button"
-                      className={`combat-hand-btn combat-hand-btn--play${blocked ? " combat-hand-btn--off" : ""}`}
-                      disabled={actions.isBusy || blocked}
-                      title={unplayable ? "这张牌写着不可出牌（卡面那枚灰标记）" : undefined}
-                      // 只发锚点：`all` / `spread` 的阵营由服务端按锚点展开
-                      onClick={() => play(selected, targetName)}
-                    >
-                      <span className="combat-hand-btn-glyph" aria-hidden="true">
-                        {blocked ? "⊘" : "▶"}
-                      </span>
-                      <span className="combat-hand-btn-caption">出牌</span>
-                    </button>
-                  )}
+                  {/* 三块常驻，只是状态不同：灰掉的原因写在「出牌」的字上 */}
+                  <button
+                    type="button"
+                    className={`combat-hand-btn combat-hand-btn--play${
+                      playState.off ? " combat-hand-btn--off" : ""
+                    }`}
+                    disabled={actions.isBusy || playState.off}
+                    title={unplayable ? "这张牌写着不可出牌（卡面那枚灰标记）" : undefined}
+                    // 只发锚点：`all` / `spread` 的阵营由服务端按锚点展开
+                    onClick={() => play(selected, targetName)}
+                  >
+                    <span className="combat-hand-btn-glyph" aria-hidden="true">
+                      {playState.off ? "⊘" : "▶"}
+                    </span>
+                    <span className="combat-hand-btn-caption">{playState.label}</span>
+                  </button>
                   <button
                     type="button"
                     className="combat-hand-btn combat-hand-btn--cancel"
