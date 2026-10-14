@@ -52,13 +52,7 @@ export default function CombatRoomPage({
     : null;
 
   return (
-    <RoomScaffold
-      userName={userName}
-      gameName={gameName}
-      exit={exit}
-      roomName={room.stage.name}
-      roomAction={action}
-    >
+    <RoomScaffold userName={userName} gameName={gameName} exit={exit} roomAction={action}>
       <CombatRoomPanel userName={userName} gameName={gameName} room={room} />
     </RoomScaffold>
   );

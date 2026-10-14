@@ -53,7 +53,7 @@ export default function OpeningRoomPage({
   };
 
   return (
-    <RoomScaffold userName={userName} gameName={gameName} exit={exit} roomName={room.stage.name}>
+    <RoomScaffold userName={userName} gameName={gameName} exit={exit}>
       <OpeningRoomPanel
         userName={userName}
         gameName={gameName}

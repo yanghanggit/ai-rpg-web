@@ -94,6 +94,11 @@ body {
   padding: 2.5rem 1.25rem;
 }
 
+/* 副本房间：顶栏只留一薄条，纵向让给下面的参战者 / 手牌主区域 */
+.page--room {
+  padding-top: 1rem;
+}
+
 /* 桌面基线以内（≥1024px，本项目的主战场）：页边距放宽，
    需要更多横向空间的页面加宽，交给下面的栅格排多列。 */
 @media (min-width: 1024px) {
@@ -109,6 +114,8 @@ body {
   /* 副本房间正文：再宽一截——左右资源列贴到两边，中间手牌才有地方铺开 */
   .page--room {
     max-width: 1800px;
+    /* 顶栏贴页顶（默认 4rem 的头顶留白收掉） */
+    padding-top: 0.75rem;
   }
 }
 
@@ -319,16 +326,20 @@ ul.items li {
   font-weight: 600;
 }
 
-/* 页面标题行：标题 + 紧贴其后的图标按钮（副本房间的「副本操作」齿轮） */
+/* 副本房间顶栏：只有操作入口，钉在右上角。**没有标题**——副本名 / 进度 / 房间名都在
+   ⚙「副本操作」与 ⚑「地图」浮窗里，这里不重复一遍，好把纵向整块让给下面的主区域。 */
 .page-head {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
+  justify-content: flex-end;
+  min-height: 2.75rem;
 }
 
-.page-head h1 {
-  margin: 0;
+/* 右上角那组操作入口 */
+.page-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 /* 标题旁的图标按钮：**无外框**（只看得见齿轮），尺寸保留以维持点击热区 */
@@ -1529,15 +1540,20 @@ ul.card-tiles--stack {
   line-height: 1.6;
 }
 
-.card-tile-source {
-  margin: 0;
-  font-size: 0.8rem;
+/* 来源 pill：名字横幅里紧跟牌名，形制与参战者卡的「当前行动 / 已行动」同一颗。
+   只在 `source !== 持有者` 时出现；不是自己的牌用传递色强调一下。 */
+.card-tile-name-state {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-/* 不是自己的牌（`source !== 持有者`）：用传递色强调一下 */
-.card-tile-source--foreign {
-  margin: 0;
-  font-size: 0.8rem;
+.card-tile-name-state--foreign {
+  border-color: var(--transfer);
   color: var(--transfer);
 }
 
@@ -1766,7 +1782,7 @@ ul.combat-roster {
    进度条又不随卡片选中时的下移而动（下移是卡片自己的 `transform`）。
    名单顺序 = 行动顺序（已行动置灰 / 当前由进度条指示）。 */
 .combat-roster-scroll {
-  margin: 1.25rem 0 0;
+  margin: 0.5rem 0 0;
   /* 顶部留进度条箭头的位，底部留「目标下移」的位
      （`overflow-x: auto` 会把纵向可见性也算成裁剪，不留就被切） */
   padding: 0.8rem 0 var(--pick-shift);

@@ -103,10 +103,8 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    // 标题换成战斗房间
-    expect(
-      await screen.findByRole("heading", { name: "荒废地窟 (2/2) 地窟深处" }),
-    ).toBeInTheDocument();
+    // 战斗房间正文起来了（页面不再有可见标题，拿「副本操作」入口当落地锚）
+    expect(await screen.findByRole("button", { name: /副本操作/ })).toBeInTheDocument();
     // 进入战斗房间自动初始化；成功后开局前唯一的动作是「开始」（旧的第一回合引导句已移除）
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByText(/抓牌以开启第一回合/)).not.toBeInTheDocument();
@@ -160,8 +158,7 @@ describe("副本房间 · 战斗房间", () => {
     server.use(instantTasks());
     renderCombatRoom();
 
-    await screen.findByRole("heading", { name: "荒废地窟 (2/2) 地窟深处" });
-    expect(screen.getByRole("button", { name: /副本操作/ })).toBeInTheDocument();
+    await screen.findByRole("button", { name: /副本操作/ });
     expect(screen.getByRole("button", { name: "地图" })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "牌组" }));
@@ -309,8 +306,9 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(handDialog).getByText("腐沼巨蜥 · 共 5 张")).toBeInTheDocument();
     expect(within(handDialog).queryByText("[塞牌]")).not.toBeInTheDocument();
     expect(within(handDialog).getAllByText("可传递")).toHaveLength(2);
-    // 手牌只显示"不是自己的"来源（劈斩 / 钉入 来自我方），自己的 / 空来源不显示
-    expect(within(handDialog).getAllByText("来源：角色.无名")).toHaveLength(2);
+    // 手牌只显示"不是自己的"来源（劈斩 / 钉入 来自我方），自己的 / 空来源不显示。
+    // 来源是名字横幅里的 pill，且剥掉 `角色.` 前缀（`displayName`）。
+    expect(within(handDialog).getAllByText("来源：无名")).toHaveLength(2);
     // 卡面词缀是一枚标记（`[楔入]`），点开才看全文
     expect(within(handDialog).getByRole("button", { name: "[楔入]" })).toBeInTheDocument();
     fireEvent.click(within(handDialog).getByRole("button", { name: "查看卡牌：钉入" }));
@@ -678,9 +676,12 @@ describe("副本房间 · 战斗房间", () => {
     prepareMockPostCombat();
     renderCombat();
 
-    // 落点要看 `/state`（有没有下一间），所以等标题把进度显出来（标题与判据用的是同一个查询）
-    await screen.findByRole("heading", { name: "荒废地窟 (2/2) 地窟深处" });
-    fireEvent.click(await screen.findByRole("button", { name: "结束本次战斗" }));
+    // 落点要看 `/state`（有没有下一间）：等按钮 title 变成「离开副本」（/state 已回来）再点
+    const endButton = await screen.findByRole("button", { name: "结束本次战斗" });
+    await waitFor(() =>
+      expect(endButton).toHaveAttribute("title", expect.stringContaining("离开副本")),
+    );
+    fireEvent.click(endButton);
 
     // 本间之后没有房间了：服务端推进必然拒绝（"副本已全部通关"），所以直接走退出那条路。
     // 中间不再停一次地图——那一屏此刻没有任何可做的事。

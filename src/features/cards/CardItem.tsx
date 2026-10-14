@@ -1,4 +1,5 @@
 import { type ReactNode, useId, useState } from "react";
+import { displayName } from "../../components/displayName";
 import CardMarkTip from "./CardMarkTip";
 import type { CardMark } from "./cardMarks";
 import { readCardMarks } from "./cardMarks";
@@ -46,7 +47,8 @@ function targetText(card: Card): string {
  * **整卡点击的含义由调用方定**：战斗手牌里是"选中待出"，牌组 / 奖励里是"打开卡牌详情"。
  *
  * **来源显示口径**：`hideSource` 一律不显示（牌组）；`owner` 只在 `source !== owner` 时才显示，
- * 并用 `--transfer` 色强调"不是自己的牌"。
+ * 并以名字横幅里的一枚 **pill**（形制同参战者卡的「当前行动」）标出，来自别人的牌用传递色。
+ * 来源是**角色名**，所以显示走 `displayName`（剥掉 `角色.` 前缀）。
  */
 export default function CardItem({
   card,
@@ -129,6 +131,20 @@ export default function CardItem({
 
           <div className="card-tile-head">
             <span className="card-tile-name">{card.name}</span>
+            {/* 来源：紧跟在牌名后的 pill（同参战者卡的「当前行动」），不是自己的牌用传递色。
+                来源是角色名，显示走 `displayName`（剥掉 `角色.` 前缀）。 */}
+            {showSource ? (
+              <span
+                className={
+                  isForeignSource
+                    ? "card-tile-name-state card-tile-name-state--foreign"
+                    : "card-tile-name-state"
+                }
+                title={`来源：${displayName(card.source)}`}
+              >
+                来源：{displayName(card.source)}
+              </span>
+            ) : null}
             {claimed ? <span className="badge badge--claimed">已领取</span> : null}
           </div>
 
@@ -150,18 +166,6 @@ export default function CardItem({
               </button>
             ))}
           </div>
-
-          {showSource ? (
-            <p
-              className={
-                isForeignSource
-                  ? "card-tile-source card-tile-source--foreign"
-                  : "muted card-tile-source"
-              }
-            >
-              来源：{card.source}
-            </p>
-          ) : null}
         </div>
       </div>
 

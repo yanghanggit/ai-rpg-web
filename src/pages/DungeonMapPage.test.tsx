@@ -33,21 +33,20 @@ function roomRow(stageName: string): HTMLElement {
 }
 
 describe("副本地图 · 状态与前进", () => {
-  it("刚进入副本：标题只留副本名、没有「地图」入口，只有本间那一行带「进入房间」", async () => {
+  it("刚进入副本：没有「地图」入口，只有本间那一行带「进入房间」", async () => {
     // 进入但不初始化：开场房间还没进过（刚进入副本）
     enterMockDungeon("副本.荒废地窟");
     renderMapPage();
 
+    // 房间页框架不再显示副本名（页面没有可见标题），等地图面板起来就够了
     expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
-    // 标题只留副本名：不带进度、不带房间名（这一屏不在某一间房里）。
-    // 标题里的副本名来自 /state，所以要等它回来（地图与房间共用同一个 `/state` 查询）
-    expect(await screen.findByRole("heading", { name: "荒废地窟" })).toBeInTheDocument();
     // 地图自己就是房间清单，所以不再给「地图」；「副本操作」「牌组」照旧
     expect(screen.getByRole("button", { name: "副本操作" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "地图" })).not.toBeInTheDocument();
 
-    expect(screen.getByText("第 1 / 2 间")).toBeInTheDocument();
+    // 副本数据来自 /state，所以要等它回来（地图与房间共用同一个 `/state` 查询）
+    expect(await screen.findByText("第 1 / 2 间")).toBeInTheDocument();
     // 房间表就是「地图」浮窗那一份（同一个 readDungeonInfo），敌人也一并列出
     expect(screen.getByText("地窟入口")).toBeInTheDocument();
     expect(screen.getByText("地窟深处")).toBeInTheDocument();
@@ -75,7 +74,6 @@ describe("副本地图 · 状态与前进", () => {
     // 落到房间页：正文是队伍块（只有房间页有）；自动初始化跑完 → 卡上的「生成奖励」可点
     expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
     await waitFor(() => expect(screen.getByRole("button", { name: "生成奖励" })).toBeEnabled());
-    expect(screen.getByRole("heading", { name: "荒废地窟 (1/2) 地窟入口" })).toBeInTheDocument();
   });
 
   it("两间之间：已结束那一行标「已完成」，按钮搬到下一间那一行，一步推进并进入下一间", async () => {

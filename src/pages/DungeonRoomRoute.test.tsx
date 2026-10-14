@@ -28,9 +28,6 @@ describe("副本房间 · 路由解析器", () => {
     enterMockDungeon("副本.荒废地窟");
     renderRoom(<DungeonRoomRoute />);
 
-    expect(
-      await screen.findByRole("heading", { name: "荒废地窟 (1/2) 地窟入口" }),
-    ).toBeInTheDocument();
     // 开场房间正文（队伍块）在，说明分发到了开场页
     expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
   });
@@ -41,9 +38,6 @@ describe("副本房间 · 路由解析器", () => {
     advanceMockDungeon();
     renderRoom(<DungeonRoomRoute />);
 
-    expect(
-      await screen.findByRole("heading", { name: "荒废地窟 (2/2) 地窟深处" }),
-    ).toBeInTheDocument();
     // 战斗房间正文（开局准备阶段）在，说明分发到了战斗页
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
   });

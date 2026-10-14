@@ -19,8 +19,8 @@ import DungeonRoomRoute from "./DungeonRoomRoute";
  */
 const renderOpening = () => renderRoom(<DungeonRoomRoute />);
 
-/** 开场房间的标题：副本名 (当前/总数) 房间名。 */
-const OPENING_HEADING = "荒废地窟 (1/2) 地窟入口";
+/** 房间页不再有可见标题；拿右上角那排入口里的「副本操作」当落地锚。 */
+const roomScaffoldLoaded = () => screen.findByRole("button", { name: /副本操作/ });
 
 /** 覆盖退出接口，让任务 id 固定（mock 自己发号，测试无法预测）。 */
 const exitWith = (jobId: number) =>
@@ -94,25 +94,26 @@ async function openActions() {
   return screen.findByRole("dialog", { name: "副本操作" });
 }
 
-/** 共同框架用开场房间验证（它同样适用于战斗房间，见 `CombatRoomPage.test.tsx` 的标题断言）。 */
+/** 共同框架用开场房间验证（它同样适用于战斗房间，见 `CombatRoomPage.test.tsx` 的入口断言）。 */
 describe("副本房间 · 共同框架", () => {
-  it("标题 = 副本名 (当前/总数) 房间名（不是「开场」这类类型名）", async () => {
+  it("房间页不再有可见标题（副本名 / 进度 / 房间名都在 ⚙ / ⚑ 浮窗里）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    expect(await screen.findByRole("heading", { name: OPENING_HEADING })).toBeInTheDocument();
-    // 只有房间名，没有单独的房间类型标签
+    expect(await roomScaffoldLoaded()).toBeInTheDocument();
+    // 整张页面不再有标题（副本名 / 进度 / 房间名），也没有单独的房间类型标签
+    expect(screen.queryByRole("heading", { name: /荒废地窟/ })).not.toBeInTheDocument();
     expect(screen.queryByText("开场")).not.toBeInTheDocument();
   });
 
-  it("标题行三个平级入口（副本操作 / 地图 / 牌组）；菜单里只剩叙事 / 离开副本", async () => {
+  it("右上角三个平级入口（副本操作 / 地图 / 牌组）；菜单里只剩叙事 / 离开副本", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    await screen.findByRole("heading", { name: OPENING_HEADING });
-    // 三个入口都在标题行上、彼此平级
+    await roomScaffoldLoaded();
+    // 三个入口都在右上角那排上、彼此平级
     expect(screen.getByRole("button", { name: /副本操作/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "地图" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
@@ -278,7 +279,7 @@ describe("副本房间 · 共同框架", () => {
     expect(await screen.findByRole("button", { name: "副本操作（退出中）" })).toBeDisabled();
     // 菜单已关，人还留在房间页
     expect(screen.queryByRole("dialog", { name: "副本操作" })).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: OPENING_HEADING })).toBeInTheDocument();
+    expect(await roomScaffoldLoaded()).toBeInTheDocument();
   });
 
   it("离开副本：任务终态后回家园（后端在任务里已经把人传回去）", async () => {
@@ -510,7 +511,7 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    await screen.findByRole("heading", { name: OPENING_HEADING });
+    await roomScaffoldLoaded();
     // 页面上不再直接有「叙事」按钮，只有菜单里一份
     expect(screen.queryByRole("button", { name: "叙事" })).not.toBeInTheDocument();
     const menu = await openActions();
@@ -525,10 +526,10 @@ describe("副本房间 · 开场房间", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "结束开局准备（回到地图）" }));
 
-    // 落点是地图（房间之间那一站）：标题只留副本名，房间那一行标「已完成」，动作搬到下一间那一行。
+    // 落点是地图（房间之间那一站）：房间页框架不再有可见标题，只有地图面板自己的「地图」标题；
+    // 房间那一行标「已完成」，动作搬到下一间那一行。
     // 推进不在这里发生——队伍的位置只在地图上由「前往下一间」改变。
     expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "荒废地窟" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "前往下一间" })).toBeEnabled();
     expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
   });

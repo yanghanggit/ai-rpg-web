@@ -134,7 +134,7 @@ describe("CardItem", () => {
     expect(screen.getByText("保留")).toBeInTheDocument();
   });
 
-  it("来源只在「不是自己的牌」时显示，并标 foreign", () => {
+  it("来源只在「不是自己的牌」时显示，做成名字横幅里的 pill，且用 displayName", () => {
     const { rerender } = render(
       <ul>
         <CardItem card={{ ...CARD, source: "角色.无名" }} owner="角色.无名" />
@@ -148,7 +148,10 @@ describe("CardItem", () => {
         <CardItem card={{ ...CARD, source: "角色.无名" }} owner="怪物.石像鬼" />
       </ul>,
     );
-    expect(screen.getByText("来源：角色.无名")).toHaveClass("card-tile-source--foreign");
+    // 来源是角色名：剥掉 `角色.` 前缀，并落在名字横幅里那枚 pill 上
+    const pill = screen.getByText("来源：无名");
+    expect(pill).toHaveClass("card-tile-name-state", "card-tile-name-state--foreign");
+    expect(pill.closest(".card-tile-head")).not.toBeNull();
   });
 
   it("点任意一枚标记（布尔或词缀）都弹说明浮层；再点同一枚收起", () => {
