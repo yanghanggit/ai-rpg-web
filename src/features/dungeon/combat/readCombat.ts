@@ -86,15 +86,18 @@ export function countOnHitAffixes(combatant: Combatant): number {
   return combatant.hand.reduce((total, card) => total + card.on_hit_affixes.length, 0);
 }
 
-/** 一张牌是不是「我方塞到敌方手里」的：持牌者是怪物、`source` 是我方成员。 */
+/**
+ * 一张牌是不是「别人塞进这名角色手里」的：`source` 指向另一名参战者（不是自己、也不是未知来源）。
+ * 可传递的牌打到谁手里就落在谁手里，所以**我方与怪物都可能被塞牌**，不再限定阵营。
+ */
 export function isTransferredCard(card: Card, owner: Combatant, combatants: Combatant[]): boolean {
-  if (owner.faction !== "monster") {
+  if (card.source === "" || card.source === owner.name) {
     return false;
   }
-  return combatants.some((other) => other.name === card.source && other.faction === "party");
+  return combatants.some((other) => other.name === card.source);
 }
 
-/** 手牌里来自我方阵营的牌数（即"我方塞过去的"，界面标 [塞牌]）。 */
+/** 手牌里由别人塞进来的牌数（界面标 [塞牌]，我方与怪物一视同仁）。 */
 export function countTransferredCards(combatant: Combatant, combatants: Combatant[]): number {
   return combatant.hand.filter((card) => isTransferredCard(card, combatant, combatants)).length;
 }

@@ -42,15 +42,15 @@ function currentCombatant(): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
-  it("角色卡两屏一致：第一行都是 hp · attack · defense；turn 多一行 能量 / 手牌 / 总格挡", async () => {
+  it("角色卡：准备屏写全 HP · attack · defense；turn 名单只留 HP 与总格挡", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
     // 准备屏：敌人与队伍都写全（还没开打，要看清双方多硬）
-    expect(await screen.findByText("hp 9/9 · attack 3 · defense 1")).toBeInTheDocument();
-    expect(screen.getByText("hp 12/15 · attack 3 · defense 1")).toBeInTheDocument();
+    expect(await screen.findByText("HP 9/9 · attack 3 · defense 1")).toBeInTheDocument();
+    expect(screen.getByText("HP 12/15 · attack 3 · defense 1")).toBeInTheDocument();
 
-    // 开打后：第一行还是那一份，第二行换成 能量 / 手牌 / 总格挡
+    // 开打后：名单卡只留 HP 与总格挡两个数值（energy / attack / defense 不在名单上）
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
     await screen.findByRole("list", { name: "手牌" });
     const roster = screen.getByRole("list", { name: "参战者" });
@@ -58,13 +58,22 @@ describe("副本房间 · 战斗房间", () => {
     if (!(youCard instanceof HTMLElement)) {
       throw new Error("名单里没有玩家那张卡");
     }
-    expect(youCard).toHaveTextContent("hp 12/15 · attack 3 · defense 1");
-    expect(youCard).toHaveTextContent("能量 3 · 手牌 5 · 总格挡 6");
+    expect(youCard).toHaveTextContent("HP 12/15");
+    expect(youCard).toHaveTextContent("总格挡 6");
+    // 两个数值在同一行（同一个 span 里），不拆成两行
+    expect(youCard).toHaveTextContent("HP 12/15 · 总格挡 6");
+    expect(youCard).not.toHaveTextContent("attack");
+    expect(youCard).not.toHaveTextContent("能量");
 
-    // 手牌数上了第二行，卡底那颗按钮就只剩词缀槽——它们就是按钮的"图标"
+    // 我方不再标「你」，但怪物的「怪物」徽标保留
+    expect(within(youCard).queryByText("你")).not.toBeInTheDocument();
+    expect(within(roster).getAllByText("怪物")).toHaveLength(4);
+
+    // 卡底那颗按钮标着三枚计数：手牌 / 被动 / 塞牌（我方也照样有 [塞牌]，只是为 0）
     const handButton = within(youCard).getByRole("button", { name: "查看手牌：无名" });
+    expect(handButton).toHaveTextContent("[手牌] 5");
     expect(handButton).toHaveTextContent("[被动] 0");
-    expect(handButton).not.toHaveTextContent("手牌 5");
+    expect(handButton).toHaveTextContent("[塞牌] 0");
   });
 
   it("开局准备：三排卡片（敌人 / 场景 + 开始 / 队伍），上下的排法与战斗房名单同一套", async () => {
@@ -271,20 +280,21 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
   });
 
-  it("名单卡可点开角色信息；卡底按钮只给 [被动] / [塞牌] 数量，点开看手牌", async () => {
+  it("名单卡可点开角色信息；卡底按钮给 [手牌] / [被动] / [塞牌] 数量，点开看手牌", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    // 卡底常驻按钮只给数量；怪物才多一项「[塞牌]」
+    // 卡底常驻按钮给三枚计数；被塞牌不分阵营（我这格没人塞就是 0，怪物手上来自我方的牌标出来）
     const paperHand = await screen.findByRole("button", { name: "查看手牌：石像鬼" });
+    expect(paperHand).toHaveTextContent("[手牌] 5");
     expect(paperHand).toHaveTextContent("[被动] 1");
     expect(paperHand).toHaveTextContent("[塞牌] 1");
     const corpseHand = screen.getByRole("button", { name: "查看手牌：腐沼巨蜥" });
     expect(corpseHand).toHaveTextContent("[被动] 1");
     expect(corpseHand).toHaveTextContent("[塞牌] 2");
-    // 我方自己那格不出现「[塞牌]」
-    expect(screen.getByRole("button", { name: "查看手牌：无名" })).not.toHaveTextContent("[塞牌]");
+    // 我方自己那格计数照样在，只是没有人塞牌 → 0
+    expect(screen.getByRole("button", { name: "查看手牌：无名" })).toHaveTextContent("[塞牌] 0");
 
     // 整卡可点 → 角色信息
     fireEvent.click(screen.getByRole("button", { name: "查看角色：石像鬼" }));

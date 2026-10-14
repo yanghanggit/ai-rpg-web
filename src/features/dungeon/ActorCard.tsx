@@ -37,8 +37,9 @@ export default function ActorCard({
     <article
       className={onOpenInfo === undefined ? "card actor-card" : "card actor-card actor-card--open"}
     >
+      {/* 卡名与手牌 / 战斗名单同一套：纯文本（不再用 pill），字号也同一级 */}
       <div className="card-head">
-        <span className="chip mono">{displayName(name)}</span>
+        <span className="card-tile-name">{displayName(name)}</span>
         {badge === undefined ? null : <span className="badge">{badge}</span>}
       </div>
 
