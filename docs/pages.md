@@ -23,7 +23,7 @@
 - 领域逻辑与跨接口编排放 `src/features/<domain>/`；组件归属与依赖方向见 [开发规范](conventions.md)。
 - 同一列表里的卡片共用一组栅格参数（如副本卡与角色卡），宽度自然对齐。
 - **角色的「失去行动力」状态统一靠标记组件判存在性**：`DeathComponent`（战死）与 `IncapacitatedComponent`（永久失能）。失能角色**仍留在场景里**（后端保留实体），所以家园的场景 chip、实体浏览器、场景浮窗都给它加「失能」标记并置灰；角色信息浮窗说明它不再行动 / 收集信息、并禁用换装；「可加入的同伴」用 `none_of=IncapacitatedComponent` 排除（后端会拒绝入队）；家园「推进一步」也要在客户端先剔除失能者——后端 `activate_plan_action` **只要列表里含一个失能者就整单拒绝**。`stages state` 只返回名字，判断谁失能要单独查一次 group。
-- **属性标签一律用 `CharacterStats` 的原英文字段名**（`hp` / `max_hp` / `lives` / `attack` / `defense`）：中文里「生命」既可能被当成 HP 也可能被当成 `lives`，用原字段名最不会歧义。
+- **属性标签一律用 `CharacterStats` 的原英文字段名**（`hp` / `max_hp` / `lives` / `attack` / `defense` / `speed`）：中文里「生命」既可能被当成 HP 也可能被当成 `lives`，用原字段名最不会歧义。
 
 ## 独立屏幕 vs 浮窗
 

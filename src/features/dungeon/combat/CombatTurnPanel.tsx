@@ -163,7 +163,7 @@ export default function CombatTurnPanel({
               <span className="res-sub">
                 {current.stats === null
                   ? ""
-                  : `attack ${current.stats.attack} · defense ${current.stats.defense}`}
+                  : `attack ${current.stats.attack} · defense ${current.stats.defense} · speed ${current.stats.speed}`}
               </span>
             </li>
             <li className="res res--energy">

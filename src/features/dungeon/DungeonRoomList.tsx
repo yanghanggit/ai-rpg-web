@@ -60,7 +60,8 @@ export default function DungeonRoomList({ rows }: { rows: DungeonRoomRow[] }) {
                     <span className="mono">{displayName(monster.name)}</span>{" "}
                     <span className="muted">
                       hp {monster.character_stats.max_hp} · attack {monster.character_stats.attack}{" "}
-                      · defense {monster.character_stats.defense}
+                      · defense {monster.character_stats.defense} · speed{" "}
+                      {monster.character_stats.speed}
                     </span>
                   </li>
                 ))}

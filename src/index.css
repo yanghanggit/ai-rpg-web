@@ -1732,14 +1732,28 @@ ul.combat-action-roster {
   position: relative;
   display: flex;
   flex: 0 0 var(--card-short);
-  flex-direction: column;
-  gap: 0.4rem;
   min-height: var(--card-tall);
-  /* 底部留出压在立绘上的那排数值（左：总格挡 / 中：定性 / 右：HP） */
-  padding: 0.7rem 0.7rem 3.4rem;
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  /* 外框：留一圈边给内框；底排的盾 / 心压在这圈边上 */
+  padding: 0.4rem;
+  border: 2px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--fg) 4%, var(--bg));
   transition: transform 0.12s ease;
+}
+
+/* 内框：立绘 / 名字 / 词条都收在这一块里；底排的盾 / 心**凸出于它**（压在外框上） */
+.combatant-inner {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 0;
+  /* 内框尽量往下顶：只留一小圈给「盾 / 心」压住（内框越大，立绘越大） */
+  margin-bottom: 0.5rem;
+  padding: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--fg) 3%, transparent);
 }
 
 /* 「你」：与队友 / 怪物分开（不是绿框——绿只留给卡外的「当前行动」进度条） */
@@ -1762,11 +1776,11 @@ ul.combat-action-roster {
     0 0 0 3px color-mix(in srgb, var(--warn) 25%, transparent);
 }
 
-/* 立绘区（先空着）：吃掉中段所有剩余高度，四角的数值压在它上面 */
+/* 立绘区（先空着）：占内框上半；比词条区大（约 1.6 : 1） */
 .combatant-art {
-  flex: 1 1 auto;
+  flex: 1.6 1 0;
   min-height: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background:
     linear-gradient(160deg, color-mix(in srgb, var(--fg) 10%, transparent), transparent),
     color-mix(in srgb, var(--fg) 4%, transparent);
@@ -1776,10 +1790,12 @@ ul.combat-action-roster {
 /* 名字横幅：名字 + 当前行动 / 已行动 并排居中（状态不再另占一个角） */
 .combatant-name {
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  padding: 0.3rem 0.5rem;
+  min-height: 1.8rem;
+  padding: 0.2rem 0.5rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: color-mix(in srgb, var(--fg) 8%, transparent);
@@ -1804,16 +1820,18 @@ ul.combat-action-roster {
   color: var(--ok);
 }
 
-/* 词条区：手牌 / 被动 / 塞牌。点它看该角色手牌（= 旧卡底那颗按钮），抬到「整卡可点」那层之上 */
+/* 词条区：手牌 / 被动 / 塞牌。占内框下半（与立绘大约各半），点它看该角色手牌 */
 .combatant-keywords {
   position: relative;
   z-index: 1;
   display: flex;
+  flex: 1 1 0;
   flex-wrap: wrap;
+  align-content: center;
   justify-content: center;
   gap: 0.3rem;
-  min-height: 1.5rem;
-  padding: 0.3rem;
+  min-height: 2.5rem;
+  padding: 0.4rem 0.3rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: color-mix(in srgb, var(--fg) 4%, transparent);
@@ -1842,11 +1860,11 @@ ul.combat-action-roster {
 .combatant-chip {
   position: absolute;
   z-index: 2;
-  bottom: 0.3rem;
+  bottom: 0.05rem;
   display: grid;
   place-items: center;
-  width: 2.8rem;
-  height: 2.8rem;
+  width: 2.3rem;
+  height: 2.3rem;
   pointer-events: none;
 }
 
@@ -1860,14 +1878,14 @@ ul.combat-action-roster {
 .combatant-chip-value {
   position: relative;
   color: var(--bg);
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   font-weight: 700;
   line-height: 1;
 }
 
 /* 总格挡（左下）：盾形 */
 .combatant-chip--block {
-  left: 0.3rem;
+  left: 0.05rem;
 }
 
 .combatant-chip--block .combatant-chip-bg {
@@ -1876,25 +1894,25 @@ ul.combat-action-roster {
 
 /* HP（右下）：心形 */
 .combatant-chip--hp {
-  right: 0.3rem;
+  right: 0.05rem;
 }
 
 .combatant-chip--hp .combatant-chip-bg {
   fill: var(--err);
 }
 
-/* 正下：定性（阵营 / 身份） */
+/* 正下：定性（阵营 / 身份）——压在内外框之间那圈边上，与盾 / 心同一排 */
 .combatant-role {
   position: absolute;
   z-index: 2;
-  bottom: 0.85rem;
+  bottom: 0.35rem;
   left: 50%;
   transform: translateX(-50%);
-  padding: 0.15rem 0.8rem;
+  padding: 0.15rem 0.7rem;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--bg);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
   pointer-events: none;

@@ -100,8 +100,9 @@ export function readCharacterStats(entity: Entity): Schemas["CharacterStats"] | 
   const max_hp = readNumber(stats, "max_hp");
   const attack = readNumber(stats, "attack");
   const defense = readNumber(stats, "defense");
-  if (hp === null || max_hp === null || attack === null || defense === null) {
+  const speed = readNumber(stats, "speed");
+  if (hp === null || max_hp === null || attack === null || defense === null || speed === null) {
     return null;
   }
-  return { hp, max_hp, attack, defense };
+  return { hp, max_hp, attack, defense, speed };
 }

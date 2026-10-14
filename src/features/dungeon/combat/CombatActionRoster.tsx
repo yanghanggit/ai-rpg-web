@@ -111,32 +111,37 @@ export default function CombatActionRoster({
               className={classes.join(" ")}
               aria-current={isCurrent ? "true" : undefined}
             >
-              {/* 立绘区：先空着（占中段） */}
-              <span className="combatant-art" aria-hidden="true" />
+              {/* 内框：立绘 / 名字 / 词条都收在这一块里；底排的盾 / 心凸出于它 */}
+              <div className="combatant-inner">
+                {/* 立绘区：先空着（占上半） */}
+                <span className="combatant-art" aria-hidden="true" />
 
-              {/* 名字横幅：当前行动 / 已行动 并进横幅（不再另占一个角） */}
-              <span className="combatant-name">
-                {displayName(combatant.name)}
-                {isCurrent ? (
-                  <span className="combatant-name-state combatant-name-state--current">
-                    当前行动
+                {/* 名字横幅：当前行动 / 已行动 并进横幅（不再另占一个角） */}
+                <span className="combatant-name">
+                  {displayName(combatant.name)}
+                  {isCurrent ? (
+                    <span className="combatant-name-state combatant-name-state--current">
+                      当前行动
+                    </span>
+                  ) : isCompleted ? (
+                    <span className="combatant-name-state">已行动</span>
+                  ) : null}
+                </span>
+
+                {/* 词条区：手牌 / 被动 / 塞牌；点它看该角色手牌（与旧卡底按钮同一入口） */}
+                <button
+                  type="button"
+                  className="combatant-keywords"
+                  aria-label={`查看手牌：${displayName(combatant.name)}`}
+                  onClick={() => onOpenHand?.(combatant.name)}
+                >
+                  <span className="affix-chip affix-chip--hand">
+                    [手牌] {combatant.hand.length}
                   </span>
-                ) : isCompleted ? (
-                  <span className="combatant-name-state">已行动</span>
-                ) : null}
-              </span>
-
-              {/* 词条区：手牌 / 被动 / 塞牌；点它看该角色手牌（与旧卡底按钮同一入口） */}
-              <button
-                type="button"
-                className="combatant-keywords"
-                aria-label={`查看手牌：${displayName(combatant.name)}`}
-                onClick={() => onOpenHand?.(combatant.name)}
-              >
-                <span className="affix-chip affix-chip--hand">[手牌] {combatant.hand.length}</span>
-                <span className="affix-chip affix-chip--hit">[被动] {onHitCount}</span>
-                <span className="affix-chip affix-chip--transfer">[塞牌] {transferredCount}</span>
-              </button>
+                  <span className="affix-chip affix-chip--hit">[被动] {onHitCount}</span>
+                  <span className="affix-chip affix-chip--transfer">[塞牌] {transferredCount}</span>
+                </button>
+              </div>
 
               {/* 左下：总格挡（盾形底） */}
               <span className="combatant-chip combatant-chip--block" title="总格挡">

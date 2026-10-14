@@ -11,7 +11,7 @@ const playerEntity: Entity = {
     [COMPONENT.Appearance]: { name: "角色.无名", base_body: "基础身体", appearance: "当前外观" },
     [COMPONENT.CharacterStats]: {
       name: "角色.无名",
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, speed: 4 },
     },
   },
 };
@@ -24,7 +24,7 @@ describe("readActorInfo", () => {
       creation_order: 2,
       base_body: "基础身体",
       appearance: "当前外观",
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, speed: 4 },
       worn_costume: null,
     });
   });
@@ -35,14 +35,14 @@ describe("readActorInfo", () => {
       data: {
         [COMPONENT.Identity]: { name: "角色.坏运气", creation_order: 1, entity_id: "id-2" },
         [COMPONENT.CharacterStats]: {
-          stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 },
+          stats: { hp: 18, max_hp: 18, attack: 5, defense: 2, speed: 3 },
         },
       },
     });
 
     expect(info.player_name).toBeNull();
     expect(info.entity_id).toBe("id-2");
-    expect(info.stats).toEqual({ hp: 18, max_hp: 18, attack: 5, defense: 2 });
+    expect(info.stats).toEqual({ hp: 18, max_hp: 18, attack: 5, defense: 2, speed: 3 });
   });
 
   it("穿着时装时读出 WornCostumeComponent.item", () => {

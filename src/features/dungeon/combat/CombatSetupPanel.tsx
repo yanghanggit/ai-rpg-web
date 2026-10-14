@@ -103,8 +103,8 @@ export default function CombatSetupPanel({
               name={combatant.name}
               badge={roleLabel(combatant)}
               stats={combatant.stats}
-              // 开局前也显示攻防（决定先打谁）
-              showAttackDefense
+              // 开局前也显示攻防速（决定先打谁、谁先手）
+              showCombatStats
               onOpenInfo={() => setInfoActor(combatant.name)}
             />
           ))}
@@ -137,8 +137,8 @@ export default function CombatSetupPanel({
               name={combatant.name}
               badge={roleLabel(combatant)}
               stats={combatant.stats}
-              // 开局前也显示攻防（决定先打谁）
-              showAttackDefense
+              // 开局前也显示攻防速（决定先打谁、谁先手）
+              showCombatStats
               onOpenInfo={() => setInfoActor(combatant.name)}
             />
           ))}

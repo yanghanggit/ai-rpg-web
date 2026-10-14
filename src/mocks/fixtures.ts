@@ -39,7 +39,7 @@ function actor(
     profile: "（mock）角色简介",
     base_body: "（mock）基础身体",
     system_message: "（mock）角色系统提示",
-    character_stats: { hp: 15, max_hp: 15, attack: 3, defense: 1 },
+    character_stats: { hp: 15, max_hp: 15, attack: 3, defense: 1, speed: 2 },
     components,
     assets: {},
   };
@@ -200,7 +200,7 @@ export const playerEntityFixture: Entity = {
     },
     [COMPONENT.CharacterStats]: {
       name: blueprintFixture.player_actor,
-      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1 },
+      stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, speed: 4 },
     },
   },
 };
@@ -228,7 +228,7 @@ export const npcEntityFixtures: Entity[] = [
       },
       [COMPONENT.CharacterStats]: {
         name: "角色.坏运气",
-        stats: { hp: 18, max_hp: 18, attack: 5, defense: 2 },
+        stats: { hp: 18, max_hp: 18, attack: 5, defense: 2, speed: 3 },
       },
     },
   },
@@ -248,7 +248,7 @@ export const npcEntityFixtures: Entity[] = [
       },
       [COMPONENT.CharacterStats]: {
         name: "角色.麻雀",
-        stats: { hp: 8, max_hp: 8, attack: 1, defense: 0 },
+        stats: { hp: 8, max_hp: 8, attack: 1, defense: 0, speed: 6 },
       },
     },
   },
@@ -462,7 +462,7 @@ export const dungeonFixture: Schemas["Dungeon"] = {
         dungeonActor(
           "怪物.石像鬼",
           "Monster",
-          { hp: 9, max_hp: 9, attack: 3, defense: 1 },
+          { hp: 9, max_hp: 9, attack: 3, defense: 1, speed: 5 },
           "（mock）一尊蹲踞在门楣上的石像鬼，赤红的石眼里映着火光。",
         ),
         dungeonActor(
@@ -473,19 +473,20 @@ export const dungeonFixture: Schemas["Dungeon"] = {
             max_hp: 16,
             attack: 5,
             defense: 2,
+            speed: 1,
           },
           "（mock）从沼泽深处爬出的腐沼巨蜥，浑身缠着霉烂的水草，鳞缝里渗着青黑的淤泥。",
         ),
         dungeonActor(
           "怪物.提线木偶",
           "Monster",
-          { hp: 7, max_hp: 7, attack: 2, defense: 0 },
+          { hp: 7, max_hp: 7, attack: 2, defense: 0, speed: 4 },
           "（mock）一具提线木偶，关节用麻绳系着，走起来哔哒作响。",
         ),
         dungeonActor(
           "怪物.缚灵",
           "Monster",
-          { hp: 12, max_hp: 12, attack: 4, defense: 1 },
+          { hp: 12, max_hp: 12, attack: 4, defense: 1, speed: 8 },
           "（mock）悬在半空的缚灵，脚不沾地，脖颈勒出一道乌痕。",
         ),
       ]),

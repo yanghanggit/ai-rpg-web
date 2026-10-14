@@ -70,7 +70,7 @@ export default function EnterDungeonDialog({
               ) : member.stats ? (
                 <span className="muted">
                   hp {member.stats.hp}/{member.stats.max_hp} · attack {member.stats.attack} ·
-                  defense {member.stats.defense}
+                  defense {member.stats.defense} · speed {member.stats.speed}
                 </span>
               ) : (
                 <span className="muted">属性未知</span>

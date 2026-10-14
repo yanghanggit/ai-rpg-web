@@ -81,6 +81,8 @@ export default function ActorInfoDialog({
               <dd className="mono">{info.stats.attack}</dd>
               <dt className="mono">defense</dt>
               <dd className="mono">{info.stats.defense}</dd>
+              <dt className="mono">speed</dt>
+              <dd className="mono">{info.stats.speed}</dd>
             </dl>
           ) : (
             <p className="muted">（无属性数据）</p>

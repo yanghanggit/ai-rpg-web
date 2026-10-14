@@ -100,7 +100,7 @@ describe("readCombatant", () => {
     const e = entity("角色.无名", {
       [COMPONENT.Player]: { player_name: "webdev" },
       [COMPONENT.CharacterStats]: {
-        stats: { hp: 12, max_hp: 18, attack: 3, defense: 1 },
+        stats: { hp: 12, max_hp: 18, attack: 3, defense: 1, speed: 4 },
       },
       [COMPONENT.RoundStats]: { energy: 3 },
       [COMPONENT.Hand]: { cards: [cardFixtures.breath, cardFixtures.ward] },
@@ -114,7 +114,7 @@ describe("readCombatant", () => {
       faction: "party",
       player: true,
       dead: false,
-      stats: { hp: 12, max_hp: 18, attack: 3, defense: 1 },
+      stats: { hp: 12, max_hp: 18, attack: 3, defense: 1, speed: 4 },
       energy: 3,
       hand: [expect.objectContaining({ name: "静默" }), expect.objectContaining({ name: "冰墙" })],
       block: 5,
@@ -129,14 +129,14 @@ describe("readCombatant", () => {
   it("怪物没有玩家 / 手牌组件时给出安全默认值", () => {
     const e = entity("怪物.石像鬼", {
       [COMPONENT.Monster]: {},
-      [COMPONENT.CharacterStats]: { stats: { hp: 9, max_hp: 9, attack: 3, defense: 1 } },
+      [COMPONENT.CharacterStats]: { stats: { hp: 9, max_hp: 9, attack: 3, defense: 1, speed: 5 } },
     });
     expect(readCombatant(e)).toEqual({
       name: "怪物.石像鬼",
       faction: "monster",
       player: false,
       dead: false,
-      stats: { hp: 9, max_hp: 9, attack: 3, defense: 1 },
+      stats: { hp: 9, max_hp: 9, attack: 3, defense: 1, speed: 5 },
       energy: 0,
       hand: [],
       block: 0,

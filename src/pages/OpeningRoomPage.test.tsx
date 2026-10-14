@@ -495,7 +495,7 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    // 属性行只有 HP（attack / defense 在角色信息浮窗里看）；卡组张数另起一行
+    // 属性行只有 HP（attack / defense / speed 在角色信息浮窗里看）；卡组张数另起一行
     expect(await screen.findByText("HP 12/15")).toBeInTheDocument();
     expect(screen.queryByText(/attack 3/)).not.toBeInTheDocument();
     // 卡上只留「卡组 N」这行状态，卡底那颗按钮就是奖励入口

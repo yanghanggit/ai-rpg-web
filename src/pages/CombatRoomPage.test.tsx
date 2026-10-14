@@ -42,13 +42,13 @@ function currentCombatant(): HTMLElement {
 }
 
 describe("副本房间 · 战斗房间", () => {
-  it("角色卡：准备屏写全 HP · attack · defense；turn 名单卡改用四角数值 + 立绘 + 词条", async () => {
+  it("角色卡：准备屏写全 HP · attack · defense · speed；turn 名单卡改用四角数值 + 立绘 + 词条", async () => {
     server.use(instantTasks());
     renderCombatRoom();
 
     // 准备屏：敌人与队伍都写全（还没开打，要看清双方多硬）
-    expect(await screen.findByText("HP 9/9 · attack 3 · defense 1")).toBeInTheDocument();
-    expect(screen.getByText("HP 12/15 · attack 3 · defense 1")).toBeInTheDocument();
+    expect(await screen.findByText("HP 9/9 · attack 3 · defense 1 · speed 5")).toBeInTheDocument();
+    expect(screen.getByText("HP 12/15 · attack 3 · defense 1 · speed 4")).toBeInTheDocument();
 
     // 开打后：名单卡换成《怪物火车》式牌面——四角数值 + 中间立绘 + 名字横幅 + 词条区
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
