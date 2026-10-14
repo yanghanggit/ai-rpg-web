@@ -7,6 +7,7 @@ import {
   isRecord,
   readBoolean,
   readCharacterStats,
+  readEquippedGearSpeed,
   readNumber,
   readString,
 } from "./ecs";
@@ -82,5 +83,42 @@ describe("readCharacterStats", () => {
         data: { [COMPONENT.CharacterStats]: { stats: { hp: 12, max_hp: "15" } } },
       }),
     ).toBeNull();
+  });
+
+  it("把 EquippedGearComponent 的 speed 叠加进有效速度", () => {
+    expect(
+      readCharacterStats({
+        name: "角色.无名",
+        data: {
+          [COMPONENT.CharacterStats]: {
+            stats: { hp: 12, max_hp: 15, attack: 3, defense: 1, speed: 4 },
+          },
+          [COMPONENT.EquippedGear]: {
+            name: "角色.无名",
+            items: [{ speed: 2 }, { speed: -1 }],
+          },
+        },
+      }),
+    ).toEqual({ hp: 12, max_hp: 15, attack: 3, defense: 1, speed: 5 });
+  });
+});
+
+describe("readEquippedGearSpeed", () => {
+  it("无组件时返回 0", () => {
+    expect(readEquippedGearSpeed(entity)).toBe(0);
+  });
+
+  it("累加各装备 speed；条目缺 speed 或结构异常时跳过（不猜）", () => {
+    expect(
+      readEquippedGearSpeed({
+        name: "角色.无名",
+        data: {
+          [COMPONENT.EquippedGear]: {
+            name: "角色.无名",
+            items: [{ speed: 2 }, { speed: -1 }, { other: true }, null],
+          },
+        },
+      }),
+    ).toBe(1);
   });
 });

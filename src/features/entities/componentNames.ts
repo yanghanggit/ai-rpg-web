@@ -18,6 +18,7 @@ export const COMPONENT = {
   DiscardPile: name("DiscardPileComponent"),
   DrawPile: name("DrawPileComponent"),
   Environment: name("EnvironmentComponent"),
+  EquippedGear: name("EquippedGearComponent"),
   ExhaustPile: name("ExhaustPileComponent"),
   Hand: name("HandComponent"),
   Identity: name("IdentityComponent"),

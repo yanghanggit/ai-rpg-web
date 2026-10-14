@@ -89,6 +89,8 @@ export function readBoolean(data: unknown, key: string): boolean | null {
 
 /**
  * 读 `CharacterStatsComponent.stats`（玩家 / 队友 / 怪物通用）；字段对齐 `Schemas["CharacterStats"]`。
+ * `speed` 叠加已装备件（`EquippedGearComponent`）的被动修正，与后端 `compute_character_stats`
+ * 的有效属性口径一致；attack / defense 由卡牌通道承载，不在此叠加。
  */
 export function readCharacterStats(entity: Entity): Schemas["CharacterStats"] | null {
   const data = getComponentData(entity, COMPONENT.CharacterStats);
@@ -104,5 +106,23 @@ export function readCharacterStats(entity: Entity): Schemas["CharacterStats"] | 
   if (hp === null || max_hp === null || attack === null || defense === null || speed === null) {
     return null;
   }
-  return { hp, max_hp, attack, defense, speed };
+  return { hp, max_hp, attack, defense, speed: speed + readEquippedGearSpeed(entity) };
+}
+
+/**
+ * `EquippedGearComponent.items` 里各 `GearItem.speed` 之和。
+ * 组件缺失、`items` 非数组或条目字段异常时按 0 计（不猜），与后端「装备级被动只加 speed」一致。
+ */
+export function readEquippedGearSpeed(entity: Entity): number {
+  const data = getComponentData(entity, COMPONENT.EquippedGear);
+  if (!isRecord(data) || !Array.isArray(data.items)) {
+    return 0;
+  }
+  return data.items.reduce<number>((total, item) => {
+    if (!isRecord(item)) {
+      return total;
+    }
+    const speed = readNumber(item, "speed");
+    return speed === null ? total : total + speed;
+  }, 0);
 }
