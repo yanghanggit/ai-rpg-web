@@ -87,6 +87,24 @@ describe("seedMockFromUrl", () => {
     );
   });
 
+  it("combat:monster → 当前行动者是怪物（队伍与怪物交错排列）", () => {
+    seedMockFromUrl(`${BASE}?seed=combat:monster`);
+    expect(readMockCombat().state).toBe(2);
+    const round = readMockCombat().rounds[0];
+    // 玩家先手，过牌一次后轮到第一个怪物
+    expect(round?.current_actor).toBe("怪物.石像鬼");
+    // 座位交错：我 / 敌 / 我 / 敌…（怪物多出来的那个接在最后）
+    expect(round?.action_order).toEqual([
+      "角色.无名",
+      "怪物.石像鬼",
+      "角色.坏运气",
+      "怪物.腐沼巨蜥",
+      "角色.麻雀",
+      "怪物.提线木偶",
+      "怪物.缚灵",
+    ]);
+  });
+
   it("combat:post → POST_COMBAT 且胜利、有战利品", () => {
     seedMockFromUrl(`${BASE}?seed=combat:post`);
     const combat = readMockCombat();

@@ -119,7 +119,7 @@ function newBattleActor(name: string): BattleActor {
   };
 }
 
-/** 当前参战者顺序（队伍在前、怪物在后）；由最近一次 `resetMockCombat` 决定。 */
+/** 当前参战者顺序（队伍与怪物**交错**：我 / 敌 / 我 / 敌…）；由最近一次 `resetMockCombat` 决定。 */
 export function readMockCombatParticipants(): string[] {
   return [...battle.keys()];
 }
@@ -159,8 +159,33 @@ export function setMockDrawPile(name: string, cards: RawCard[]): void {
 }
 
 /**
+ * 把队伍与怪物交错排：我 / 敌 / 我 / 敌…（人数不等时多的一方接在后面）。
+ *
+ * 让 mock 的行动顺序不再是「我方整块、敌方整块」，这样名单（`.combat-action-roster`）
+ * 上能看到队伍与怪物真正的穿插——贴近真实回合制里双方交替出手的样子。
+ */
+function interleaveParties(party: readonly string[], monsters: readonly string[]): string[] {
+  const order: string[] = [];
+  const length = Math.max(party.length, monsters.length);
+  for (let index = 0; index < length; index += 1) {
+    const member = party[index];
+    if (member !== undefined) {
+      order.push(member);
+    }
+    const monster = monsters[index];
+    if (monster !== undefined) {
+      order.push(monster);
+    }
+  }
+  return order;
+}
+
+/**
  * 复位为「刚进入战斗房间」：state = INITIALIZATION、清空回合与战斗组件，并按
  * `monsterNames` 建立参战者（队伍从 `./opening` 取）。
+ *
+ * 队伍与怪物**交错**入座（`interleaveParties`），所以 `readMockCombatParticipants` 与
+ * `action_order` 都是「我 / 敌 / 我 / 敌…」。
  *
  * 进入 / 推进到战斗房间时由 `./dungeons` 调用；与后端 `dungeon_advance_action.py`
  * 把 `combat.state` 置为 `INITIALIZATION` 对齐。
@@ -171,7 +196,7 @@ export function resetMockCombat(monsterNames: readonly string[] = fixtureMonster
   battle = new Map();
   dead = new Set();
   loot = [];
-  for (const name of [...readMockPartyNames(), ...monsterNames]) {
+  for (const name of interleaveParties(readMockPartyNames(), monsterNames)) {
     battle.set(name, newBattleActor(name));
   }
 }
