@@ -46,7 +46,6 @@ export interface Combatant {
   piles: CombatPiles;
 }
 
-/** 阵营判据与 TUI `classify_faction` 一致：玩家 / NPC → 我方，怪物 → 敌方。 */
 export function classifyFaction(entity: Entity): Faction {
   if (hasComponent(entity, COMPONENT.Player) || hasComponent(entity, COMPONENT.NPC)) {
     return "party";
@@ -139,7 +138,6 @@ export function readPiles(entity: Entity): CombatPiles {
   };
 }
 
-/** 阵营 / 身份 → 界面标签，与 TUI `role_label` 一致（玩家 / 队友 / 怪物）。 */
 export function roleLabel(combatant: Combatant): string {
   if (combatant.faction === "monster") {
     return "怪物";

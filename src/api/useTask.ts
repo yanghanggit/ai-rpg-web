@@ -107,7 +107,6 @@ export function useTask(jobId: number | null | undefined, options: UseTaskOption
         }
         return;
       }
-      // 流正常结束却没到终态：TUI 同样按超时处理（watch_task_until_done 末尾抛 TimeoutError）
       setState((previous) =>
         isTerminal(previous.status) ? previous : { ...previous, isTimedOut: true },
       );

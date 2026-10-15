@@ -79,7 +79,6 @@ describe("家园概览页", () => {
       {
         user_name: "webdev",
         game_name: "Game1",
-        // 全部场景的全部角色，跨场景去重且保序（与 TUI cmd_advance 口径一致）
         actors: ["角色.坏运气", "角色.无名", "角色.麻雀"],
       },
     ]);

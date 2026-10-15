@@ -1,10 +1,6 @@
 /**
  * mock 用的内存战斗状态（战斗房间）。
  *
- * 对应 TUI 的 `tui/mock_data.py`：真实后端把战斗状态记在 `Combat`（state / result / rounds）
- * 上，把血量 / 能量 / 手牌 / 牌堆 / 战利品挂在**实体组件**上；mock 在这里按同一语义维护
- * 这几份状态，让 `pnpm dev:mock` 下「初始化 → 抓牌 → 出手 → 结算」整条战斗循环可走。
- *
  * 分工与其它 mock 模块一致：
  * - 本模块只管**战斗状态本身**（`Combat` + 各参战者的战斗组件 + 战利品）；
  * - 参战者是否被搬到哪个场景，由 `./dungeons` 通过 `./stages` 处理；
@@ -337,8 +333,11 @@ export function playMockCards(
   }
 
   const targetLabel = targets.length > 0 ? targets.join("、") : "（自动目标）";
-  check.round.cards_log.push(`${actorName} 使用『${cardName}』对 ${targetLabel} 造成伤害。`);
-  check.round.cards_narrative.push(`${actorName} 打出『${cardName}』，命中目标！`);
+  check.round.entries.push({
+    kind: "cards",
+    log: `${actorName} 使用『${cardName}』对 ${targetLabel} 造成伤害。`,
+    narrative: `${actorName} 打出『${cardName}』，命中目标！`,
+  });
   return { ok: true, message: "出牌完成" };
 }
 
@@ -377,11 +376,11 @@ export function useMockConsumable(itemName: string): { ok: boolean; message: str
   actor.hand.push(...materialized);
 
   const cardNames = materialized.map((card) => String(card.name)).join("、");
-  check.round.consumable_log.push(
-    `[${check.actor} 使用 ${itemName} ×${count}] 生成手牌「${cardNames}」`,
-  );
-  check.round.consumable_narrative.push("（mock）消耗品已物化为手牌，待出牌结算。");
-  check.round.consumable_use_count += 1;
+  check.round.entries.push({
+    kind: "consumable",
+    log: `[${check.actor} 使用 ${itemName} ×${count}] 生成手牌「${cardNames}」`,
+    narrative: "（mock）消耗品已物化为手牌，待出牌结算。",
+  });
   return { ok: true, message: "使用完成" };
 }
 
@@ -391,9 +390,11 @@ export function equipMockGear(itemName: string): { ok: boolean; message: string 
   if (!check.ok) {
     return { ok: false, message: check.message };
   }
-  check.round.gear_log.push(`将『${itemName}』转化为手牌。`);
-  check.round.gear_narrative.push(`装备『${itemName}』已就绪。`);
-  check.round.gear_equip_count += 1;
+  check.round.entries.push({
+    kind: "gear",
+    log: `将『${itemName}』转化为手牌。`,
+    narrative: `装备『${itemName}』已就绪。`,
+  });
   return { ok: true, message: "使用完成" };
 }
 
@@ -421,8 +422,11 @@ export function advanceMockMonsterTurn(): { ok: boolean; message: string } {
     return { ok: false, message: check.message };
   }
   const actor = check.actor;
-  check.round.cards_log.push(`${actor} 自动出牌，造成若干伤害。`);
-  check.round.cards_narrative.push(`${actor} 发起了攻击！`);
+  check.round.entries.push({
+    kind: "cards",
+    log: `${actor} 自动出牌，造成若干伤害。`,
+    narrative: `${actor} 发起了攻击！`,
+  });
   const next = advanceTurn(check.round);
   return {
     ok: true,
@@ -455,10 +459,7 @@ export function collectMockLoot(): { ok: boolean; message: string } {
   return { ok: true, message: `已收取 ${count} 件战利品到背包` };
 }
 
-/**
- * 开发调试 / 测试用：直接预置结算态（一局已完成回合 + 胜利 + 战利品 + 怪物已战死），
- * 不必把整场战斗打一遍（对应 TUI 的 `prepare_mock_post_combat`）。
- */
+/** 开发调试 / 测试用：直接预置结算态（一局已完成回合 + 胜利 + 战利品 + 怪物已战死）。 */
 export function prepareMockPostCombat(): void {
   combat.state = STATE_POST_COMBAT;
   combat.result = RESULT_WIN;
@@ -469,8 +470,13 @@ export function prepareMockPostCombat(): void {
       action_order: [...order],
       draw_completed: true,
       is_completed: true,
-      cards_log: [`${order[0] ?? "角色"} 使用『刺击』造成致命一击。`],
-      cards_narrative: [`${order[0] ?? "角色"} 打出『刺击』，一击命中！`],
+      entries: [
+        {
+          kind: "cards",
+          log: `${order[0] ?? "角色"} 使用『刺击』造成致命一击。`,
+          narrative: `${order[0] ?? "角色"} 打出『刺击』，一击命中！`,
+        },
+      ],
     }),
   ];
   for (const name of order) {
@@ -512,8 +518,13 @@ export function prepareMockDefeat(): void {
       action_order: [...order],
       draw_completed: true,
       is_completed: true,
-      cards_log: [`${lastBlow} 的最后一击命中了队伍，全员倒下。`],
-      cards_narrative: [`${lastBlow} 嘶吼着扑来，队伍再无人起身。`],
+      entries: [
+        {
+          kind: "cards",
+          log: `${lastBlow} 的最后一击命中了队伍，全员倒下。`,
+          narrative: `${lastBlow} 嘶吼着扑来，队伍再无人起身。`,
+        },
+      ],
     }),
   ];
   for (const name of order) {

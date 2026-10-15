@@ -559,16 +559,7 @@ export function roundFixture(overrides: Partial<Schemas["Round"]> = {}): Schemas
     current_actor: null,
     is_completed: false,
     draw_completed: false,
-    cards_log: [],
-    cards_narrative: [],
-    consumable_log: [],
-    consumable_narrative: [],
-    consumable_use_count: 0,
-    gear_log: [],
-    gear_narrative: [],
-    gear_equip_count: 0,
-    artifact_log: [],
-    artifact_narrative: [],
+    entries: [],
     ...overrides,
   };
 }

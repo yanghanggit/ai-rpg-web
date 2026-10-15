@@ -1,8 +1,5 @@
 /**
  * 战斗房间的 phase 派生（纯函数）。
- *
- * 四个 phase 与 TUI 四个 Screen 一一对应：`init`（NONE / INITIALIZATION）、`round_start`（ONGOING
- * 待抓牌）、`turn`（ONGOING 有行动角色）、`post`（COMPLETE / POST_COMBAT）。Panel 只消费结果。
  */
 import type { Schemas } from "../../../api/types";
 
@@ -27,7 +24,6 @@ export const COMBAT_RESULT = {
   LOSE: 2,
 } as const;
 
-/** 战斗状态 → 界面说法（与 TUI `/info` 的 `CombatState.name` 对应）。 */
 export const COMBAT_STATE_LABELS: Record<number, string> = {
   [COMBAT_STATE.NONE]: "未开始",
   [COMBAT_STATE.INITIALIZATION]: "初始化中",
@@ -45,7 +41,6 @@ export const COMBAT_RESULT_LABELS: Record<number, string> = {
 
 /** 由战斗状态派生当前 phase。 */
 export function deriveCombatPhase(combat: Combat): CombatPhase {
-  // COMPLETE（已出胜负）与 POST_COMBAT 合并成 post，与 TUI 的 `CombatPostScreen` 一致
   if (combat.state === COMBAT_STATE.COMPLETE || combat.state === COMBAT_STATE.POST_COMBAT) {
     return "post";
   }

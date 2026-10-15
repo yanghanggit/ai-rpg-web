@@ -95,7 +95,7 @@ describe("useTask", () => {
     expect(result.current.isRunning).toBe(false);
   });
 
-  it("流在终态前结束视为超时（与 TUI 的 TimeoutError 一致）", async () => {
+  it("流在终态前结束视为超时", async () => {
     mockWatch(() => [taskEvent(1, "doing")]);
 
     const { result } = renderHook(() => useTask(1));

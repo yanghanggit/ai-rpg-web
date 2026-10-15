@@ -37,7 +37,8 @@ function RoundFacts({ index, round }: { index: number; round: Schemas["Round"] }
         )}
         <dt>消耗品 / 装备</dt>
         <dd>
-          {round.consumable_use_count} / {round.gear_equip_count}
+          {round.entries.filter((entry) => entry.kind === "consumable").length} /{" "}
+          {round.entries.filter((entry) => entry.kind === "gear").length}
         </dd>
       </dl>
       <CombatRoundLog round={round} />

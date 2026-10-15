@@ -85,8 +85,6 @@ function readPlayState(
 }
 
 /**
- * 单个角色的回合行动（`ONGOING` 且有 `current_actor`，对应 TUI `CombatTurnActorScreen`）。
- *
  * 三块：参战者横滑名单（`CombatActionRoster`，顺序即 `action_order`）、行动区三栏（左 = 当前行动者
  * 资源 / 中 = 手牌横滑 / 右 = 过牌 + 牌堆）、出牌交互。
  *

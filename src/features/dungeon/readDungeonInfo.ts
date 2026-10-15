@@ -17,7 +17,6 @@ function formatCreatedAt(value: string | undefined): string | null {
  * 把副本的模型数据整理成浮窗好渲染的形状。
  *
  * 数据本身就是生成物类型（`Schemas["Dungeon"]`），所以这里不做校验，只做三件展示层的事：
- * - 房间类型直接用判别字段 `room.type`（不学 TUI 用「场景里有没有怪物」去猜）；
  * - 敌人从 `room.stage.actors` 里按 `ActorType === "Monster"` 取；
  * - 进度直接读模型自己的 `current_room_index`——**副本进行中时它 >= 0**，静态副本（磁盘
  *   JSON）恒为 -1，所以同一个浮窗给总览页与房间页用都不会误标。

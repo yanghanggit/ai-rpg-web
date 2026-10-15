@@ -109,8 +109,10 @@ describe("回合行动", () => {
 
     expect(playMockCards(PLAYER, "劈斩", [MONSTER_1])).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
-    expect(round?.cards_log).toHaveLength(1);
-    expect(round?.cards_narrative).toHaveLength(1);
+    expect(round?.entries).toHaveLength(1);
+    expect(round?.entries[0]?.kind).toBe("cards");
+    expect(round?.entries[0]?.log).toBeTruthy();
+    expect(round?.entries[0]?.narrative).toBeTruthy();
 
     const after = actorEntity(PLAYER);
     expect(componentData(after, COMPONENT.Hand)?.cards).toHaveLength(4);
@@ -129,9 +131,9 @@ describe("回合行动", () => {
     expect(useMockConsumable("消耗品.治疗药水")).toMatchObject({ ok: true });
     expect(equipMockGear("装备.短斧")).toMatchObject({ ok: true });
     const round = readMockCombat().rounds[0];
-    expect(round?.consumable_use_count).toBe(1);
-    expect(round?.gear_equip_count).toBe(1);
-    expect(round?.consumable_log).toHaveLength(1);
+    const entries = round?.entries ?? [];
+    expect(entries.filter((entry) => entry.kind === "consumable")).toHaveLength(1);
+    expect(entries.filter((entry) => entry.kind === "gear")).toHaveLength(1);
     // 治疗药水 count=2 → 物化 2 张手牌
     expect(componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards).toHaveLength(7);
   });
@@ -152,7 +154,7 @@ describe("回合行动", () => {
     passMockTurn(); // 让怪物成为 current_actor
     expect(advanceMockMonsterTurn()).toMatchObject({ ok: true });
     expect(readMockCombat().rounds[0]?.current_actor).toBe(MONSTER_2);
-    expect(readMockCombat().rounds[0]?.cards_log).toHaveLength(1);
+    expect(readMockCombat().rounds[0]?.entries).toHaveLength(1);
   });
 });
 
