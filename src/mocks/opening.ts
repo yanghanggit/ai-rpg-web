@@ -1,11 +1,10 @@
 /**
- * mock 用的内存「本次副本开局」状态：队伍快照、牌组、奖励（Spoils）、开场是否已初始化。
+ * mock 用的内存「本次副本开局」状态：队伍快照、牌组、奖励（Spoils）。
  *
- * 真实后端里这些都不是独立的数据结构，而是**实体上的组件**：
+ * 真实后端里这些都**不是独立的数据结构，而是实体上的组件**：
  * - 队伍：`enter_dungeon` 时给玩家与名单成员挂 `PartyMemberComponent`（此后名单不可改）；
  * - 牌组：各成员的 `DeckComponent`；奖励：`SpoilsComponent`（生成后才有，内部两个队列：
- *   `candidate_cards` 待领取、`claimed_cards` 已领取；当前 gameplay 只允许领一张）；
- * - 开场是否初始化：`OpeningRoom.initialized`（属于副本房间，所以 `/room` 的响应要带上它）。
+ *   `candidate_cards` 待领取、`claimed_cards` 已领取；当前 gameplay 只允许领一张）。
  *
  * mock 里按同一语义维护这几份状态，让 `pnpm dev:mock` 下「初始化 → 生成奖励 → 领卡 →
  * 进入下一关」整条链路可走。组件的**拼装**在这里，副本本身的状态在 `./dungeons`，
@@ -30,8 +29,6 @@ let party: string[] = [];
 let decks = new Map<string, RawCard[]>();
 /** 各成员的奖励（Spoils）；没有条目表示尚未生成。 */
 let spoils = new Map<string, MockSpoils>();
-/** 开场是否已初始化（叙事 + 牌库）。 */
-let initialized = false;
 
 function clone<T>(value: T): T {
   return structuredClone(value);
@@ -40,10 +37,6 @@ function clone<T>(value: T): T {
 /** 队伍成员名（含玩家）。 */
 export function readMockPartyNames(): string[] {
   return [...party];
-}
-
-export function readMockOpeningInitialized(): boolean {
-  return initialized;
 }
 
 /** 已持有 SpoilsComponent 的成员名（用于“奖励已生成”幂等守卫）。 */
@@ -57,7 +50,7 @@ export function readMockClaimedCount(actorName: string): number {
 }
 
 /**
- * 进副本：固化队伍并给每人装上初始牌组（奖励清空、开场回到未初始化）。
+ * 进副本：固化队伍并给每人装上初始牌组（奖励清空）。
  *
  * @param members 队伍成员（含玩家，顺序同名单）。
  */
@@ -65,15 +58,13 @@ export function enterMockOpeningParty(members: readonly string[]): void {
   party = [...members];
   decks = new Map(members.map((name) => [name, clone(deckFixtures[name] ?? defaultDeckFixture)]));
   spoils = new Map();
-  initialized = false;
 }
 
-/** 退出副本：副本结束，这一局的开场状态一并清掉。 */
+/** 退出副本：副本结束，这一局的开局状态一并清掉。 */
 export function leaveMockOpening(): void {
   party = [];
   decks = new Map();
   spoils = new Map();
-  initialized = false;
 }
 
 /**
@@ -111,11 +102,6 @@ export function readMockPartyEntities(): Entity[] {
     }
   }
   return entities;
-}
-
-/** 开场初始化：叙事 + 牌库（mock 里只切状态，叙事由 handler 追一条消息）。 */
-export function initMockOpening(): void {
-  initialized = true;
 }
 
 /** 奖励（Spoils）生成：给每个成员各装一份候选卡（后端 `SPOILS_CARD_COUNT = 3`）；已领取队列为空。 */

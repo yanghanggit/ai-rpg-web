@@ -5,7 +5,6 @@ import { prepareMockPostCombat } from "../mocks/combat";
 import { advanceMockDungeon, enterMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
-import { initMockOpening } from "../mocks/opening";
 import { instantTasks, renderMap } from "../test/RoomHarness";
 import DungeonMapPage from "./DungeonMapPage";
 
@@ -33,8 +32,7 @@ function roomRow(stageName: string): HTMLElement {
 }
 
 describe("副本地图 · 状态与前进", () => {
-  it("刚进入副本：没有「地图」入口，只有本间那一行带「进入房间」", async () => {
-    // 进入但不初始化：开场房间还没进过（刚进入副本）
+  it("刚进入副本：开场房间无完成态，动作直接落在下一间那一行", async () => {
     enterMockDungeon("副本.荒废地窟");
     renderMapPage();
 
@@ -52,34 +50,20 @@ describe("副本地图 · 状态与前进", () => {
     expect(screen.getByText("地窟深处")).toBeInTheDocument();
     expect(screen.getByText(/hp 9/)).toBeInTheDocument();
 
-    // 动作长在目标那一行：还没进过本间 → 本间那一行带「进入房间」，别的行什么都不带
+    // 非战斗房间没有“完成”状态：本行直接标「已完成」，动作整行搬到下一间（不再有「进入房间」）
     const first = roomRow("地窟入口");
     const second = roomRow("地窟深处");
-    expect(first).toHaveTextContent("你在这里");
-    expect(within(first).getByRole("button", { name: "进入房间" })).toBeEnabled();
-    expect(within(second).queryByRole("button")).not.toBeInTheDocument();
-    expect(second).not.toHaveTextContent("下一间");
+    expect(first).toHaveTextContent("已完成");
+    expect(within(first).queryByRole("button")).not.toBeInTheDocument();
+    expect(within(second).getByRole("button", { name: "前往下一间" })).toBeEnabled();
 
     // 页面上没有解释性提示行（也不预判「离开副本」能不能点）
     expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
   });
 
-  it("「进入房间」：进入本间（开场房间整页），并自动开始初始化", async () => {
-    server.use(instantTasks());
-    enterMockDungeon("副本.荒废地窟");
-    renderMapPage();
-
-    fireEvent.click(await screen.findByRole("button", { name: "进入房间" }));
-
-    // 落到房间页：正文是队伍块（只有房间页有）；自动初始化跑完 → 卡上的「生成奖励」可点
-    expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
-    await waitFor(() => expect(screen.getByRole("button", { name: "生成奖励" })).toBeEnabled());
-  });
-
   it("两间之间：已结束那一行标「已完成」，按钮搬到下一间那一行，一步推进并进入下一间", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
-    initMockOpening();
     renderMapPage();
 
     // 本间已结束 → 本行是「已完成」，动作整行搬到下一间（不再另开工具栏、也没有确认框）
@@ -108,7 +92,6 @@ describe("副本地图 · 状态与前进", () => {
       ),
     );
     enterMockDungeon("副本.荒废地窟");
-    initMockOpening();
     renderMapPage();
 
     fireEvent.click(await screen.findByRole("button", { name: "前往下一间" }));

@@ -12,10 +12,10 @@ import { instantTasks, renderRoom } from "../test/RoomHarness";
 import DungeonRoomRoute from "./DungeonRoomRoute";
 
 /**
- * `OpeningRoomPage` 的测试。
+ * `NonCombatRoomPage` 的测试。
  *
- * 房间页需要一个**已解析的** `room`（初始化后要重新取 `/room` 才能看到 `initialized` 翻转），
- * 所以统一从路由挂载 `<DungeonRoomRoute/>`——解析器会把它分发到本页；`?seed` 深链与这里无关。
+ * 房间页需要一个**已解析的** `room`，所以统一从路由挂载 `<DungeonRoomRoute/>`——解析器会把它
+ * 分发到本页；`?seed` 深链与这里无关。
  */
 const renderOpening = () => renderRoom(<DungeonRoomRoute />);
 
@@ -54,7 +54,7 @@ const failingInit = (spy: () => void) =>
     return HttpResponse.json({ detail: "mock 初始化失败" }, { status: 500 });
   });
 
-/** 进入开场房间会自动初始化；等到角色卡上那颗「生成奖励」可点（= `initialized=true`）为止。 */
+/** 进入开场房间会自动初始化；等自动初始化跑完（角色卡上那颗「生成奖励」可点）为止。 */
 async function waitForInit() {
   await waitFor(() => {
     for (const button of screen.getAllByRole("button", { name: "生成奖励" })) {
@@ -178,7 +178,7 @@ describe("副本房间 · 共同框架", () => {
     };
     server.use(
       instantTasks(),
-      http.post(api("/api/dungeon/opening/generate_spoils/v1/"), () => {
+      http.post(api("/api/dungeon/spoils/generate/v1/"), () => {
         hasNewMessage = true;
         return HttpResponse.json({ job_id: 2, message: "ok" });
       }),
@@ -296,7 +296,7 @@ describe("副本房间 · 共同框架", () => {
 });
 
 describe("副本房间 · 开场房间", () => {
-  it("自动初始化失败时：原因写在场景卡里、点整张卡重试，结束与退出都由服务端拦", async () => {
+  it("自动初始化失败时：原因写在场景卡里、点整张卡重试（奖励已与初始化解耦）", async () => {
     const initSpy = vi.fn();
     server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒废地窟");
@@ -310,25 +310,15 @@ describe("副本房间 · 开场房间", () => {
     // 自动初始化只发一次；失败后不自动重试
     expect(initSpy).toHaveBeenCalledTimes(1);
 
-    // 标题行没有第二颗 ↻：初始化三态全在场景卡上（失败也没有兜底的那颗）——全屏只有这一处「重试初始化」
+    // 标题行没有第二颗 ↻：初始化三态全在场景卡上（失败也没有兜底的那颗）
     expect(screen.getAllByRole("button", { name: /重试初始化/ })).toHaveLength(1);
 
-    // 未初始化时角色卡上的奖励按钮在、但不可点（生成是服务端硬前置）
-    expect(await screen.findByRole("button", { name: "生成奖励" })).toBeDisabled();
+    // 奖励已与初始化解耦：初始化失败也不拦「生成奖励」（服务端只要求非战斗房间）
+    expect(await screen.findByRole("button", { name: "生成奖励" })).toBeEnabled();
 
-    // 未初始化 → 「结束开局准备」这件事根本不存在；
-    // 页面上也没有解释性提示行（初始化状态写在场景卡里，不需要再说一遍）
-    expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
+    // 非战斗房间无完成态：「结束开局准备」始终可用；页面上没有解释性提示行
+    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).toBeInTheDocument();
     expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
-
-    // 「离开副本」不做客户端预判：按钮可点，点下去由服务端拦（原因原样显示）
-    const menu = await openActions();
-    fireEvent.click(within(menu).getByRole("button", { name: "离开副本" }));
-    expect(
-      await screen.findByText("离开副本失败：开场房间尚未初始化，无法退出"),
-    ).toBeInTheDocument();
-    // 人还在本间（副本没被拆），场景卡仍是可点的重试入口
-    expect(screen.getByRole("button", { name: "重试初始化：地窟入口" })).toBeInTheDocument();
 
     // 点场景卡重试（本间唯一的重试入口）
     fireEvent.click(stageCard);

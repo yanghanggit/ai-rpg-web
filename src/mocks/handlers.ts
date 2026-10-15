@@ -56,9 +56,7 @@ import {
 import {
   consumeFailNextOpeningInit,
   generateMockSpoils,
-  initMockOpening,
   pickMockSpoilsCard,
-  readMockOpeningInitialized,
   readMockPartyEntities,
   readMockSpoilsHolders,
   withMockOpeningComponents,
@@ -329,10 +327,6 @@ export const handlers = [
     if (room === null) {
       return HttpResponse.json({ detail: "当前副本没有进行中的房间" }, { status: 404 });
     }
-    // 开场是否已初始化属于房间状态（真实后端记在 `OpeningRoom.initialized` 上）
-    if (room.type === "opening") {
-      room.initialized = readMockOpeningInitialized();
-    }
     return HttpResponse.json({ room });
   }),
 
@@ -346,7 +340,6 @@ export const handlers = [
         { status: 500 },
       );
     }
-    initMockOpening();
     appendMockSessionMessage({
       type: "announce",
       message: "（mock）开场房间初始化完成。",
@@ -357,14 +350,8 @@ export const handlers = [
     return HttpResponse.json({ job_id: createMockTask(), message: "mock 开场初始化任务已启动" });
   }),
 
-  // 生成奖励（Spoils）：依赖开场已初始化；幂等（已有奖励则后端拒绝，与后端同一守卫）
-  http.post(api("/api/dungeon/opening/generate_spoils/v1/"), () => {
-    if (!readMockOpeningInitialized()) {
-      return HttpResponse.json(
-        { detail: "开场房间尚未初始化（叙事 + 牌库），请先调用开场初始化接口" },
-        { status: 409 },
-      );
-    }
+  // 生成奖励（Spoils）：幂等（已有奖励则后端拒绝，与后端同一守卫）
+  http.post(api("/api/dungeon/spoils/generate/v1/"), () => {
     const holders = readMockSpoilsHolders();
     if (holders.length > 0) {
       return HttpResponse.json(
@@ -379,9 +366,8 @@ export const handlers = [
   }),
 
   // 领卡（Spoils 子操作 pick_card）：从 candidate_cards 出队并记入 claimed_cards（组件保留），与后端同一语义
-  http.post(api("/api/dungeon/opening/pick_spoils/pick_card/v1/"), async ({ request }) => {
-    const body =
-      (await request.json()) as ApiBody<"/api/dungeon/opening/pick_spoils/pick_card/v1/">;
+  http.post(api("/api/dungeon/spoils/pick_card/v1/"), async ({ request }) => {
+    const body = (await request.json()) as ApiBody<"/api/dungeon/spoils/pick_card/v1/">;
     const result = pickMockSpoilsCard(body.actor_name, body.card_name);
     if (!result.ok) {
       return HttpResponse.json({ detail: result.error }, { status: 409 });

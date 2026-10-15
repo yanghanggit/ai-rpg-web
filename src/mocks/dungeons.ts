@@ -15,12 +15,7 @@ import {
   resetMockCombatState,
 } from "./combat";
 import { blueprintFixture, dungeonFixture, emptyDungeonFixture } from "./fixtures";
-import {
-  enterMockOpeningParty,
-  leaveMockOpening,
-  readMockOpeningInitialized,
-  readMockPartyNames,
-} from "./opening";
+import { enterMockOpeningParty, leaveMockOpening, readMockPartyNames } from "./opening";
 import { readMockRosterNames } from "./roster";
 import { moveMockActorsToStage, resetMockStages } from "./stages";
 
@@ -66,7 +61,6 @@ export function readMockDungeonState(): Schemas["DungeonStateResponse"] {
       ...structuredClone(dungeon),
       rooms,
       current_room_index: runningRoomIndex,
-      setup_entities: true,
     },
   };
 }
@@ -144,9 +138,6 @@ export function readMockExitRefusal(): string | null {
   }
   if (room.type === "combat" && !isMockPostCombat()) {
     return "战斗未结束，无法退出";
-  }
-  if (room.type === "opening" && !readMockOpeningInitialized()) {
-    return "开场房间尚未初始化，无法退出";
   }
   return null;
 }

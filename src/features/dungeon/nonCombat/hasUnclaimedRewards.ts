@@ -7,8 +7,8 @@ import type { DungeonPartyMember } from "../useDungeonParty";
  * - 角色卡上那颗按钮 → 提醒色 + `!`（"这里还有东西等你拿"）；
  * - 正文里那张「结束本间」（「回到地图」卡）→ 同样提醒色（"再做这一步就永久失去了"）。
  *
- * 两处都只是**提醒**：服务端把领卡硬绑在"当前房间还是这间开场房"，所以没领就是失去——
- * 这是设计要的惩罚，界面绝不阻止（见 `OpeningRoomPanel` 的单向门说明）。
+ * 两处都只是**提醒**：服务端把领卡绑在“当前房间是非战斗房间”，所以离开本间（或推进/退本导致
+ * 本次副本的队伍解散）后就再领不到——这是设计要的惩罚，界面绝不阻止。
  */
 export function hasUnclaimedRewards(member: DungeonPartyMember): boolean {
   return (

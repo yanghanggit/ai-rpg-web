@@ -472,13 +472,11 @@ export const dungeonFixture: Schemas["Dungeon"] = {
   profile: "（mock）荒废地窟：荒废多年的地底石窟，深处似有低语徘徊。",
   created_at: "2026-09-11T12:00:00Z",
   current_room_index: -1,
-  setup_entities: false,
   assets: {},
   archive_summary: "",
   rooms: [
     {
       type: "opening",
-      initialized: false,
       stage: dungeonStage("场景.地窟入口", []),
     },
     {
@@ -524,7 +522,6 @@ export const emptyDungeonFixture: Schemas["Dungeon"] = {
   rooms: [],
   profile: "",
   current_room_index: -1,
-  setup_entities: false,
   assets: {},
   archive_summary: "",
 };
@@ -582,14 +579,12 @@ export function combatRoomFixture(
 /**
  * 构造一个开场房间（`OpeningRoom`）：`GET .../room` 的 `room` 的 `opening` 分支。
  *
- * 只需要一个入参：开场房间的房间侧状态就只有 `initialized` 一个字段（叙事 + 牌库初始化），
- * 奖励是否存在挂在队伍成员身上，不在房间上。
+ * 房间侧没有状态位（叙事 / 环境挂在场景实体、奖励挂在队伍成员上），所以只有 `type` 与 `stage`。
  */
-export function openingRoomFixture(initialized = false): Schemas["OpeningRoom"] {
+export function openingRoomFixture(): Schemas["OpeningRoom"] {
   return {
     type: "opening",
     stage: dungeonStage("场景.地窟入口", []),
-    initialized,
   };
 }
 

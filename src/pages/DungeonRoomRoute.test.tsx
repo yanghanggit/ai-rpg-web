@@ -7,9 +7,9 @@ import DungeonRoomRoute from "./DungeonRoomRoute";
 
 /**
  * 路由入口 `DungeonRoomRoute` 只做两件事：取回当前房间（处理「加载中 / 没有进行中的房间」），
- * 再按服务端判别字段把整页交给 `OpeningRoomPage` / `CombatRoomPage`。
+ * 再按服务端判别字段把整页交给 `NonCombatRoomPage` / `CombatRoomPage`。
  *
- * 两个房间页自己的行为在各自测试文件里（`OpeningRoomPage.test.tsx` / `CombatRoomPage.test.tsx`）；
+ * 两个房间页自己的行为在各自测试文件里（`NonCombatRoomPage.test.tsx` / `CombatRoomPage.test.tsx`）；
  * 这里只验证「解析到哪一页」与「解析失败时的出口」。
  */
 describe("副本房间 · 路由解析器", () => {
@@ -23,7 +23,7 @@ describe("副本房间 · 路由解析器", () => {
     expect(await screen.findByText("家园页占位")).toBeInTheDocument();
   });
 
-  it("进行中的是开场房间 → 分发到 OpeningRoomPage", async () => {
+  it("进行中的是开场房间 → 分发到 NonCombatRoomPage", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderRoom(<DungeonRoomRoute />);

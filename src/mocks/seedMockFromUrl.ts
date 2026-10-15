@@ -19,12 +19,7 @@ import {
 } from "./combat";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
 import { blueprintFixture, turnHandFixture } from "./fixtures";
-import {
-  claimFirstMockSpoilsCard,
-  failNextMockOpeningInit,
-  generateMockSpoils,
-  initMockOpening,
-} from "./opening";
+import { claimFirstMockSpoilsCard, failNextMockOpeningInit, generateMockSpoils } from "./opening";
 import { addMockRosterMember } from "./roster";
 
 /** 种子只服务 fixture 里那份副本；将来要种别的副本，再把副本名并进 token。 */
@@ -39,30 +34,27 @@ function fillParty(): void {
 
 /** token → 「造出该阶段」的一串 mock 调用（每个 token 覆盖一个 `deriveCombatPhase` 分支）。 */
 const SEEDS: Record<string, () => void> = {
-  // OPENING：刚进入副本的开场房间，**未初始化**（进入房间那一刻才自动跑初始化）
+  // OPENING：刚进入副本的开场房间（房间侧无状态位；叙事由场景实体给）
   "opening:fresh": () => {
     enterMockDungeon(DUNGEON);
   },
-  // OPENING：自动初始化失败（标题行那颗 ↻ 变成错误色 = 可重试），再点一次就会成功
+  // OPENING：自动初始化失败（场景卡变成错误色 = 可重试），再点一次就会成功
   "opening:init-failed": () => {
     enterMockDungeon(DUNGEON);
     failNextMockOpeningInit();
   },
-  // OPENING：刚进入副本的开场房间，已初始化（可「生成奖励」）
+  // OPENING：开场房间（初始化已与奖励解耦，本种子与 fresh 等价，保留作深层链兼容）
   "opening:ready": () => {
     enterMockDungeon(DUNGEON);
-    initMockOpening();
   },
-  // OPENING：开场房间已初始化并生成奖励（角色卡底那颗按钮进第二态「获取奖励」）
+  // OPENING：已生成奖励（角色卡底那颗按钮进第二态「获取奖励」）
   "opening:spoils": () => {
     enterMockDungeon(DUNGEON);
-    initMockOpening();
     generateMockSpoils();
   },
   // OPENING：奖励已生成且玩家已领走一张（那颗按钮进第三态「查看奖励」）
   "opening:claimed": () => {
     enterMockDungeon(DUNGEON);
-    initMockOpening();
     generateMockSpoils();
     claimFirstMockSpoilsCard("角色.无名");
   },
@@ -71,7 +63,6 @@ const SEEDS: Record<string, () => void> = {
     // 名单必须在 enter 之前补：队伍是进副本那一刻固化的
     fillParty();
     enterMockDungeon(DUNGEON);
-    initMockOpening();
   },
   // INITIALIZATION：刚推进到战斗房间，等待初始化
   "combat:init": () => {

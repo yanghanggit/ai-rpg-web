@@ -7,7 +7,8 @@ import { COMBAT_RESULT, COMBAT_STATE } from "./combat/combatPhase";
  */
 export function readRoomGuards(room: Schemas["DungeonRoomResponse"]["room"]) {
   if (room.type === "opening") {
-    return { done: room.initialized, defeated: false };
+    // 非战斗房间没有“完成”状态（叙事 / 奖励都挂在实体上，服务端也不据此拦截推进）：随时可离开
+    return { done: true, defeated: false };
   }
 
   const { state, result } = room.combat;

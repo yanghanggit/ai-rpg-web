@@ -11,7 +11,7 @@ import DungeonRoomRoute from "./DungeonRoomRoute";
 /**
  * `CombatRoomPage` 的测试。
  *
- * 与 `OpeningRoomPage.test.tsx` 一样，房间需要一个已解析的 `room`，所以统一从路由挂载
+ * 与 `NonCombatRoomPage.test.tsx` 一样，房间需要一个已解析的 `room`，所以统一从路由挂载
  * `<DungeonRoomRoute/>`——解析器会把它分发到本页；`?seed` 深链与这里无关。
  */
 const renderCombat = () => renderRoom(<DungeonRoomRoute />);
