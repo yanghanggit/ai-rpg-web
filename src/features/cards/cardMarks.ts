@@ -72,7 +72,7 @@ const FLAG_SPECS: {
     key: "transferable",
     label: "可传递",
     tone: "transfer",
-    hint: "打出时额外复制一份给目标；本体照常结算并进入弃牌/消耗流程。",
+    hint: "打出时额外复制一份给目标；本体照常结算并进入弃牌/消耗流程。副本落地即失去传递性，不可再传递。",
     shown: (card) => card.transferable,
   },
 ];

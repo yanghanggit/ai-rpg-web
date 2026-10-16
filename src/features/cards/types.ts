@@ -40,7 +40,7 @@ export interface Card {
   retain: boolean;
   /** pass turn 时若仍在手牌则自动消耗。 */
   ethereal: boolean;
-  /** 出牌时额外为每个目标手牌 copy 一份（本体照常结算并进入弃牌/消耗流程）；即【塞牌】的机制。 */
+  /** 出牌时额外为每个目标手牌 copy 一份（本体照常结算并进入弃牌/消耗流程；副本落地即 transferable=false、不可再传递）；即【塞牌】的机制。 */
   transferable: boolean;
   /** 是否可出牌；false 时系统阻止出牌。 */
   playable: boolean;
