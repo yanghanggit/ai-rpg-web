@@ -42,6 +42,7 @@ export function readCard(value: unknown): Card | undefined {
     on_play_affixes: readAffixes(value, "on_play_affixes"),
     on_hit_affixes: readAffixes(value, "on_hit_affixes"),
     on_turn_end_affixes: readAffixes(value, "on_turn_end_affixes"),
+    on_autonomous_affixes: readAffixes(value, "on_autonomous_affixes"),
     exhaust: readBoolean(value, "exhaust") ?? false,
     retain: readBoolean(value, "retain") ?? false,
     ethereal: readBoolean(value, "ethereal") ?? false,

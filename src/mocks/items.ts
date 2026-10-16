@@ -97,6 +97,7 @@ function cardSignature(card: RawItem): unknown[] {
     affixes("on_play_affixes"),
     affixes("on_hit_affixes"),
     affixes("on_turn_end_affixes"),
+    affixes("on_autonomous_affixes"),
   ];
 }
 

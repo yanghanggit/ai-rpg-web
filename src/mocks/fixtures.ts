@@ -602,6 +602,7 @@ function mockCard(name: string, overrides: Record<string, unknown> = {}): Record
     on_play_affixes: [],
     on_hit_affixes: [],
     on_turn_end_affixes: [],
+    on_autonomous_affixes: [],
     playable: true,
     exhaust: false,
     retain: false,
@@ -671,6 +672,7 @@ export const cardFixtures = {
     damage: 0,
     playable: false,
     retain: false,
+    on_autonomous_affixes: ["[自行运转]:过牌时符文自行结算，回复持有者 HP"],
   }),
   nail: mockCard("钉入", {
     description: "（mock）抡起铁钉，一钉一钉楔进裂缝。",

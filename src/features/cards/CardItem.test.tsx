@@ -7,7 +7,7 @@ import type { Card } from "./types";
  * `CardItem` 的单元测试：**卡面各部件用的是不是同一套设计语言**。
  *
  * 卡牌与角色卡各有一套语言（见 `CardItem` 顶部注释），所以这里盯的是卡牌这一套：
- * 词缀（三种时机）与布尔属性**都是带色 chip、都是一颗按钮**——点它弹说明浮层
+ * 词缀（四种时机）与布尔属性**都是带色 chip、都是一颗按钮**——点它弹说明浮层
  * （`CardMarkTip`），来源只在"不是自己的牌"时出现且标 `foreign`，`【塞牌】`不进卡面。
  */
 const CARD: Card = {
@@ -24,6 +24,7 @@ const CARD: Card = {
   on_play_affixes: ["[破防]:本段命中后更容易击穿格挡"],
   on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: ["[余音]:回合结束时余音未散"],
+  on_autonomous_affixes: ["[自行运转]:过牌时符文自行结算"],
   exhaust: true,
   retain: true,
   ethereal: true,
@@ -44,10 +45,11 @@ describe("CardItem", () => {
     expect(screen.getByText("保留")).toHaveClass("affix-chip--retain");
     expect(screen.getByText("虚无")).toHaveClass("affix-chip--ethereal");
     expect(screen.getByText("可传递")).toHaveClass("affix-chip--transfer");
-    // 三种时机词缀各一色（卡面只写 [名称]）
+    // 四种时机词缀各一色（卡面只写 [名称]）
     expect(screen.getByText("[破防]")).toHaveClass("affix-chip--play");
     expect(screen.getByText("[楔入]")).toHaveClass("affix-chip--hit");
     expect(screen.getByText("[余音]")).toHaveClass("affix-chip--turn-end");
+    expect(screen.getByText("[自行运转]")).toHaveClass("affix-chip--autonomous");
   });
 
   it("费用 / 伤害 / 格挡是三枚角徽（各一副不同形状）", () => {

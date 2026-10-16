@@ -30,10 +30,12 @@ export interface Card {
   target_type: CardTargetType;
   /** 锁定自身；true 时目标即自己，忽略 `target_type`。 */
   self_target: boolean;
-  /** 三种触发时机的词缀（自由文本，格式 `[词缀名]:机械结算描述`）。 */
+  /** 四种触发时机的词缀（自由文本，格式 `[词缀名]:机械结算描述`）。 */
   on_play_affixes: string[];
   on_hit_affixes: string[];
   on_turn_end_affixes: string[];
+  /** 自主运行：持有者 pass turn 时由卡牌自主结算，效果目标可为场上任意存活角色。 */
+  on_autonomous_affixes: string[];
   /** 出牌后永久消耗。 */
   exhaust: boolean;
   /** 回合末保留在手牌。 */

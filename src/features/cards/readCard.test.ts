@@ -15,6 +15,7 @@ const cardFixture = {
   on_play_affixes: ["[破甲]:本次出牌更容易击穿格挡"],
   on_hit_affixes: [],
   on_turn_end_affixes: [],
+  on_autonomous_affixes: ["[自行运转]:过牌时符文自行结算"],
   playable: true,
   exhaust: false,
   retain: false,
@@ -36,6 +37,7 @@ describe("readCard", () => {
       self_target: false,
       playable: true,
       on_play_affixes: ["[破甲]:本次出牌更容易击穿格挡"],
+      on_autonomous_affixes: ["[自行运转]:过牌时符文自行结算"],
       uuid: "00000000-0000-0000-0000-0000000000c1",
     });
   });
@@ -54,6 +56,7 @@ describe("readCard", () => {
       self_target: false,
       playable: true,
       on_play_affixes: [],
+      on_autonomous_affixes: [],
     });
   });
 

@@ -16,14 +16,19 @@ function targetText(card: Card): string {
   return `${label}${card.hit_count > 1 ? `x${card.hit_count}` : ""}`;
 }
 
-/** 三种触发时机的词缀字段名。 */
-export type AffixKey = "on_play_affixes" | "on_hit_affixes" | "on_turn_end_affixes";
+/** 四种触发时机的词缀字段名。 */
+export type AffixKey =
+  | "on_play_affixes"
+  | "on_hit_affixes"
+  | "on_turn_end_affixes"
+  | "on_autonomous_affixes";
 
-/** 三种触发时机 → 中文标签 + 色调（绿 / 红 / 黄）。 */
+/** 四种触发时机 → 中文标签 + 色调（绿 / 红 / 黄 / 品红）。 */
 export const AFFIX_TYPES: { key: AffixKey; label: string; tone: string }[] = [
   { key: "on_play_affixes", label: "打出时", tone: "play" },
   { key: "on_hit_affixes", label: "被命中时", tone: "hit" },
   { key: "on_turn_end_affixes", label: "回合结束时", tone: "turn-end" },
+  { key: "on_autonomous_affixes", label: "自主运行", tone: "autonomous" },
 ];
 
 /** 布尔标记在卡面上的分类名（它们不是"某时机触发"，而是"这张牌身上要留意的一件事"）。 */
@@ -84,7 +89,7 @@ const FLAG_SPECS: {
 export interface CardMark {
   /** 稳定标识：卡面与详情右栏算出来必须一致，详情据此定位高亮。 */
   id: string;
-  /** 分类标签：`标记`（布尔）/ `打出时` / `被命中时` / `回合结束时`。 */
+  /** 分类标签：`标记`（布尔）/ `打出时` / `被命中时` / `回合结束时` / `自主运行`。 */
   group: string;
   /** chip 上的文字：`保留` / `[楔入]`（解析不出名称的词缀是截断后的原文）。 */
   label: string;
@@ -117,7 +122,7 @@ function readTargetMark(card: Card): CardMark | null {
   };
 }
 
-/** 这张卡身上全部要显示的标记：目标 pill 在前，然后布尔，最后三种时机词缀（即卡面顺序）。 */
+/** 这张卡身上全部要显示的标记：目标 pill 在前，然后布尔，最后四种时机词缀（即卡面顺序）。 */
 export function readCardMarks(card: Card): CardMark[] {
   const target = readTargetMark(card);
 

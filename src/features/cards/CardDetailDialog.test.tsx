@@ -24,6 +24,7 @@ const CARD: Card = {
   on_play_affixes: ["[破防]:本段命中后更容易击穿格挡"],
   on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: [],
+  on_autonomous_affixes: [],
   exhaust: false,
   retain: false,
   ethereal: false,

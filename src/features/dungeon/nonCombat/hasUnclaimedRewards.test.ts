@@ -21,6 +21,7 @@ const card: Card = {
   on_play_affixes: [],
   on_hit_affixes: [],
   on_turn_end_affixes: [],
+  on_autonomous_affixes: [],
   source: "",
 };
 
