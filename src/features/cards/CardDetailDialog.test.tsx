@@ -20,7 +20,6 @@ const CARD: Card = {
   hit_count: 2,
   block: 0,
   target_type: "single",
-  self_target: false,
   on_play_affixes: ["[破防]:本段命中后更容易击穿格挡"],
   on_hit_affixes: ["[楔入]:命中的段数越多，进程越难再逃"],
   on_turn_end_affixes: [],

@@ -1,10 +1,11 @@
 import { readAffixLabel, readAffixParts } from "./readAffixLabel";
 import type { Card, CardTargetType } from "./types";
 
-/** 目标类型 → 界面说法；**单体是默认，不标**（只有多目标才值得占一枚 pill）。 */
+/** 目标类型 → 界面说法；**单体是默认，不标**（只有多目标 / 自身才值得占一枚 pill）。 */
 const TARGET_LABELS: Partial<Record<CardTargetType, string>> = {
   all: "全体",
   spread: "散射",
+  self: "自身",
 };
 
 /**
@@ -12,7 +13,7 @@ const TARGET_LABELS: Partial<Record<CardTargetType, string>> = {
  * `hit_count > 1` 时后缀 `xN`。两者都为空（单段单体）就返回空串，卡面不渲染这一枚。
  */
 function targetText(card: Card): string {
-  const label = card.self_target ? "自身" : (TARGET_LABELS[card.target_type] ?? "");
+  const label = TARGET_LABELS[card.target_type] ?? "";
   return `${label}${card.hit_count > 1 ? `x${card.hit_count}` : ""}`;
 }
 
@@ -105,13 +106,14 @@ function readTargetMark(card: Card): CardMark | null {
   if (label === "") {
     return null;
   }
-  const where = card.self_target
-    ? "以自己为目标。"
-    : card.target_type === "all"
-      ? "命中目标阵营里的所有人。"
-      : card.target_type === "spread"
-        ? "在目标阵营里随机命中。"
-        : "";
+  const where =
+    card.target_type === "self"
+      ? "以自己为目标。"
+      : card.target_type === "all"
+        ? "命中目标阵营里的所有人。"
+        : card.target_type === "spread"
+          ? "在目标阵营里随机命中。"
+          : "";
   const hits = card.hit_count > 1 ? `这张牌会命中 ${card.hit_count} 次。` : "";
   return {
     id: "target",

@@ -50,7 +50,7 @@ function PileButton({
  * `spread` 补一句「随机命中」：它选中的集合与 `all` 相同，差别只在落点。
  */
 function targetHint(card: Card, targets: string[]): string {
-  if (card.self_target) {
+  if (card.target_type === "self") {
     return "目标：自己";
   }
   if (targets.length === 0) {
@@ -143,7 +143,7 @@ export default function CombatTurnPanel({
   const actor = current;
   const selected = current.hand.find((card) => card.uuid === selectedUuid) ?? null;
   // 选中非自身牌时，名单进入「选目标」态；怪物手牌不可选
-  const picking = !isMonster && selected !== null && !selected.self_target;
+  const picking = !isMonster && selected !== null && selected.target_type !== "self";
   const targets =
     selected === null ? [] : readTargetNames(selected, targetName, actor.name, combatants);
   // 不可出牌（`playable === false`）/ 本回合能量不够 / 还差一个目标：都只灰掉「出牌」
@@ -153,8 +153,8 @@ export default function CombatTurnPanel({
 
   /** 出一张牌：自身牌自动指向自己，其余用名单里点中的目标。 */
   function play(card: Card, target: string | null) {
-    const targets = card.self_target ? [actor.name] : [target ?? ""];
-    if (!card.self_target && targets[0] === "") {
+    const targets = card.target_type === "self" ? [actor.name] : [target ?? ""];
+    if (card.target_type !== "self" && targets[0] === "") {
       return;
     }
     setSelectedUuid(null);
@@ -287,7 +287,11 @@ export default function CombatTurnPanel({
                             const wasSelected = selectedUuid === card.uuid;
                             setSelectedUuid(wasSelected ? null : card.uuid);
                             setTargetName(
-                              wasSelected ? null : card.self_target ? current.name : null,
+                              wasSelected
+                                ? null
+                                : card.target_type === "self"
+                                  ? current.name
+                                  : null,
                             );
                           },
                         })}

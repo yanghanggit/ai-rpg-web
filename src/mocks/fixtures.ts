@@ -96,7 +96,6 @@ export const blueprintFixture: Schemas["Blueprint"] = {
                     hit_count: 1,
                     block: 0,
                     target_type: "single",
-                    self_target: false,
                   },
                 ],
                 resources: [],
@@ -311,7 +310,6 @@ export const runtimeInventoryFixture: Record<string, unknown>[] = [
         hit_count: 1,
         block: 0,
         target_type: "single",
-        self_target: false,
       },
     ],
     resources: [],
@@ -613,7 +611,6 @@ function mockCard(name: string, overrides: Record<string, unknown> = {}): Record
     hit_count: 1,
     block: 0,
     target_type: "single",
-    self_target: false,
     source: "",
     uuid: `mock-card-${name}`,
     ...overrides,
@@ -643,7 +640,7 @@ export const cardFixtures = {
     cost: 1,
     damage: 0,
     block: 3,
-    self_target: true,
+    target_type: "self",
   }),
   spark: mockCard("烈焰符", {
     description: "（mock）掷出一道烈焰符文，只此一次的爆亮。",
@@ -664,7 +661,7 @@ export const cardFixtures = {
     damage: 0,
     block: 2,
     retain: true,
-    self_target: true,
+    target_type: "self",
   }),
   passive: mockCard("常驻符文", {
     description: "（mock）刻在身上的常驻符文，靠它自己起作用。",
@@ -696,7 +693,7 @@ export const cardFixtures = {
     damage: 0,
     block: 4,
     retain: true,
-    self_target: true,
+    target_type: "self",
   }),
   lantern: mockCard("引路明灯", {
     description: "（mock）灯火只够亮一瞬，灭前把路照穿。",
@@ -727,7 +724,7 @@ export const cardFixtures = {
  * 这样「牌组」浏览里一行三张、多行、末行居中这三种情形在 mock 下都能一眼看到。
  *
  * 玩家的**前 5 张 = 每回合抓到手的那一把**（`MOCK_DRAW_PER_TURN = 5`，按数组顺序抓），所以把
- * `single`（劈斩）/ `self_target`（静默）/ 不可出牌（常驻符文）/ `spread`（镜光）/ `all`（战吼）
+ * `single`（劈斩）/ `self`（静默）/ 不可出牌（常驻符文）/ `spread`（镜光）/ `all`（战吼）
  * 这五种目标类型各摆一张在手牌里，方便直接在回合界面上试选目标。
  *
  * 注意：dev 种子 `combat:turn` 会用 `turnHandFixture` 覆盖这把抓牌（为了让一个出牌页就把卡面
@@ -802,7 +799,7 @@ const coffinExtraCards = [
     damage: 2,
     on_hit_affixes: ["[蚀甲]:命中的段数越多，护体越薄"],
   }),
-  mockCard("冻结", { cost: 1, damage: 0, block: 5, self_target: true }),
+  mockCard("冻结", { cost: 1, damage: 0, block: 5, target_type: "self" }),
   mockCard("拖拽", { cost: 1, damage: 2, target_type: "spread" }),
   mockCard("尘沙", { cost: 1, damage: 0, block: 3, target_type: "all" }),
   mockCard("死咒", { cost: 0, damage: 0, playable: false }),

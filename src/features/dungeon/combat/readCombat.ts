@@ -102,7 +102,7 @@ export function countTransferredCards(combatant: Combatant, combatants: Combatan
 }
 
 /**
- * 选中的牌在名单里该被「压下」的目标（原始名）：`self_target` → 自己；`single` → 锚点；
+ * 选中的牌在名单里该被「压下」的目标（原始名）：`self` → 自己；`single` → 锚点；
  * `all` / `spread` → 锚点所在阵营的全体存活者。`spread` 与 `all` 的差别只在结算与文案。
  */
 export function readTargetNames(
@@ -111,7 +111,7 @@ export function readTargetNames(
   actor: string,
   combatants: Combatant[],
 ): string[] {
-  if (card.self_target) {
+  if (card.target_type === "self") {
     return [actor];
   }
   if (anchor === null) {

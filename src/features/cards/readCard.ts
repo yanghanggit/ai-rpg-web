@@ -38,7 +38,6 @@ export function readCard(value: unknown): Card | undefined {
     hit_count: readNumber(value, "hit_count") ?? 1,
     block: readNumber(value, "block") ?? 0,
     target_type,
-    self_target: readBoolean(value, "self_target") ?? false,
     on_play_affixes: readAffixes(value, "on_play_affixes"),
     on_hit_affixes: readAffixes(value, "on_hit_affixes"),
     on_turn_end_affixes: readAffixes(value, "on_turn_end_affixes"),

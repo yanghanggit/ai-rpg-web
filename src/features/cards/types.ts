@@ -7,13 +7,13 @@
  */
 
 /** 目标类型判别值，与后端 `TargetType` 的字符串值一一对应。 */
-export const TARGET_TYPES = ["single", "all", "spread"] as const;
+export const TARGET_TYPES = ["single", "all", "spread", "self"] as const;
 
 export type CardTargetType = (typeof TARGET_TYPES)[number];
 
 /**
  * 校验后的卡牌：字段名与后端一致（保留 snake_case，见 docs/conventions.md 四），
- * `target_type` 已收窄到已知三种。
+ * `target_type` 已收窄到已知四种。
  */
 export interface Card {
   name: string;
@@ -28,8 +28,6 @@ export interface Card {
   hit_count: number;
   block: number;
   target_type: CardTargetType;
-  /** 锁定自身；true 时目标即自己，忽略 `target_type`。 */
-  self_target: boolean;
   /** 四种触发时机的词缀（自由文本，格式 `[词缀名]:机械结算描述`）。 */
   on_play_affixes: string[];
   on_hit_affixes: string[];

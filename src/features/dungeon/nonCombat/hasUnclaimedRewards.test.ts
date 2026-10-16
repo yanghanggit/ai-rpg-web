@@ -16,7 +16,6 @@ const card: Card = {
   retain: false,
   ethereal: false,
   transferable: false,
-  self_target: false,
   target_type: "single",
   on_play_affixes: [],
   on_hit_affixes: [],
