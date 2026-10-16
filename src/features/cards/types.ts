@@ -30,7 +30,7 @@ export interface Card {
   target_type: CardTargetType;
   /** 锁定自身；true 时目标即自己，忽略 `target_type`。 */
   self_target: boolean;
-  /** 三种触发时机的词缀（自由文本，格式 `[名称]:触发倾向描述`）。 */
+  /** 三种触发时机的词缀（自由文本，格式 `[词缀名]:机械结算描述`）。 */
   on_play_affixes: string[];
   on_hit_affixes: string[];
   on_turn_end_affixes: string[];
@@ -40,7 +40,7 @@ export interface Card {
   retain: boolean;
   /** pass turn 时若仍在手牌则自动消耗。 */
   ethereal: boolean;
-  /** 出牌时把本体 copy 到每个目标手牌（即【塞牌】的机制）。 */
+  /** 出牌时额外为每个目标手牌 copy 一份（本体照常结算并进入弃牌/消耗流程）；即【塞牌】的机制。 */
   transferable: boolean;
   /** 是否可出牌；false 时系统阻止出牌。 */
   playable: boolean;

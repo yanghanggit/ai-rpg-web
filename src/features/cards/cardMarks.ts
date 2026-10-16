@@ -72,7 +72,7 @@ const FLAG_SPECS: {
     key: "transferable",
     label: "可传递",
     tone: "transfer",
-    hint: "打出时复制一份给目标，本体留在自己手牌。",
+    hint: "打出时额外复制一份给目标；本体照常结算并进入弃牌/消耗流程。",
     shown: (card) => card.transferable,
   },
 ];
