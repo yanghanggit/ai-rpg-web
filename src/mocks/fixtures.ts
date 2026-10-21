@@ -1,11 +1,7 @@
 /**
- * Mock 数据（fixtures）。
+ * Mock 数据（fixtures）：mock 模式与单元测试的**唯一**假数据来源。
  *
- * 这里是 mock 模式（pnpm dev:mock）与单元测试的**唯一**假数据来源，
- * 避免两边各自维护一套导致漂移。
- *
- * 每个 fixture 都用生成物（schema.d.ts）派生的类型标注：
- * 后端契约一变，pnpm typecheck 就会在这里报错，而不是等到运行时。
+ * 每个 fixture 都用生成物派生的类型标注，所以后端契约一变 `pnpm typecheck` 就在这里报错。
  */
 import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
@@ -187,14 +183,10 @@ export const stageEntityFixtures: Entity[] = blueprintFixture.stages.map((stage,
 }));
 
 /**
- * 玩家实体的序列化数据（家园运行期）。
+ * 玩家实体的序列化数据（家园运行期）：group / details 两个端点用它当返回体。
  *
- * 玩家实体在 Identity / Appearance / CharacterStats 之外额外挂 PlayerComponent，
- * 所以 group / details 两个端点用它当返回体。字段形状照抄后端 `model_dump()`：
- * CharacterStatsComponent 的 stats 是嵌套对象。
- *
- * **只序列化客户端会读的组件**：后端的 `SystemMessage`（客户端不允许读）与 `ActorComponent`
- * （只有 `name` / `current_stage`，暂无用途）不列入——mock 不是后端响应的完整镜像。
+ * **只序列化客户端会读的组件**：`SystemMessage`（客户端不允许读）与 `ActorComponent` 不入列——
+ * mock 不是后端响应的完整镜像。字段形状照抄后端 `model_dump()`。
  */
 export const playerEntityFixture: Entity = {
   name: blueprintFixture.player_actor,
@@ -723,15 +715,9 @@ export const cardFixtures = {
 /**
  * 各成员的固定牌组。
  *
- * 张数故意拉开：玩家 9 张（三行满）、坏运气 5 张（最后一行不满、居中）、麻雀 2 张——
- * 这样「牌组」浏览里一行三张、多行、末行居中这三种情形在 mock 下都能一眼看到。
- *
- * 玩家的**前 5 张 = 每回合抓到手的那一把**（`MOCK_DRAW_PER_TURN = 5`，按数组顺序抓），所以把
- * `single`（劈斩）/ `self`（静默）/ 不可出牌（常驻符文）/ `spread`（镜光）/ `all`（战吼）
- * 这五种目标类型各摆一张在手牌里，方便直接在回合界面上试选目标。
- *
- * 注意：dev 种子 `combat:turn` 会用 `turnHandFixture` 覆盖这把抓牌（为了让一个出牌页就把卡面
- * 看全，含多段命中）；正常流程与测试都走上面这个牌组。
+ * 张数故意拉开（9 / 5 / 2）：一行三张、多行、末行居中三种情形在 mock 下都能看到。
+ * 玩家前 5 张 = 每回合抓到的那一把（`MOCK_DRAW_PER_TURN`），五种目标类型各一张，方便试选目标。
+ * dev 种子 `combat:turn` 会覆盖这把抓牌；正常流程与测试都走这里。
  */
 export const deckFixtures: Record<string, Record<string, unknown>[]> = {
   [blueprintFixture.player_actor]: [
@@ -758,13 +744,10 @@ export const deckFixtures: Record<string, Record<string, unknown>[]> = {
 export const defaultDeckFixture: Record<string, unknown>[] = [cardFixtures.cleave];
 
 /**
- * dev 种子 `combat:turn` 的手牌：**必含多段命中**，同时把卡面要看的东西尽量铺全，
- * 于是「多段命中」不再需要单开一个种子。
+ * dev 种子 `combat:turn` 的手牌：**必含多段命中**，同时把卡面要看的东西尽量铺全。
  *
- * 五张牌尽量各管一摊：四种目标（单体 / 自身 / 阵营散射 / 阵营全体）、段数 `×2` 与 `×3`、
- * 三种时机词缀各一张、可传递标记。
- *
- * 只被这个种子用；正常牌组（`deckFixtures`）与每回合正常抓牌都不动，避免影响既有断言。
+ * 五张牌各管一摊：四种目标、段数 ×2 / ×3、三种时机词缀各一张、可传递标记。只被这个种子用，
+ * 正常牌组（`deckFixtures`）与每回合抓牌都不动。
  */
 export const turnHandFixture: Record<string, unknown>[] = [
   cardFixtures.cleave, // 单体 + 打出时词缀 + 可传递
@@ -775,15 +758,10 @@ export const turnHandFixture: Record<string, unknown>[] = [
 ];
 
 /**
- * `腐沼巨蜥` 多出来的那一段牌组（加在它原本的 5 张后面）。
+ * `腐沼巨蜥` 多出来的那段牌组（接在它原本 5 张后面）。
  *
- * 为什么偏偏给它加长：卡牌列表浮窗（牌组 / 手牌 / 牌堆）是**固定三行 × 三列、超出在框内滚动**的，
- * 而 3×3 = 9 张正是它的临界值——手牌 5 张、别家牌组 5 张都碰不到那条线，**滚动与裁切在 mock 里
- * 根本走不到**。补到 15 张后：牌组浮窗 5 行、抽牌堆（15 减每回合抳的 5）4 行，两处都要滚，
- * `dev:mock` 下一眼能看出「高度固定、里面滚」是不是想要的效果。
- *
- * 前 5 张（`cleave / breath / nail / shroud / bell`）是它每回合抓到手里的那一把，不能动——
- * 手牌上的【塞牌】/【被动】演示靠它们。这里的牌名也不能与那 5 张重名（uuid 由牌名推出来）。
+ * 补到 15 张是为了让「卡牌列表浮窗固定 3 行 × 3 列、超出在框内滚动」在 dev 下真能走到滚动与裁切。
+ * 前 5 张是它每回合抓到手里的那一把，不能动；牌名也不能与那 5 张重名（uuid 由牌名推出）。
  */
 const coffinExtraCards = [
   mockCard("锁喉", { cost: 1, damage: 2 }),
@@ -882,14 +860,11 @@ export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((ro
 }));
 
 /**
- * 挂了 `IdentityComponent` 的实体（世界 / 场景 / 角色）。
+ * 挂了 `IdentityComponent` 的实体（世界 / 场景 / 角色）：`group?all_of=` 的返回体，供前端读
+ * `creation_order` 排显示顺序。
  *
- * `group?all_of=IdentityComponent` 的 mock 返回体，供前端读 `creation_order` 排显示顺序
- * （见 `features/entities/creationOrder.ts`）。只列 mock 里会出现在家园 / 副本视图中的
- * 场景与角色；储物箱等未挂 Identity 的世界实体不入列。
- *
- * `playerEntityFixture` 不带运行期背包，但排序只读 Identity，已足够；
- * 需要完整玩家实体（含背包）的调用方请用 `items.ts` 的 `readMockPlayerEntity`。
+ * 只列家园 / 副本视图里会出现的场景与角色。不带运行期背包——要完整玩家实体用 `items.ts` 的
+ * `readMockPlayerEntity`。
  */
 export const identityEntityFixtures: Entity[] = [
   playerEntityFixture,

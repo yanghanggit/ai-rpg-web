@@ -1,9 +1,7 @@
 /**
- * 战斗单位读取（纯函数）。
+ * 战斗单位读取（纯函数）：`Round` 只记发生了什么，血量 / 能量 / 手牌 / 格挡 / 牌堆都挂在实体组件上。
  *
- * `Round` 只记「发生了什么」，血量 / 能量 / 手牌 / 格挡 / 牌堆都挂在实体组件上（队伍走
- * `PartyMemberComponent`、怪物走房间场景）。组件访问走 `features/entities/ecs`，这里只做战斗
- * 界面的领域选择与展示口径：阵营、手牌、牌堆、格挡。
+ * 组件访问走 `features/entities/ecs`；这里只做战斗界面的领域选择与展示口径（阵营、手牌、牌堆、格挡）。
  */
 import type { Schemas } from "../../../api/types";
 import { readCards } from "../../cards/readCards";

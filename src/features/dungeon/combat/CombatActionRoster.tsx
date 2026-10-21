@@ -3,18 +3,11 @@ import ActorChip from "../ActorChip";
 import { type Combatant, countOnHitAffixes, countTransferredCards, roleLabel } from "./readCombat";
 
 /**
- * 行动面板（turn）的参战者一览（横向滚动）：每格一张竖长牌，思路取自《怪物火车》——
- * 中段是**立绘区**（`.combatant-art`，先空着），下面是名字横幅（当前行动 / 已行动并进横幅）
- * 与词条区（手牌 / 被动 / 塞牌）；底排三个：左下总格挡（盾）/ 正下定性（阵营）/ 右下 HP（心）。
+ * 行动面板的参战者横滑名单：一格一张竖长牌（立绘区 → 名字横幅 + 词条区 → 底排格挡 / 阵营 / HP）。
  *
- * 名单按 `order`（当前回合 `action_order`）排，本身就是行动顺序：已行动置灰，当前行动由名单上方
- * 一条**固定**的进度条（`.combat-action-track`，走过绿 / 未到灰，粗箭头停在当前那张上）指示，
- * 不给卡片描边。进度条与名单是兄弟节点、同在 `.combat-roster-scroll` 里，所以它**不随卡片选中时的
- * 下移而动**（否则会被截断），只随名单一起横滑。选目标态**不给所有卡上色**（ALL / SPREAD 会让
- * 整排都黄，等于没标）；只有真正「出列」的目标（`.combatant-card--target`）才带特殊色 + 下移。
- *
- * 整卡点击 = 选目标（`picking`）或开角色信息；词条区那颗按钮 = 看该角色手牌，标着
- * `[被动] N` / `[塞牌] M`（我方与怪物都可能被塞牌）。名字显示走 `displayName`，key 用原名。
+ * 顺序即行动顺序（`action_order`）：已行动置灰，当前行动由名单上方那条**固定**进度条指示，
+ * 不画卡片描边（进度条不随卡片选中时的下移而动）。整卡点击 = 选目标（`picking`）或开角色信息；
+ * 词条区那颗按钮 = 看该角色手牌。key 用原始名，显示走 `displayName`。
  */
 export default function CombatActionRoster({
   combatants,

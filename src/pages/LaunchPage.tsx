@@ -3,13 +3,9 @@ import { API_BASE_URL } from "../api/client";
 import { $api } from "../api/query";
 
 /**
- * 启动屏（首页）。
+ * 启动屏（首页）：只确认「客户端能连上哪台服务器、服务器是否正常」，与玩家身份无关。
  *
- * 职责边界：只确认「这个客户端能连上哪台服务器、服务器是否正常」，与玩家身份无关。
- * 因此这里没有登录/开局，玩家身份流程从 /lobby 开始。
- *
- * 后端根路由 `/` 已有 `response_model=ServerInfoResponse`，字段类型直接来自生成物，
- * 因此不再需要手写的收窄层（原先的 src/api/serverInfo.ts 已删除）。
+ * 后端根路由 `/` 已有 `response_model`，字段类型直接来自生成物，所以不需要手写的收窄层。
  */
 export default function LaunchPage() {
   const navigate = useNavigate();

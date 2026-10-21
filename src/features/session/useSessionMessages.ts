@@ -1,9 +1,8 @@
 /**
- * 会话消息（叙事）的增量拉取：记住已收到的最大 `sequence_id` 作游标，用 `/since` 只拉新增，
+ * 会话消息（叙事）的增量拉取：记住已收到的最大 `sequence_id` 当游标，用 `/since` 只拉新增，
  * 再 `mergeSessionMessages` 合并（重复 / 乱序都安全）。
  *
- * 无操作时靠 `refetchInterval` 兜底，任务终态由调用方 `invalidateQueries` 立即拉一次。
- * 游标在 queryKey 里，按资源失效用前缀 `["get", SESSION_MESSAGES_PATH]`。
+ * 无操作时靠 `refetchInterval` 兜底；游标在 queryKey 里，按前缀 `["get", SESSION_MESSAGES_PATH]` 失效。
  */
 import { useEffect, useState } from "react";
 import { $api } from "../../api/query";

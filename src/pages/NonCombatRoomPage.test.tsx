@@ -14,11 +14,8 @@ import DungeonRoomRoute from "./DungeonRoomRoute";
 /**
  * `NonCombatRoomPage` 的测试。
  *
- * 房间页需要一个**已解析的** `room`，所以统一从路由挂载 `<DungeonRoomRoute/>`——解析器会把它
- * 分发到本页；`?seed` 深链与这里无关。
- *
- * 开场房现在是**事件屏**：一大张背景 + 一个对话框 + 一列对话选项（奖励选项在前，去向在最后），
- * 没有角色卡。所以下面的断言都落在「对话框三态 / 选项清单 / 奖励浮窗」这三块上。
+ * 房间页需要一个**已解析的** `room`，所以统一从路由挂载 `<DungeonRoomRoute/>`（`?seed` 深链与这里无关）。
+ * 开场房是**事件屏**（背景 + 对话框 + 一列选项），所以断言落在「对话框三态 / 选项清单 / 奖励浮窗」上。
  */
 const renderOpening = () => renderRoom(<DungeonRoomRoute />);
 

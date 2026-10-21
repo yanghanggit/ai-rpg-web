@@ -1,11 +1,8 @@
 /**
- * 家园「切换场景」：触发一次场景切换 → 等待任务 → 刷新家园状态。
+ * 家园「切换场景」：触发场景切换 → 等任务 → 刷新家园状态。
  *
- * `POST /api/home/player/switch_stage/v1/` 只返回 `job_id`，真正的场景迁移
- * （以及随之而来的一轮 home pipeline）都发生在任务里；等待与失效交给
- * `src/api/useJobAction.ts`（见 docs/api-layer.md 六）。
- *
- * `switchingStage` 记录本次目标场景，页面上只把被点的那张卡显示为「切换中…」。
+ * `POST /api/home/player/switch_stage/v1/` 只返回 `job_id`，迁移与随之而来的一轮 pipeline 都在任务里
+ * （等待与失效见 `src/api/useJobAction.ts`）。`switchingStage` 记录目标场景，只给它显示「切换中…」。
  */
 import { useState } from "react";
 import { client, unwrap } from "../../api/client";

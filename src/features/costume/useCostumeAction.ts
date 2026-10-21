@@ -1,13 +1,8 @@
 /**
- * 穿 / 脱时装。
+ * 穿 / 脱时装（`POST /api/home/costume/wear|remove/v1/`）。
  *
- * 与 `useSwitchStage`、`useCraftItem` 同一范式：`POST /api/home/costume/wear|remove/v1/`
- * 只返回 `job_id`，外观合成由 home pipeline 任务完成，结果通过会话消息通知。
- * 所以「触发 → 等任务 → 失效」三步，拿到 job_id 不等于换装完成。
- *
- * 两个动作共用同一条 job 监听与失效流程，所以收在一个 hook 里。
- * 穿/脱都会改动实体（外观、WornCostume）与储物箱，所以失效沿用道具那套：
- * entities details / group 前缀 + 会话消息。
+ * 接口只返回 `job_id`，换装由 home pipeline 任务完成——**拿到 job_id 不等于换装完成**；等待与失效
+ * 交给 `src/api/useJobAction.ts`（失效范围：实体 + 会话消息）。两个方向共用同一条链路。
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";

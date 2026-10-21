@@ -1,10 +1,8 @@
 /**
  * mock 用的内存副本列表（`GET /api/home/dungeon-list/v1/` 的数据源）。
  *
- * 真实后端把副本存成磁盘上的 JSON 文件（`game/config.py` 的 `DUNGEONS_DIR`），
- * 列表接口读取全部文件并按创建时间排序；「生成副本」走异步 pipeline 写出一份新 JSON。
- * mock 里就用这一个数组模拟，让 `pnpm dev:mock` 下
- * 「生成 → 列表变长 → 查阅静态数据」这条链路可见。
+ * 真实后端把副本存成磁盘 JSON（`DUNGEONS_DIR`），列表按创建时间排序；「生成副本」走异步 pipeline
+ * 写出一份新 JSON。mock 用一个数组模拟，让「生成 → 列表变长 → 查阅」这条链路可见。
  */
 import type { Schemas } from "../api/types";
 import {

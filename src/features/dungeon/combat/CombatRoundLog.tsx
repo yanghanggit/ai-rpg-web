@@ -13,11 +13,8 @@ const ENTRY_KIND_LABELS: Record<Schemas["RoundEntry"]["kind"], string> = {
 /**
  * 本回合记录：把最新回合的记录队列按**发生顺序线性**列出（整体刷新）。
  *
- * 每条记录自带 `log`（战斗数据）+ `narrative`（演出叙事），队列跨类型保序，
- * 因此直接依序渲染即可，无需再按类型分组或对齐两条并行数组。
- *
- * 这是**本回合**的明细，与顶栏「叙事」按钮打开的**全局**事件流不是同一份数据，
- * 所以这里不重复搬运会话消息。
+ * 每条记录自带 `log` + `narrative`，队列跨类型保序，依序渲染即可。这是**本回合**的明细，
+ * 与「叙事」那份全局事件流不是同一份数据。
  */
 export default function CombatRoundLog({ round }: { round: Schemas["Round"] | null }) {
   if (round === null) {

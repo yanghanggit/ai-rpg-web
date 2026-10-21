@@ -1,9 +1,8 @@
 /**
  * ECS 组件类名常量（只列前端实际读取的组件）。
  *
- * 契约里组件 key 只是 `string`，拼错不会编译报错、只会静默少一块数据。这里的每个值都经
- * `name()` 校验为后端注册表里的类名（`pnpm gen:api` 生成）：后端改名 / 删组件后重新生成，
- * `tsc` 会直接在对应行报错。需要新组件时在此追加一项。
+ * 组件 key 在契约里只是 `string`，拼错不报编译错、只静默少一块数据。每个值都经 `name()` 校验为
+ * 后端注册表里的类名（`pnpm gen:api` 生成）：后端改名后重新生成，`tsc` 会直接在对应行报错。
  */
 import type { ApiComponentName } from "../../api/componentRegistry";
 

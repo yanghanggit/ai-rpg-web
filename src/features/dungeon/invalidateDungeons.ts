@@ -1,9 +1,7 @@
 /**
- * 副本相关查询的失效口径：副本列表 / 运行状态 / 当前房间，都按路径前缀失效（叙事不在这里，
- * 它靠 `refetchInterval`）。
+ * 副本相关查询的失效口径：副本列表 / 运行状态 / 当前房间按路径前缀失效（叙事不在这里，靠 `refetchInterval`）。
  *
- * 两个入口只差「等不等重取落地」：`invalidateDungeons` 不等；`refetchDungeons` 等
- * （推进后调用方马上换屏，必须等，否则会先渲染缓存旧房间）。
+ * 两个入口只差「等不等重取落地」：`refetchDungeons` 会等（推进后马上换屏，不等就会先渲染旧房间）。
  */
 import type { QueryClient } from "@tanstack/react-query";
 

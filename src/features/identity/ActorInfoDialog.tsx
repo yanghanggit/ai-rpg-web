@@ -5,15 +5,11 @@ import { readActorInfo } from "./readActorInfo";
 import { useActorEntity } from "./useActorEntity";
 
 /**
- * 角色信息浮窗（玩家与 NPC 共用）。
+ * 角色信息浮窗（玩家与 NPC 共用，靠 `actorName` 区分）。
  *
- * 点工具栏「角色信息」或场景卡片里的任意角色 chip 都会打开它，区别只是 `actorName`。
- * 展示该角色实体上必要的组件信息（Identity / Appearance / CharacterStats，玩家另有
- * PlayerComponent，穿着时装则有 WornCostumeComponent），并提供穿/脱时装入口。
- * `data` 的逐字段校验见 `readActorInfo`——字段缺失就显示占位，不猜。
- *
- * `costumeEnabled`：副本进行中家园接口会被后端拒绝，所以副本里关掉穿/脱时装入口
- * （与 `ItemManagerDialog` 的 `craftEnabled` 同一手法：同一个浮窗给不同场景用，靠能力开关区分）。
+ * 展示 Identity / Appearance / CharacterStats（玩家另有 Player，穿着时装则有 WornCostume），
+ * 并给出穿 / 脱时装入口；字段校验在 `readActorInfo`（缺失即占位，不猜）。
+ * `costumeEnabled`：副本进行中家园接口会被拒绝，所以副本里关掉这个入口。
  */
 export default function ActorInfoDialog({
   userName,

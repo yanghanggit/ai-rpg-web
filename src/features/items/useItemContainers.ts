@@ -1,12 +1,8 @@
 /**
  * 道具管理浮窗的取数编排：把「背包 / 储物箱 / 穿戴中时装」拼成一个视图模型。
  *
- * 涉及三个接口，存在先后依赖，所以按「跨接口编排抽 hook」的约定收在这里：
- * 1. 用 group(`WorldComponent` + `StorageComponent`) 找到储物箱世界实体（运行时才知道名字）；
- * 2. 用 group(`WornCostumeComponent`) 拿到穿戴中时装（含穿戴者）；
- * 3. 用 details 一次性拉玩家与储物箱实体，读出 `InventoryComponent` / `StorageComponent`。
- *
- * 仅在浮窗打开（`actorName` 非空）时才请求，避免家园页常驻拉取道具。
+ * 三个接口有先后依赖（先 group 找到储物箱世界实体与穿戴中时装，再 details 拉两者的容器），
+ * 所以按「跨接口编排抽 hook」收在这里。仅在浮窗打开（`actorName` 非空）时请求。
  */
 import { $api } from "../../api/query";
 import { COMPONENT } from "../entities/componentNames";

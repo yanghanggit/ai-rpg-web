@@ -1,9 +1,8 @@
 /**
- * 把一串 `data:` 载荷包成 MSW 的 SSE 流式响应。
+ * 把一串 `data:` 载荷包成 MSW 的 SSE 流式响应（后端两个 SSE 端点都是 `text/event-stream`，
+ * 每条事件形如 `data: {json}\n\n`）。
  *
- * 后端两个 SSE 端点 `Content-Type` 都是 `text/event-stream`、每条事件形如
- * `data: {json}\n\n`；测试与 `pnpm dev:mock` 用同一套 handler，所以解析/拼帧逻辑
- * 只放在这里一处。
+ * 测试与 `pnpm dev:mock` 共用同一套 handler，所以拼帧逻辑只放在这一处。
  */
 
 /**

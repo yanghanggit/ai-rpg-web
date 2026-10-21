@@ -1,14 +1,10 @@
 import { type ReactNode, useEffect, useId, useRef } from "react";
 
 /**
- * 通用浮层：遮罩 + 居中面板。负责四件容易被漏掉的事——
- * 点遮罩关闭、ESC 关闭、打开时把焦点移进关闭按钮、打开期间锁住背景滚动。
+ * 通用浮层：遮罩 + 居中面板。
  *
- * 为什么不用原生 `<dialog>` + `showModal()`：jsdom（测试环境）尚未实现 `showModal`，
- * 用了就没法做组件测试。这里自己实现需要的部分。
- *
- * 遮罩做成一个真正的 `<button>` 而非带 onClick 的 div：它本来就是"点这里关闭"的
- * 可聚焦控件，语义正确，也避免在非交互元素上挂点击事件。
+ * 契约：点遮罩 / ESC 关闭、打开时焦点移到关闭按钮、打开期间锁背景滚动。手写而不用原生
+ * `<dialog>`（jsdom 没有 `showModal`，用了就没法做组件测试）。
  */
 export default function Modal({
   title,

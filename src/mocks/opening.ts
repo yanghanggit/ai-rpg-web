@@ -1,14 +1,9 @@
 /**
  * mock 用的内存「本次副本开局」状态：队伍快照、牌组、奖励（Spoils）。
  *
- * 真实后端里这些都**不是独立的数据结构，而是实体上的组件**：
- * - 队伍：`enter_dungeon` 时给玩家与名单成员挂 `PartyMemberComponent`（此后名单不可改）；
- * - 牌组：各成员的 `DeckComponent`；奖励：`SpoilsComponent`（生成后才有，内部两个队列：
- *   `candidate_cards` 待领取、`claimed_cards` 已领取；当前 gameplay 只允许领一张）。
- *
- * mock 里按同一语义维护这几份状态，让 `pnpm dev:mock` 下「初始化 → 生成奖励 → 领卡 →
- * 进入下一关」整条链路可走。组件的**拼装**在这里，副本本身的状态在 `./dungeons`，
- * 两者由 handler 接线（真实后端也是 API 层把两边读出来拼成响应）。
+ * 真实后端里这些都是实体组件：`PartyMemberComponent`（进副本时挂，此后名单不可改）、
+ * `DeckComponent`、`SpoilsComponent`（两个队列 `candidate_cards` / `claimed_cards`，每人只许领一张）。
+ * 组件的拼装在这里，副本本身的状态在 `./dungeons`，由 handler 接线。
  */
 import { COMPONENT } from "../features/entities/componentNames";
 import type { Entity, EntityData } from "../features/entities/ecs";

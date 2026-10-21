@@ -1,10 +1,8 @@
 /**
- * 实体查询的失效口径（`details` / `group` 两个端点）。
+ * 实体查询的失效口径：`details` / `group` 两个端点。
  *
- * 大量领域的状态都挂在**实体组件**上（背包与储物箱、穿戴中时装、队伍名单、副本队伍与牌组/奖励、
- * 角色/场景信息……），读它们只有这两条路。所以组件被改写后要失效的是这两个路径，
- * 与「是哪个领域改的」无关——按**路径前缀**失效即可（queryKey 是 `[method, path, init]`，
- * 用 `[method, path]` 就能命中全部参数组合）。
+ * 大量领域的状态都挂在实体组件上，所以组件被改写后要失效的是这两个路径，与「哪个领域改的」无关：
+ * 按路径前缀失效即可（queryKey 是 `[method, path, init]`）。
  */
 import type { QueryClient } from "@tanstack/react-query";
 import { SESSION_MESSAGES_PATH } from "../session/useSessionMessages";

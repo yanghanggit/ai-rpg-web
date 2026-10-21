@@ -1,11 +1,8 @@
 /**
- * 工坊合成（消耗品 / 装备 / 时装）。
+ * 工坊合成（消耗品 / 装备 / 时装）：`POST /api/home/craft/*` 只返回 `job_id`，合成在 home pipeline
+ * 任务里完成（等待与失效见 `src/api/useJobAction.ts`）。
  *
- * `POST /api/home/craft/*` 只返回 `job_id`，真正的合成由 home pipeline 任务完成，
- * 结果通过会话消息通知——等待与失效交给 `src/api/useJobAction.ts`（见 docs/api-layer.md 六）。
- *
- * 三个工坊的请求体与响应体完全一致（都是 `HomeCraftItemRequest/Response`），
- * 只是路径不同，所以合成入口用 `workshop` 参数区分。
+ * 三个工坊的请求 / 响应体完全一致，只是路径不同，所以用 `workshop` 参数区分。
  */
 import { client, unwrap } from "../../api/client";
 import { useJobAction } from "../../api/useJobAction";

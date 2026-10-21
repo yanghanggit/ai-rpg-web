@@ -1,10 +1,8 @@
 /**
- * mock 用的内存队伍名单状态（`PartyRosterComponent`）。
+ * mock 用的内存队伍名单状态（`PartyRosterComponent`，真实后端挂在玩家实体上）。
  *
- * 真实后端把队伍名单挂在**玩家实体**上：`PartyRosterComponent { name, members }`，
- * 名单为空时直接移除该组件（见 `services/home_actions.py`）。
- * add / remove 是**同步**动作，并有校验：成员必须是 NPC、不能重复、不能是玩家自身。
- * 这里照抄同一套语义，让 `pnpm dev:mock` 与真实后端行为一致。
+ * 语义照抄后端：名单为空时移除组件；add / remove 是同步动作，且成员必须是 NPC、不能重复、
+ * 不能是玩家自身。
  */
 import { COMPONENT } from "../features/entities/componentNames";
 import type { Entity } from "../features/entities/ecs";

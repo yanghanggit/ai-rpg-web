@@ -2,14 +2,10 @@ import { displayName } from "../../components/displayName";
 import Modal from "../../components/Modal";
 
 /**
- * 实体浏览器浮窗：把「场景 → 角色」的 actors_by_stage 一次性摊开，作为快捷/宏观入口。
+ * 实体浏览器浮窗：把 `actors_by_stage` 一次性摊开（场景 → 角色 → 点开对应的信息浮窗）。
  *
- * 与点场景卡片是**同样的结果**，只是多一条路径：这里能一眼看到全部 Stage / Actor。
- * 点场景名 → 场景信息浮窗；点角色名 → 角色信息浮窗。
- *
- * 只做展示与回调，具体打开哪个浮窗由页面负责（`features/` 之间不互相依赖）。
- * `actorsByStage` 由页面按 `creation_order` 排好序后传入（见 `home/orderActorsByStage`），
- * 本组件不再排序。
+ * 与点场景卡片结果相同，只是多一条能一眼看到全部 Stage / Actor 的路径。只做展示与回调，
+ * 开哪个浮窗由页面定；`actorsByStage` 由页面按 `creation_order` 排好传入，这里不再排序。
  */
 export default function EntityBrowserDialog({
   actorsByStage,

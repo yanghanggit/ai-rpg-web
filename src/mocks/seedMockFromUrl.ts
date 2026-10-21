@@ -1,13 +1,9 @@
 /**
  * dev/mock 专用的「深链种子」：把 URL 上的 `?seed=...` 翻译成一份 mock 初始状态。
  *
- * 目的是让 `DevIndexPage` 能直接深链到**任意开场 / 战斗状态**（如 `/dungeon/room?seed=opening:spoils`、
- * `/dungeon/room?seed=combat:turn`），不必每次手动走「进入副本 → 初始化 → …」。它守住既定原则：
- * - **不给 phase 加路由**：路径仍是 `/dungeon/room`，`seed` 只是 mock 指令；
- * - **app / router 零感知**：只有 dev 入口（`main.tsx::enableMocking`）调用它；
- * - **与测试同源**：造状态调的就是测试用的那几个 mock 函数，不引入第二套真值来源。
- *
- * 「表达状态」用**阶段名**（`combat:turn`）而不是原始字段（`state=2`）：前者是意图，后者是实现细节。
+ * 让 `DevIndexPage` 能直接深链到任意开场 / 战斗状态，不必手动走「进入副本 → 初始化 → …」。约束：
+ * 不给 phase 加路由；只有 dev 入口（`main.tsx::enableMocking`）调用它；造状态就用测试那几个 mock
+ * 函数；种子写**阶段名**（`combat:turn`）而不是原始字段。
  */
 
 import { endedRoomKey, markRoomEnded } from "../features/dungeon/endedRooms";

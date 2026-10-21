@@ -1,9 +1,8 @@
 /**
- * ECS 组件载荷读取（纯函数）。
+ * ECS 组件载荷读取（纯函数），只放**跨领域共用**的部分：类型 / 集合解析、通用访问与共享读取器。
  *
- * 只放**跨领域共用**的部分：类型与集合解析、通用访问（`getComponentData` / `hasComponent` /
- * `readString|readNumber|readBoolean`）与共享读取器 `readCharacterStats`；领域专属读取器留在各自领域。
  * 组件 `data` 是 `Dict[str, Any]`，所以逐字段运行时校验：读不出来返回 `null` / 空值，不猜。
+ * 领域专属读取器留在各自领域。
  */
 import type { Schemas } from "../../api/types";
 import { COMPONENT, type ComponentName } from "./componentNames";

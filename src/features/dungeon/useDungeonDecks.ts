@@ -1,9 +1,8 @@
 /**
- * 「牌组一览」的数据：我方队伍（复用 `useDungeonParty`）+ 本间场景里的怪物。
+ * 「牌组一览」的数据：我方队伍（`useDungeonParty`）+ 本间场景里的怪物。
  *
- * 怪物名从房间模型 `room.stage.actors` 按 `type === "Monster"` 取（不能按 `MonsterComponent` 查
- * group：副本所有房间的怪物实体都已建出，会拉进别的房间的怪），再一次 details 读 `DeckComponent`。
- * 死的怪也列（房间模型是静态的）。
+ * 怪物按房间模型 `room.stage.actors` 里 `type === "Monster"` 取，**不能**按 `MonsterComponent` 查
+ * group（别的房间的怪物实体也已建出）。死的怪也列——房间模型是静态的。
  */
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";

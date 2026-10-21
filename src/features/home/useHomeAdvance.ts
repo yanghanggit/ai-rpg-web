@@ -1,9 +1,8 @@
 /**
- * 家园「推进」：触发一轮推进 → 等待任务 → 刷新家园状态。
+ * 家园「推进」：触发推进 → 等任务 → 刷新家园状态。
  *
- * `POST /api/home/advance/v1/` 只返回 `job_id`，真正的状态变化发生在任务里，
- * 所以**拿到 job_id 不等于操作完成**——三步里的后两步由 `src/api/useJobAction.ts` 统一负责
- * （见 docs/api-layer.md 六）。
+ * `POST /api/home/advance/v1/` 只返回 `job_id`，**拿到 job_id 不等于推进完成**；后两步由
+ * `src/api/useJobAction.ts` 负责。
  */
 import { client, unwrap } from "../../api/client";
 import { useJobAction } from "../../api/useJobAction";

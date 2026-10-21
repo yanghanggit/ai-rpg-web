@@ -13,13 +13,10 @@ import { type Combatant, roleLabel } from "./readCombat";
 import type { CombatActions } from "./useCombatActions";
 
 /**
- * 战斗开始前的那一屏（`init` / `round_start` 共用）：
- * 左边是 **3 敌 / 3 我**的卡阵（中间一条分隔线——一局战斗最多 3v3），右边一条与卡阵**同高**的
- * 场景栏（顶上是环境叙述、底下是大「开始」）。卡面与开场房共用 `ActorCard`。
+ * 战斗开始前的那一屏（`init` / `round_start` 共用）：左边 **3 敌 / 3 我**的卡阵（中间一条分隔线，
+ * 一局最多 3v3），右边一条同高的场景栏（环境叙述 + 大「开始」）。卡面与开场房共用 `ActorCard`。
  *
- * 进入房间自动初始化一次（不重试）；「开始」是唯一动作：点它开第一回合（init 未成则先补 init 再开）。
- * 卡片与战斗名单**同一套语言**：立绘区（占最大面积，没有词条区）+ 名字横幅 + 底排
- * （定性 / HP 心）；总格挡要等抓了牌才有，攻防速不在卡上（点卡开角色信息浮窗看）。
+ * 进房间自动初始化一次（不重试）；「开始」是唯一动作：点它开第一回合（init 未成则先补 init 再开）。
  */
 export default function CombatSetupPanel({
   userName,

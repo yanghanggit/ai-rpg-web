@@ -1,9 +1,6 @@
 /**
- * 生成新副本。
- *
- * `POST /api/home/generate_dungeon/v1/` 只返回 `job_id`，真正的生成由 home pipeline 任务完成
- * （后端注释也写明「请通过会话消息查询结果」）——等待与失效交给 `src/api/useJobAction.ts`
- * （见 docs/api-layer.md 六）。
+ * 生成新副本：`POST /api/home/generate_dungeon/v1/` 只返回 `job_id`，生成在 home pipeline 任务里完成
+ * （等待与失效见 `src/api/useJobAction.ts`）。
  */
 import { client, unwrap } from "../../../api/client";
 import { useJobAction } from "../../../api/useJobAction";

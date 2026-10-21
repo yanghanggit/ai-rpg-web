@@ -9,15 +9,10 @@ import DungeonMapPage from "../pages/DungeonMapPage";
 import DungeonRoomRoute from "../pages/DungeonRoomRoute";
 
 /**
- * 副本「进行中」测试的公共外壳：QueryClient + MemoryRouter + **地图 / 房间 / 家园**三条路由。
+ * 副本「进行中」测试的公共外壳：QueryClient + MemoryRouter + 地图 / 房间 / 家园三条路由。
  *
- * 为什么三条路由都挂**真页面**：副本进行中的屏幕切换正是这套设计的主体（地图 ⇄ 房间，全部
- * `replace`），所以测试要让玩家**点进**另一条路由、再看落点是什么，而不是断言一个占位文本。
- * `entry` 决定被测元素挂在哪一条上，另一条挂真页面当落点；只有家园页仍是占位
- * （它只是「离开副本」的终点，不需要在副本测试里考）。
- *
- * 这里与 `?seed=` 的 mock 深链无关：那是 dev 入口的事。放在 `src/test/`（测试基建），只被测试
- * 引用；`checkFileConventions` 已把该目录列入 `.tsx` 白名单（见 docs/conventions.md §一）。
+ * 三条路由都挂**真页面**，因为要考的就是屏幕切换本身（地图 ⇄ 房间，全部 `replace`）：
+ * `entry` 决定被测元素挂在哪一条上，另一条挂真页面当落点；家园页仍是占位。
  */
 export default function RoomHarness({
   children,

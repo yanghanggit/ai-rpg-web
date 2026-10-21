@@ -1,10 +1,7 @@
 /**
- * 默认 MSW handlers。
+ * 默认 MSW handlers，mock 模式与单元测试共用。
  *
- * - mock 模式（pnpm dev:mock）：浏览器 worker 用这套 handler 返回 fixtures。
- * - 单元测试：node server 默认挂这套 handler；用例内用 `server.use(...)` 覆盖特定接口。
- *
- * 新增页面需要 mock 时，把该页依赖的接口加到这里即可，测试与调试同时生效。
+ * 用例内用 `server.use(...)` 覆盖特定接口。新增页面需要 mock 时，把该页依赖的接口加到这里即可。
  */
 import { HttpResponse, http } from "msw";
 import { API_BASE_URL } from "../api/client";

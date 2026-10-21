@@ -14,8 +14,6 @@ import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
 import type { OpeningInit } from "./useOpeningInit";
 import type { SpoilsActions } from "./useSpoilsActions";
-
-/** 非战斗房间（当前仅 `opening`；`combat` 之外的类型都落在这里）。 */
 export type NonCombatRoom = Exclude<Schemas["DungeonRoomResponse"]["room"], Schemas["CombatRoom"]>;
 
 /** 对话框的三态：进行中 / 初始化失败 / 就绪（就绪时它同时是本间的主行动：生成奖励 → 查看全文）。 */
@@ -55,17 +53,11 @@ interface EventChoice {
 }
 
 /**
- * 非战斗房间的正文：**一大张背景 + 一个对话框 + 一串对话选项**。
+ * 非战斗房间的正文：**一大张背景 + 一个对话框 + 一串对话选项**（没有角色卡）。
  *
- * 不再有角色卡：队伍只以「奖励选项」的形式出现（每人一个选项，点开才是奖励浮窗），
- * 最后一个选项永远是本间的去向（结束本间 → 回地图 / 离开副本）。
- *
- * **对话框就是本间的主行动**：一个按钮顺着 初始化（进行中 → 失败可重试）→ 生成奖励 →
- * 查看场景（全文 / 场景内角色）走。顺序由客户端的状态守卫排，服务端不参与（它本来也不拦：
- * 不生成奖励直接结束本间 / 推进都允许）。
- *
- * 归页面持有的数据 / 动作（初始化、奖励、队伍、去向）都从 props 进来，这一层只负责排版与措辞；
- * 点奖励选项打开 `SpoilsDialog`（一人一窗：一级是奖励名字列表，点名字才看卡面细节）。
+ * 对话框就是本间的主行动：初始化 → 生成奖励 → 查看场景，动作词写在框里右下角，顺序只由
+ * 客户端状态守卫排。选项一列、去向永远最后一个，队伍只以「奖励选项」出现（每人一个 → `SpoilsDialog`）。
+ * 数据 / 动作都从 props 进来，这一层只排版与措辞。
  */
 export default function NonCombatRoomPanel({
   userName,

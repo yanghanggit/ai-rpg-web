@@ -14,15 +14,10 @@ const ITEM_TYPE_LABELS: Record<string, string> = {
 };
 
 /**
- * 所选蓝图的宏观视图。
+ * 所选蓝图的宏观视图（只读，字段全部来自蓝图的生成物类型）。
  *
- * 只做展示，字段全部来自生成物推导的 Blueprint 类型，不手写结构。
- * 长文本用原生 <details> 承载：战役设定、场景与角色默认展开，世界实体默认折叠
- * （它通常只是个名单，先收起来能让面板短一半）。
- * 这里刻意不显示 Stage.profile / Actor.profile 等长描述——需要的是"Stage 里有谁"的宏观映射。
- *
- * 实体名一律经 `displayName` 只显示最后一段（`角色.无名` → `无名`）；
- * key 与"是否玩家角色"的比较仍然用**原始名字**，显示名不能当身份。
+ * 长文本用 `<details>`：战役设定 / 场景 / 角色默认展开，世界实体默认折叠。
+ * 实体名走 `displayName`，但 key 与"是否玩家"仍用原始名——显示名不能当身份。
  */
 export default function BlueprintDetails({ blueprint }: { blueprint: Schemas["Blueprint"] }) {
   const containers = collectItemContainers(blueprint);

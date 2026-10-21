@@ -1,12 +1,9 @@
 /**
- * mock 用的内存道具状态（背包 / 储物箱 / 穿戴中时装）。
+ * mock 用的内存道具状态（背包 / 储物箱 / 穿戴中时装）：真实后端里它们挂在实体组件上
+ * （`InventoryComponent` / `StorageComponent` / `WornCostumeComponent`），这里直接改这几份数组。
  *
- * 真实后端里道具挂在实体上（玩家 `InventoryComponent`、世界储物箱 `StorageComponent`、
- * 角色 `WornCostumeComponent`），由 move / craft 动作改写；mock 里直接改这几份数组，
- * 让 `pnpm dev:mock` 下「移动 / 合成后列表变化」可见。行为对齐后端：
- * - 移动按名字逐个搬；
- * - 写入容器时按堆叠身份合并：材料按名称、消耗品按名称 + 内置卡牌规格，装备/时装不堆叠；
- * - 合成按名字逐个消耗 `MaterialItem` 的 `count`，并把产物按同一规则并入储物箱。
+ * 行为对齐后端：移动按名字逐个搬；入容器按堆叠身份合并（材料按名称、消耗品按名称 + 内置卡牌
+ * 规格，装备 / 时装不堆叠）；合成按名字逐个扣 `count` 并把产物并入储物箱。
  */
 import { COMPONENT } from "../features/entities/componentNames";
 import type { Entity } from "../features/entities/ecs";

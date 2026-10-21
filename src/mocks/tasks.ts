@@ -1,11 +1,8 @@
 /**
- * mock 用的内存任务表。
+ * mock 用的内存任务表：行为对齐后端（procrastinate）——任务从 `doing` 开始，过一段时间自动
+ * `succeeded`；未知 job_id 推 `task_not_found`。
  *
- * 让 `pnpm dev:mock` 下「动作 → job_id → SSE 监听 → 终态」这条链路能完整走通，
- * 行为对齐真实后端（procrastinate）：任务从 `doing` 开始，过一段时间自动 `succeeded`；
- * 未知 job_id 推送 `task_not_found`（后端也是推 `{ "error": ... }` 事件）。
- *
- * 状态不持久：刷新页面后任务表仍在（模块级 Map），重启 dev server 才清空。
+ * 模块级 Map：刷新页面仍在，重启 dev server 才清空。
  */
 import type { Schemas } from "../api/types";
 

@@ -1,8 +1,7 @@
 /**
- * mock 的场景插图（内联 SVG）。
+ * mock 的场景插图（内联 SVG）：`pnpm dev:mock` 没有后端 `.assets/image/`，但版式（大背景 + 对话框 +
+ * 选项）必须看得见，所以直接把一张洞穴背景当作 `GET /assets/image/<file>` 的响应返回。
  *
- * `pnpm dev:mock` 里没有真实后端的 `.assets/image/`，但版式（一整个大背景 + 对话框 + 选项）必须看得见，
- * 所以 mock 直接把一张洞穴背景当作 `GET /assets/image/<file>` 的响应返回（见 `./handlers`）。
  * 真实后端是同一路径上的 PNG，客户端不需要区分两者。
  */
 export const mockIllustrationSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice">

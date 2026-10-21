@@ -1,14 +1,8 @@
 /**
  * mock 用的内存战斗状态（战斗房间）。
  *
- * 分工与其它 mock 模块一致：
- * - 本模块只管**战斗状态本身**（`Combat` + 各参战者的战斗组件 + 战利品）；
- * - 参战者是否被搬到哪个场景，由 `./dungeons` 通过 `./stages` 处理；
- * - 组件的拼装（`withMockCombatComponents` / `readMockCombatActorEntity`）在这里，
- *   副本本身的状态在 `./dungeons`，由 handler 接线（真实后端也是 API 层把两边读出来拼响应）。
- *
- * 状态取值与后端 `models/combat.py::CombatState` 一致：
- * `0 NONE / 1 INITIALIZATION / 2 ONGOING / 3 COMPLETE / 4 POST_COMBAT`。
+ * 只管战斗状态本身（`Combat` + 各参战者的战斗组件 + 战利品）；参战者在哪个场景由 `./dungeons`
+ * 经 `./stages` 处理。`state` 取值与后端 `models/combat.py::CombatState` 一致。
  */
 import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
@@ -177,14 +171,11 @@ function interleaveParties(party: readonly string[], monsters: readonly string[]
 }
 
 /**
- * 复位为「刚进入战斗房间」：state = INITIALIZATION、清空回合与战斗组件，并按
- * `monsterNames` 建立参战者（队伍从 `./opening` 取）。
+ * 复位为「刚进入战斗房间」：`state = INITIALIZATION`、清空回合与战斗组件，按 `monsterNames`
+ * 建立参战者（队伍从 `./opening` 取）。
  *
- * 队伍与怪物**交错**入座（`interleaveParties`），所以 `readMockCombatParticipants` 与
- * `action_order` 都是「我 / 敌 / 我 / 敌…」。
- *
- * 进入 / 推进到战斗房间时由 `./dungeons` 调用；与后端 `dungeon_advance_action.py`
- * 把 `combat.state` 置为 `INITIALIZATION` 对齐。
+ * 队伍与怪物**交错**入座（`interleaveParties`），所以 `readMockCombatParticipants` 与 `action_order`
+ * 都是「我 / 敌 / 我 / 敌…」。进入 / 推进到战斗房间时由 `./dungeons` 调用。
  */
 export function resetMockCombat(monsterNames: readonly string[] = fixtureMonsterNames()): void {
   combat = emptyCombat();
@@ -498,13 +489,9 @@ export function prepareMockPostCombat(): void {
 /**
  * 开发调试 / 测试用：直接预置**战败**结算态。
  *
- * 对应服务端 `CombatOutcomeSystem` 的「我方失败」判据——`_is_player_side_eliminated`：我方阵营
- * （`PartyMemberComponent`）**全员带 `DeathComponent`**。所以这里把队伍成员逐个标记战死、怪物保留
- * 存活，`result = LOSE`、`state = POST_COMBAT`；战败不生成战利品（`CombatLootSystem` 只在 `is_won`
- * 时跑），所以 `loot` 清空，结算页只剩一行失败。
- *
- * 另外两种也判 LOSE 的情形（双方都无牌 / 主动撤退）不在这里造：种子是给「看页面」用的，全灭是最
- * 典型的那种；撤退另有 `retreatMockCombat` 覆盖。
+ * 判据同服务端 `_is_player_side_eliminated`（我方全员 `DeathComponent`）：队伍成员逐个战死、怪物
+ * 存活，`result = LOSE`、`state = POST_COMBAT`；战败不掉战利品，所以 `loot` 清空。
+ * 撤退另有 `retreatMockCombat` 覆盖。
  */
 export function prepareMockDefeat(): void {
   combat.state = STATE_POST_COMBAT;

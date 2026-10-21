@@ -1,9 +1,8 @@
 /**
- * 本次副本的队伍：每个成员的战斗属性（`CharacterStatsComponent`）、牌组（`DeckComponent`）、
- * 奖励（`SpoilsComponent`）。
+ * 本次副本的队伍：每个成员的战斗属性、牌组、奖励（`SpoilsComponent`，`null` 表示尚未生成）。
  *
- * 队伍在进副本那一刻固化，标题行的「牌组」入口在任何一屏都用它，所以留在顶层。两步取数：
- * group 按 `PartyMemberComponent` 拿到队伍名 → details 取组件。奖励 `null` 表示尚未生成。
+ * 队伍在进副本那一刻固化，标题行的「牌组」入口在任何一屏都用它，所以留在顶层。
+ * 两步取数：group 按 `PartyMemberComponent` 拿队伍名 → details 取组件。
  */
 import { $api } from "../../api/query";
 import type { Schemas } from "../../api/types";

@@ -8,14 +8,10 @@ import type { Card } from "./types";
 /**
  * 卡牌：**「一张卡长什么样」的唯一实现**（牌组 / 手牌 / 战利品共用）。
  *
- * 调用方要守的几条：
- * - `onSelect` 给了才整张卡可点，**含义由调用方定**（手牌＝选中待出，牌组＝打开详情）；
- * - `onMarkClick` 不给就自己弹 `CardMarkTip`，给了交给调用方（卡牌详情用它定位右栏）；
- * - `action` 只是插槽：动作属于流程，卡牌不替别的流程命名动词；
- * - 来源是否显示看 `hideSource` / `owner`（牌组一律不显示，自己的牌不显示）；
- * - 牌名**不走 `displayName`**：`Card.name` 没有 `类型.` 前缀。
- *
- * 卡面的设计语言（角落数值、词条 chip、为什么卡面不写 description）见 docs/pages.md「卡面」。
+ * 调用方要守的：`onSelect` 给了才整卡可点、**含义由调用方定**（手牌＝选中待出，牌组＝打开详情）；
+ * `onMarkClick` 不给就自己弹 `CardMarkTip`，给了交给调用方；`action` 只是插槽，动作属于流程；
+ * 来源显示看 `hideSource` / `owner`；牌名**不走 `displayName`**（`Card.name` 没有 `类型.` 前缀）。
+ * 卡面的设计语言见 docs/pages.md「卡面」。
  */
 export default function CardItem({
   card,

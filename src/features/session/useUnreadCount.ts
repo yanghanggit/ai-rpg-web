@@ -2,15 +2,10 @@ import { useEffect, useSyncExternalStore } from "react";
 import { getUnreadBaseline, setUnreadBaseline, subscribeUnreadBaseline } from "./unreadBaselines";
 
 /**
- * 未读事件数：服务端已有消息里、客户端还没打开浮层看过的条数。
+ * 未读事件数：服务端已有、客户端还没打开浮层看过的消息条数。
  *
- * 某个会话第一次看到数据时把当时的历史记为已看基线（基线跨屏存活于 `unreadBaselines`）；
- * 打开浮层即视为已读。不做持久化，刷新后重建。
- *
- * @param session 会话 key，未读基线按它隔离
- * @param total 客户端当前持有的消息总数
- * @param isReady 首屏数据是否已到达
- * @param isOpen 叙事浮层是否打开
+ * 首次拿到数据时把当时的历史记为基线（存于 `unreadBaselines`），打开浮层即视为已读。
+ * 不持久化，刷新后重建。
  */
 export function useUnreadCount(
   session: string,

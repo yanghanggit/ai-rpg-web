@@ -1,9 +1,8 @@
 /**
  * mock 用的内存场景表。
  *
- * 真实后端里，场景 → 角色的分布由 home pipeline 任务改写；mock 里没有 pipeline，
- * 所以在 switch_stage 的 handler 里直接改这份表，让「切换后玩家换个场景」可见。
- * 行为对齐后端：玩家只出现在一个场景，`readMockStages` 返回当前快照。
+ * 真实后端里场景 → 角色的分布由 home pipeline 改写；mock 没有 pipeline，所以在 switch_stage 的
+ * handler 里直接改这张表。行为对齐后端：玩家只出现在一个场景。
  */
 import type { Schemas } from "../api/types";
 import { COMPONENT } from "../features/entities/componentNames";
