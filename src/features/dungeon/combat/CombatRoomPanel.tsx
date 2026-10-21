@@ -1,10 +1,12 @@
 import { useEffect, useRef } from "react";
 import { describeApiError } from "../../../api/describeApiError";
 import type { Schemas } from "../../../api/types";
+import ActionReportDialog from "./ActionReportDialog";
 import CombatPostPanel from "./CombatPostPanel";
 import CombatSetupPanel from "./CombatSetupPanel";
 import CombatTurnPanel from "./CombatTurnPanel";
 import { deriveCombatPhase } from "./combatPhase";
+import { useActionReport } from "./useActionReport";
 import { useCombatActions } from "./useCombatActions";
 import { useCombatScene } from "./useCombatScene";
 
@@ -27,6 +29,8 @@ export default function CombatRoomPanel({
 }) {
   const scene = useCombatScene(userName, gameName, room);
   const actions = useCombatActions(userName, gameName);
+  // 动作浮窗挂在房间层：换行动者、进结算屏都不卸载它，战报不会跟着 Panel 一起消失
+  const actionReport = useActionReport(actions, room.combat.rounds);
 
   const phase = deriveCombatPhase(room.combat);
   const latest = room.combat.rounds.at(-1) ?? null;
@@ -84,6 +88,8 @@ export default function CombatRoomPanel({
           actions={actions}
         />
       )}
+
+      <ActionReportDialog report={actionReport.report} onClose={actionReport.close} />
     </>
   );
 }

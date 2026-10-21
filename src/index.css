@@ -1306,6 +1306,32 @@ li.dungeon-room--current {
   font-weight: 600;
 }
 
+/* 动作浮窗里那颗"在动"的点：等待以秒计，光靠一句话看起来像卡住了 */
+.combat-wait {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.combat-wait-dot {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--warn);
+  animation: combat-wait 1.2s ease-in-out infinite;
+}
+
+@keyframes combat-wait {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* 回合之间：名单照旧，行动区只剩一句「准备下一回合…」（抓牌由客户端自动发） */
 .combat-round-start,
 .combat-monster-turn {

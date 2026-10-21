@@ -1,7 +1,13 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
-import { prepareMockDefeat, prepareMockPostCombat } from "../mocks/combat";
+import {
+  drawMockCards,
+  initMockCombat,
+  passMockTurn,
+  prepareMockDefeat,
+  prepareMockPostCombat,
+} from "../mocks/combat";
 import { advanceMockDungeon, enterMockDungeon } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
@@ -623,6 +629,90 @@ describe("副本房间 · 战斗房间", () => {
       expect(tile).toHaveClass("combatant-card--target");
     }
     expect(screen.getByText(/（随机命中）/)).toBeInTheDocument();
+  });
+
+  it("动作浮窗：按下就盖上并写明进行中（这一屏只看「进行中」那一态，不等结算）", async () => {
+    // 直接造出"轮到怪物"的回合，不点任何按钮，也就不必等任务
+    enterMockDungeon("副本.荒废地窟");
+    advanceMockDungeon();
+    initMockCombat();
+    drawMockCards();
+    passMockTurn();
+    renderCombat();
+
+    fireEvent.click(await screen.findByRole("button", { name: "怪物行动" }));
+
+    // mock 任务要跑 2 秒：这一屏只看浮窗开出来的那一态
+    const report = await screen.findByRole("dialog", { name: "怪物行动" });
+    expect(within(report).getByText("进行中")).toBeInTheDocument();
+    expect(within(report).getByText(/服务端正在决策与结算/)).toBeInTheDocument();
+  });
+
+  it("动作浮窗：跑完换成这次新增的回合条目，「继续」收起", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒废地窟");
+    advanceMockDungeon();
+    initMockCombat();
+    drawMockCards();
+    renderCombat();
+
+    fireEvent.click(await screen.findByRole("button", { name: "选中手牌：劈斩" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
+    fireEvent.click(within(handBar()).getByRole("button", { name: "出牌" }));
+
+    const report = await screen.findByRole("dialog", { name: "出牌结算" });
+    await waitFor(() => expect(within(report).getByText("已结算")).toBeInTheDocument());
+    // 条目就是 `Round.entries` 新增的那几条：种类说法 + 数据日志 + 叙事
+    // （标题也叫「出牌结算」，所以这里按条目的两段内容认，而不认标题那四个字）
+    expect(within(report).getByText(/使用『劈斩』/)).toBeInTheDocument();
+    expect(within(report).getByText(/打出『劈斩』，命中目标/)).toBeInTheDocument();
+
+    fireEvent.click(within(report).getByRole("button", { name: "继续" }));
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "出牌结算" })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("动作浮窗：过牌没有留下记录就自己收起，不额外要一次点击", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒废地窟");
+    advanceMockDungeon();
+    initMockCombat();
+    drawMockCards();
+    renderCombat();
+
+    fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
+    expect(await screen.findByRole("dialog", { name: "过牌" })).toBeInTheDocument();
+
+    // 等不到条目 → 收窗（宽限 1.2 秒，给足时间）
+    await waitFor(
+      () => expect(screen.queryByRole("dialog", { name: "过牌" })).not.toBeInTheDocument(),
+      {
+        timeout: 4000,
+      },
+    );
+  });
+
+  it("动作浮窗：动作失败时不弹条目，浮窗收起，原因留在按钮旁边", async () => {
+    server.use(instantTasks());
+    server.use(
+      http.post(
+        api("/api/dungeon/combat/play_cards/v1/"),
+        () => new HttpResponse(null, { status: 500 }),
+      ),
+    );
+    enterMockDungeon("副本.荒废地窟");
+    advanceMockDungeon();
+    initMockCombat();
+    drawMockCards();
+    renderCombat();
+
+    fireEvent.click(await screen.findByRole("button", { name: "选中手牌：劈斩" }));
+    fireEvent.click(screen.getByRole("button", { name: "选择目标：石像鬼" }));
+    fireEvent.click(within(handBar()).getByRole("button", { name: "出牌" }));
+
+    expect(await screen.findByText(/回合动作失败/)).toBeInTheDocument();
+    expect(screen.queryByRole("dialog", { name: "出牌结算" })).not.toBeInTheDocument();
   });
 
   it("过牌推进到怪物；全员行动完后自动开下一回合，玩家直接接着出牌", async () => {
