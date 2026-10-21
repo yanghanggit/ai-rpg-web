@@ -47,6 +47,10 @@ const sections: DevSection[] = [
       { to: `${ROOM}?seed=opening:spoils`, label: "开场房间 · 已生成奖励" },
       { to: `${ROOM}?seed=opening:claimed`, label: "开场房间 · 已领奖励" },
       { to: `${ROOM}?seed=party:full`, label: "开场房间 · 队伍带同伴" },
+      {
+        to: `${ROOM}?seed=opening:party-spoils`,
+        label: "开场房间 · 三人队伍 + 已生成奖励",
+      },
     ],
   },
   {

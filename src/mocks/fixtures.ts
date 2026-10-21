@@ -447,6 +447,9 @@ function dungeonActor(
   };
 }
 
+/** mock 场景插图：与 `./handlers` 里的 `/assets/image/:filename` 对应（文件名只用于拼 URL）。 */
+const MOCK_ILLUSTRATION_META = ".assets/image/mock_dungeon_stage.svg.meta";
+
 function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"] {
   return {
     name,
@@ -455,7 +458,7 @@ function dungeonStage(name: string, actors: Schemas["Actor"][]): Schemas["Stage"
     system_message: "（mock）场景系统提示",
     actors,
     components: {},
-    assets: {},
+    assets: { illustration: MOCK_ILLUSTRATION_META },
   };
 }
 
@@ -853,8 +856,10 @@ export const spoilsFixture: Record<string, unknown>[] = [
 /**
  * 副本场景实体（运行期）：`StageComponent` + `EnvironmentComponent`。
  *
- * 从 `dungeonFixture` 的房间派生，场景名与副本数据天然一致；环境叙述在真实后端由
- * `EnvironmentInitializationSystem` 用 LLM 生成（副本初始化时），mock 里给固定文本。
+ * 从 `dungeonFixture` 的房间派生，场景名与副本数据天然一致。
+ * **环境叙述是「运行期状态」**：开场房那份由开场初始化生成（真后端是 `OpeningInitActorSystem`
+ * 写 `EnvironmentComponent`），所以这里**一开始没有**，由 mock 的初始化 handler 补上
+ * （见 `./stages` 的 `markMockStageNarrative`）；战斗房在 mock 里给一份固定文本。
  */
 export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((room, index) => ({
   name: room.stage.name,
@@ -865,10 +870,14 @@ export const dungeonStageEntityFixtures: Entity[] = dungeonFixture.rooms.map((ro
       entity_id: `mock-${room.stage.name}`,
     },
     [COMPONENT.Stage]: { name: room.stage.name },
-    [COMPONENT.Environment]: {
-      name: room.stage.name,
-      narrative: `（mock）${room.stage.name} 的环境叙述：石壁渗水，火把在风里明灭。`,
-    },
+    ...(room.type === "opening"
+      ? {}
+      : {
+          [COMPONENT.Environment]: {
+            name: room.stage.name,
+            narrative: `（mock）${room.stage.name} 的环境叙述：石壁渗水，火把在风里明灭。`,
+          },
+        }),
   },
 }));
 

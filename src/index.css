@@ -19,13 +19,13 @@
   --autonomous: #c026d3;
   --border: #e5e7eb;
   --bg: #ffffff;
-  /* 卡片足迹（**全游戏统一标准**）：短边 = 角色卡的宽 = 场景卡的高，长边 = 角色卡的高 = 场景卡的宽。
-     比例对齐《怪物火车》的竖长牌面（≈ 0.57）；角色卡 / 场景卡 / 牌面共用这一对，
-     所以「横（场景）」就是「竖（角色）」转 90°。 */
+  /* 卡片足迹（**全游戏统一标准**）：短边 = 角色卡的宽，长边 = 角色卡的高。
+     比例对齐《怪物火车》的竖长牌面（≈ 0.57）；角色卡 / 牌面共用这一对
+     （卡牌列表的列宽与行高也从这里派生）。 */
   --card-short: 11rem;
   --card-tall: 19.5rem;
-  /* 两个**卡形块**之间的距离：每一条卡片横排都用它（敌人 / 队伍 / 手牌 / 牌堆 / 场景行 /
-     中间那一条……）。差个零点几 rem，两排并排时就看得出不齐。 */
+  /* 两个**卡形块**之间的距离：每一条卡片横排都用它（敌人 / 队伍 / 手牌 / 牌堆……）。
+     差个零点几 rem，两排并排时就看得出不齐。 */
   --card-gap: 0.9rem;
   /* 卡牌列表浮窗（牌组 / 手牌 / 牌堆）是**固定尺寸**：宽正好三张卡、高正好三行。
      卡多就在框内滚，卡少（甚至一张没有）也占住同一块面积——面板忽大忽小只会让人每次打开
@@ -1074,102 +1074,176 @@ li.dungeon-room--current {
    "多行各带一颗动作按钮"（见 `DungeonRoomList`）。
    行形状（`ol.dungeon-rooms` / `li.dungeon-room`）与「地图」浮窗共用，见上。 */
 
-/* ── 副本开场房间 ───────────────────────────────────────────── */
+/* ── 副本开场房间（事件屏） ─────────────────────────────────── */
 
-/* 场景行：**横置的场景卡**（固定大小）+ 右侧那张「回到地图」卡。
-   横置是刻意的：横 = 场景 / 进度，竖 = 人（下面的角色卡）。两张卡同高，并排成一行。 */
-/* 场景行（中间那排）：高度就是一张**横置卡牌**（`--card-short`；场景卡自己就是这个高），
-   内容**重心居中**——与战斗房的出牌状态条（`.combat-hand-bar`）同一副骨架。
-   `safe` 是为了内容比容器宽时也不会把左边那一张推到看不见的地方。 */
-.stage-row {
+/* 一整个大背景 + 底部一列对话选项（《杀戮尖塔》事件屏的读法）：背景是场景插图
+   （`room.stage.assets.illustration`），前景只有一张**对话框**和一串选项，没有角色卡。
+   选项贴底、居中成一列：视线从叙述往下走到「下一步」，最后一个选项永远是本间的去向。 */
+.event-screen {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  align-content: center;
-  justify-content: safe center;
-  min-height: var(--card-short);
-  gap: var(--card-gap);
-  margin: 1.5rem 0 0;
+  align-items: flex-end;
+  justify-content: center;
+  /* 顶栏只占一薄条，剩下的高度全部给这张背景（矮屏就按内容撑开，不裁掉选项） */
+  min-height: calc(100vh - 5rem);
+  margin-top: 0.5rem;
+  border-radius: 14px;
+  overflow: hidden;
 }
 
-/* 场景卡：**固定大小**（换房间、初始化前后都不跳）。尺寸 = 角色卡足迹**转 90°**：
-   宽 = `--card-tall`、高 = `--card-short`，所以横竖并排是一族。叙述超出就三行省略，全文在浮窗里。 */
-.stage-card {
+/* 底部压一层暗：插图千差万别，靠这一层保证压在它上面的对话框与选项永远读得清
+   （上面不压——场景要让出来看） */
+.event-screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(3, 7, 10, 0.9) 0%,
+    rgba(3, 7, 10, 0.55) 32%,
+    rgba(3, 7, 10, 0) 68%
+  );
+  pointer-events: none;
+}
+
+/* 背景：铺满整块（`object-fit: cover` 由插图自己决定构图，客户端不裁不改） */
+.event-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* 没有插图时也得是同一块「大背景」：一块深色渐变，不是白底 */
+.event-backdrop--empty {
+  background: radial-gradient(circle at 50% 45%, #1d3a42, #070d12 65%), #070d12;
+}
+
+/* 前景列：对话框 + 选项，宽度收在一行话好读的范围里（`z-index` 压在暗层之上） */
+.event-stage {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  width: min(100%, var(--card-tall));
-  /* 高度跟宽度一起定死：卡片是这一屏的量尺，不能因为描述长短而变形 */
-  height: var(--card-short);
-  padding: 1.1rem 1.25rem;
-  border: 1px solid var(--border);
+  gap: 0.6rem;
+  width: min(100%, 46rem);
+  padding: 1.5rem 1.25rem 2rem;
+}
+
+/* 对话框：深色半透，压在背景上仍然读得清；三态只用边框 / 正文颜色区分 */
+.event-narrative {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.95rem 1.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.28);
   border-radius: 12px;
+  background: rgba(6, 12, 16, 0.74);
+  color: #f2f6f7;
   text-align: left;
 }
 
-/* 卡面上的角色名：小一号的静默标签（与正文拉开层次，且不随状态变） */
-.stage-card-label {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-/* 正文：三行省略；`-webkit-box` 是 line-clamp 的标准写法 */
-.stage-card-body {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
-  overflow: hidden;
-  line-height: 1.6;
-}
-
-/* 初始化失败：原因用错误色（与页面上的错误行同一套颜色） */
-.stage-card--failed .stage-card-body {
-  color: var(--err);
-}
-
-/* 进行中：不可点（没什么可做的），但不用变灰——它只是还没轮到 */
-.stage-card--running {
+.event-narrative:disabled {
+  /* 进行中：没什么可点的，但不压暗——它只是还没轮到 */
   opacity: 1;
   cursor: default;
 }
 
-.stage-card--running .stage-card-body {
-  color: var(--muted);
+.event-narrative-label {
+  font-size: 0.85rem;
+  color: rgba(242, 246, 247, 0.62);
 }
 
-/* 「回到地图」卡：形状上与场景卡同一族（横置、同高），里面就一个箭头 + 一行小字 */
-.stage-next {
+/* 对话框右下角的动作词：这个框现在也是本间的主行动（重试初始化 / 生成奖励 / 查看场景），
+   所以要把"点下去会发生什么"写在框里，光有叙述看不出可点 */
+.event-narrative-action {
+  align-self: flex-end;
+  font-size: 0.9rem;
+  color: #f2c46b;
+}
+
+/* 正文四行省略：全文在「场景信息」浮窗里（生成奖励之后同一个框变成「查看场景」） */
+.event-narrative-body {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+  line-height: 1.65;
+}
+
+.event-narrative--running .event-narrative-body {
+  color: rgba(242, 246, 247, 0.62);
+}
+
+.event-narrative--failed {
+  border-color: #f87171;
+}
+
+.event-narrative--failed .event-narrative-body {
+  color: #fca5a5;
+}
+
+/* 选项列：一行一个，标题 + 会发生什么；最后一个永远是本间的去向 */
+.event-choices {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  width: 9.5rem;
-  /* 与场景卡同高（`.stage-row` 的 stretch 也会拉到一样高，这里写死是保险） */
-  min-height: var(--card-short);
-  padding: 0.75rem;
-  border-radius: 12px;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.stage-next-arrow {
-  font-size: 2.5rem;
-  line-height: 1;
+.event-choice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.75rem;
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 10px;
+  background: rgba(6, 12, 16, 0.74);
+  color: #f2f6f7;
+  text-align: left;
 }
 
-.stage-next-caption {
-  font-size: 0.85rem;
-  color: var(--muted);
+/* 悬停：边框亮起来即可（背景不动，免得快速划过时整行忽明忽暗） */
+.event-choice:hover:not(:disabled),
+.event-choice:focus-visible {
+  border-color: #f2f6f7;
 }
 
-/* 「还有候选卡未领，一按就永久失去」：与角色卡那颗按钮（`.button--pending`）同一套提醒色。
-   提醒的后果（"结束本间后就无法再领取了"）放在按钮的 title 里。 */
-.stage-next--warn {
-  border-color: var(--warn);
-  color: var(--warn);
+.event-choice-title {
+  font-weight: 600;
 }
 
-.stage-next--warn .stage-next-caption {
-  color: var(--warn);
+.event-choice-effect {
+  font-size: 0.9rem;
+  color: rgba(242, 246, 247, 0.68);
+}
+
+/* 「还有候选卡未领，一按就永久失去」：与角色卡那颗按钮（`.button--pending`）同一套提醒色，
+   只是这里背景是深色，用的警告色要亮一档。后果写在 title 里。 */
+.event-choice--warn {
+  border-color: #f59e0b;
+}
+
+.event-choice--warn .event-choice-title,
+.event-choice--warn .button-mark {
+  color: #f59e0b;
+}
+
+/* 页面上那几句错误 / 加载：压在深色背景上，用浅色字 */
+.event-note {
+  margin: 0;
+  padding: 0 0.25rem;
+  font-size: 0.9rem;
+  color: rgba(242, 246, 247, 0.72);
+}
+
+.event-note--error {
+  color: #fca5a5;
 }
 
 /* 战斗开始前那一屏：左边 3 敌 / 3 我 的卡阵（中间一条分隔线——一局战斗最多 3v3），
@@ -2368,7 +2442,7 @@ ul.combat-hand-list .card-tile--selected .card-tile-frame {
   color: var(--fg);
 }
 
-/* 卡状按钮：与「回到地图」卡（`.stage-next`）同一副形状（大图标 + 小字），只是缩成方块、小一号 */
+/* 卡状按钮：大图标 + 小字，缩成方块、比牌面小一号 */
 .combat-hand-btn {
   display: flex;
   flex-direction: column;

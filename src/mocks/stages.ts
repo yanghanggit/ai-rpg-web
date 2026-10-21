@@ -6,6 +6,7 @@
  * 行为对齐后端：玩家只出现在一个场景，`readMockStages` 返回当前快照。
  */
 import type { Schemas } from "../api/types";
+import { COMPONENT } from "../features/entities/componentNames";
 import type { Entity } from "../features/entities/ecs";
 import {
   blueprintFixture,
@@ -65,9 +66,23 @@ function findMockStageOfActor(actor: string): string | null {
   return null;
 }
 
+/** 运行期生成的环境叙述（真后端由初始化管道写进 `EnvironmentComponent`）；key = 场景名。 */
+let generatedNarratives = new Map<string, string>();
+
+/**
+ * 记下某场景新生成的环境叙述（开场初始化用）。
+ *
+ * 真后端这不是客户端做的：初始化管道跑完，场景实体的 `EnvironmentComponent` 就有了叙述，
+ * 客户端只是重取实体。mock 没有 pipeline，所以在初始化 handler 里直接改这份表。
+ */
+export function markMockStageNarrative(stageName: string, narrative: string): void {
+  generatedNarratives = new Map(generatedNarratives).set(stageName, narrative);
+}
+
 /** 复位成初始 fixture（测试之间隔离）。 */
 export function resetMockStages(): void {
   actorsByStage = cloneActorsByStage(homeStagesFixture.actors_by_stage);
+  generatedNarratives = new Map();
 }
 
 /** 场景实体快照（深拷贝）；未知场景名返回 `null`。家园与副本场景都在这里。 */
@@ -75,5 +90,13 @@ export function readMockStageEntity(name: string): Entity | null {
   const fixture = [...stageEntityFixtures, ...dungeonStageEntityFixtures].find(
     (entity) => entity.name === name,
   );
-  return fixture === undefined ? null : structuredClone(fixture);
+  if (fixture === undefined) {
+    return null;
+  }
+  const entity = structuredClone(fixture);
+  const narrative = generatedNarratives.get(name);
+  if (narrative !== undefined) {
+    entity.data[COMPONENT.Environment] = { name, narrative };
+  }
+  return entity;
 }

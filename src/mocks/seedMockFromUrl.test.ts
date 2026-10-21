@@ -126,6 +126,13 @@ describe("seedMockFromUrl", () => {
     expect(readMockCombatLoot()).toEqual([]);
   });
 
+  it("opening:party-spoils → 三人队伍且奖励已生成（奖励选项按成员各一个）", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:party-spoils`);
+    expect(readMockDungeonRoom()?.type).toBe("opening");
+    expect(readMockPartyNames()).toEqual(["角色.无名", "角色.坏运气", "角色.麻雀"]);
+    expect(readMockSpoilsHolders()).toEqual(["角色.无名", "角色.坏运气", "角色.麻雀"]);
+  });
+
   // 放最后：它会改队伍名单（module 级状态），后面的用例都靠前面的空名单
   it("party:full → 队伍含玩家与两名同伴", () => {
     seedMockFromUrl(`${BASE}?seed=party:full`);

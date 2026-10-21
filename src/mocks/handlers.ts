@@ -42,6 +42,7 @@ import {
   newGameFixture,
   serverInfoFixture,
 } from "./fixtures";
+import { mockIllustrationSvg } from "./illustration";
 import {
   craftMockItem,
   moveMockItem,
@@ -69,7 +70,12 @@ import {
 } from "./roster";
 import { appendMockSessionMessage, readMockSessionMessages } from "./sessionMessages";
 import { sseResponse } from "./sseResponse";
-import { moveMockPlayerToStage, readMockStageEntity, readMockStages } from "./stages";
+import {
+  markMockStageNarrative,
+  moveMockPlayerToStage,
+  readMockStageEntity,
+  readMockStages,
+} from "./stages";
 import { createMockTask, watchMockTask } from "./tasks";
 
 /** 把后端相对路径补成完整 URL，供 MSW handler 匹配。 */
@@ -79,6 +85,16 @@ export function api(path: string): string {
 
 export const handlers = [
   http.get(api("/"), () => HttpResponse.json(serverInfoFixture)),
+
+  // 场景插图（后端从 `.assets/image/` 挂出来的静态文件）：mock 给一张内联 SVG，
+  // 让 `pnpm dev:mock` 也能看到「一整个大背景」的版式。路径形状与真后端一致。
+  http.get(
+    api("/assets/image/:filename"),
+    () =>
+      new HttpResponse(mockIllustrationSvg, {
+        headers: { "Content-Type": "image/svg+xml" },
+      }),
+  ),
 
   http.get(api("/api/game/blueprint-list/v1/"), () => HttpResponse.json(blueprintListFixture)),
 
@@ -340,6 +356,11 @@ export const handlers = [
         { status: 500 },
       );
     }
+    // 真后端：初始化管道把环境叙述写进场景实体（`EnvironmentComponent`），客户端重取就能看到
+    markMockStageNarrative(
+      "场景.地窟入口",
+      "（mock）开场叙事：推开石门，地窟深处的寒气扑面而来；石壁渗水，火把在风里明灭。",
+    );
     appendMockSessionMessage({
       type: "announce",
       message: "（mock）开场房间初始化完成。",

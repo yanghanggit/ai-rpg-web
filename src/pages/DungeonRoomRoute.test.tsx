@@ -28,8 +28,8 @@ describe("副本房间 · 路由解析器", () => {
     enterMockDungeon("副本.荒废地窟");
     renderRoom(<DungeonRoomRoute />);
 
-    // 开场房间正文（队伍块）在，说明分发到了开场页
-    expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
+    // 开场房间正文（事件屏）在，说明分发到了开场页
+    expect(await screen.findByRole("region", { name: "房间正文" })).toBeInTheDocument();
   });
 
   it("进行中的是战斗房间 → 分发到 CombatRoomPage", async () => {

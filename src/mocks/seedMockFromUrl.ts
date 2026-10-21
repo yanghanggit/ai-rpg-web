@@ -80,6 +80,12 @@ const SEEDS: Record<string, (context: SeedContext) => void> = {
       markRoomEnded(endedRoomKey(userName, gameName, room.stage.name));
     }
   },
+  // OPENING：三人队伍 + 已生成奖励（奖励选项按成员各一个，用于核对多人的选项清单）
+  "opening:party-spoils": () => {
+    fillParty();
+    enterMockDungeon(DUNGEON);
+    generateMockSpoils();
+  },
   // OPENING：队伍里有同伴（用于看 / 调试「牌组」浏览：一级名单里有三个角色）
   "party:full": () => {
     // 名单必须在 enter 之前补：队伍是进副本那一刻固化的

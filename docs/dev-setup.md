@@ -114,5 +114,11 @@ pnpm screenshot /game/webdev/Game1/dungeon --mock
 2. **Mock 模式**：`pnpm dev:mock`，浏览器端 MSW 拦截 API，完全不需要后端。
    - 假数据在 `src/mocks/fixtures.ts`，指定接口的假响应在 `src/mocks/handlers.ts`；
    - 这套 handlers **与单元测试共用**，不会两边漂移；
+   - **场景插图也走 mock**：`GET /assets/image/<file>` 返回 `./illustration.ts` 里那张内联 SVG，
+     所以真后端还没生成插图的房间，在 mock 里也看得到完整的版式；
+   - **默认带一个同伴**（`browser.ts` 里补名单，只影响 `dev:mock`，单元测试仍是空名单）：
+     一进副本就能看到「多成员」的选项清单；
+   - **开场房的环境叙述也由初始化生成**（`./stages` 的 `markMockStageNarrative`），
+     所以 `?seed=opening:fresh` 能看到"初始化中 → 叙述出现"的真实顺序；
    - 页面右上角会显示橙色 `MOCK 模式` 徽标，避免误以为在连真实后端。
 3. **开发索引**：`/dev` 列出常用深链，点一下就到（例：`http://localhost:5173/dev`）。

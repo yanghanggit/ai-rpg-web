@@ -4,7 +4,7 @@ import { API_BASE_URL, client, unwrap } from "../api/client";
 import { API_PATHS } from "../api/schemaPaths";
 import { COMPONENT } from "../features/entities/componentNames";
 import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
-import { blueprintFixture } from "./fixtures";
+import { blueprintFixture, serverInfoFixture } from "./fixtures";
 import { handlers } from "./handlers";
 
 const USER = "webdev";
@@ -123,10 +123,13 @@ function handlerPath(handler: HttpHandler): string | null {
 describe("MSW handler 路径守卫", () => {
   it("每个 handler 路径都存在于生成的 OpenAPI 契约中", () => {
     const contract = new Set(API_PATHS.map(normalizePath));
+    // 静态资源不在契约里（后端是 `app.mount`，不是路由）：按服务端自报的前缀认出来
+    const assetsPrefix = `${serverInfoFixture.assets_url_prefix}/`;
     const orphans = handlers
       .flatMap((handler) => (handler instanceof HttpHandler ? [handler] : []))
       .map(handlerPath)
       .filter((path): path is string => path !== null)
+      .filter((path) => !path.startsWith(assetsPrefix))
       .map(normalizePath)
       .filter((path) => !contract.has(path));
 

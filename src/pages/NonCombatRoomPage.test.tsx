@@ -16,11 +16,17 @@ import DungeonRoomRoute from "./DungeonRoomRoute";
  *
  * 房间页需要一个**已解析的** `room`，所以统一从路由挂载 `<DungeonRoomRoute/>`——解析器会把它
  * 分发到本页；`?seed` 深链与这里无关。
+ *
+ * 开场房现在是**事件屏**：一大张背景 + 一个对话框 + 一列对话选项（奖励选项在前，去向在最后），
+ * 没有角色卡。所以下面的断言都落在「对话框三态 / 选项清单 / 奖励浮窗」这三块上。
  */
 const renderOpening = () => renderRoom(<DungeonRoomRoute />);
 
 /** 房间页不再有可见标题；拿右上角那排入口里的「副本操作」当落地锚。 */
 const roomScaffoldLoaded = () => screen.findByRole("button", { name: /副本操作/ });
+
+/** 房间正文那一块（事件屏）。 */
+const roomBody = () => screen.getByRole("region", { name: "房间正文" });
 
 /** 覆盖退出接口，让任务 id 固定（mock 自己发号，测试无法预测）。 */
 const exitWith = (jobId: number) =>
@@ -54,37 +60,36 @@ const failingInit = (spy: () => void) =>
     return HttpResponse.json({ detail: "mock 初始化失败" }, { status: 500 });
   });
 
-/** 进入开场房间会自动初始化；等自动初始化跑完（角色卡上那颗「生成奖励」可点）为止。 */
+/**
+ * 对话框 = 本间的主行动，一个按钮顺着 初始化 → 生成奖励 → 查看场景 走，
+ * 所以它的无障碍名就是「此刻点下去会做什么」。
+ */
+function box(action: "初始化中" | "重试初始化" | "生成奖励" | "查看场景") {
+  return within(roomBody()).getByRole("button", { name: `${action}：地窟入口` });
+}
+
+/** 进入开场房间会自动初始化；等自动初始化跑完（对话框从「初始化中」变成「生成奖励」）为止。 */
 async function waitForInit() {
-  await waitFor(() => {
-    for (const button of screen.getAllByRole("button", { name: "生成奖励" })) {
-      expect(button).toBeEnabled();
-    }
-  });
+  await screen.findByRole("button", { name: "生成奖励：地窟入口" });
 }
 
-/** 某个成员卡底那颗奖励按钮（三态：生成奖励 / 获取奖励 / 查看奖励）。 */
-function spoilsButton(memberName: string) {
-  // 整卡可点那层按钮带「查看角色：X」的名字，用它定位到卡片再找奖励按钮
-  const card = screen
-    .getByRole("button", { name: `查看角色：${displayName(memberName)}` })
-    .closest("article");
-  if (!(card instanceof HTMLElement)) {
-    throw new Error(`找不到 ${memberName} 的角色卡`);
-  }
-  return within(card).getByRole("button", { name: /奖励/ });
+/** 一个对话选项（奖励类选项的名字带成员名，去向选项带括号里的去向）。 */
+function choice(name: string) {
+  return within(roomBody()).getByRole("button", { name });
 }
 
-/** 走完「（自动）初始化 → 生成奖励」；生成是**整队一次**的动作，点哪张卡上那颗都一样。 */
+/** 走完「（自动）初始化 → 生成奖励」；生成是**整队一次**的动作，之后每个成员各一个选项。 */
 async function generateSpoils() {
   await waitForInit();
-  fireEvent.click(spoilsButton("角色.无名"));
-  await screen.findAllByRole("button", { name: "获取奖励" });
+  fireEvent.click(box("生成奖励"));
+  await waitFor(() =>
+    expect(screen.getAllByRole("button", { name: /^获取奖励：/ }).length).toBeGreaterThan(0),
+  );
 }
 
-/** 打开某个成员的奖励浮窗：点其角色卡上的「获取奖励 / 查看奖励」。 */
-async function openSpoils(memberName: string) {
-  fireEvent.click(spoilsButton(memberName));
+/** 打开某个成员的奖励浮窗（点它的「获取奖励 / 查看奖励」选项）。 */
+async function openSpoils(memberName: string, action: "获取奖励" | "查看奖励" = "获取奖励") {
+  fireEvent.click(choice(`${action}：${displayName(memberName)}`));
   return screen.findByRole("dialog", { name: "奖励" });
 }
 
@@ -198,9 +203,8 @@ describe("副本房间 · 共同框架", () => {
     await waitForInit();
     expect(entry).not.toHaveClass("icon-button--unread");
 
-    // 生成奖励 → 失效叙事 → 新事件到达：入口按钮变绿并带上未读数
-    await waitForInit();
-    fireEvent.click(spoilsButton("角色.无名"));
+    // 生成奖励（对话框）→ 失效叙事 → 新事件到达：入口按钮变绿并带上未读数
+    fireEvent.click(box("生成奖励"));
     await waitFor(() => expect(entry).toHaveClass("icon-button--unread"));
     expect(within(entry).getByText("1")).toBeInTheDocument();
 
@@ -295,111 +299,121 @@ describe("副本房间 · 共同框架", () => {
   });
 });
 
-describe("副本房间 · 开场房间", () => {
-  it("自动初始化失败时：原因写在场景卡里、点整张卡重试（奖励已与初始化解耦）", async () => {
+describe("副本房间 · 开场房间（事件屏）", () => {
+  it("版式：一大张背景 + 一个对话框 + 一列选项，没有角色卡", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒废地窟");
+    renderOpening();
+
+    await roomScaffoldLoaded();
+
+    // 背景是场景插图（`room.stage.assets.illustration` → 服务端静态文件，mock 给一张 SVG）
+    const backdrop = document.querySelector(".event-backdrop");
+    expect(backdrop).toHaveAttribute("src", expect.stringContaining("/assets/image/"));
+    // 队伍不再有卡片区：人只以奖励选项出现
+    expect(screen.queryByRole("region", { name: "队伍" })).not.toBeInTheDocument();
+    expect(document.querySelector(".actor-card")).toBeNull();
+  });
+
+  it("自动初始化失败时：原因写在对话框里、点它重试（重试之前不放出奖励）", async () => {
     const initSpy = vi.fn();
     server.use(failingInit(initSpy));
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    // 初始化失败写在场景卡里：卡片本身变成本间的主行动（点整张卡重试）
-    const stage = await screen.findByRole("region", { name: "场景描述" });
-    const stageCard = within(stage).getByRole("button", { name: "重试初始化：地窟入口" });
-    expect(stageCard).toHaveTextContent("初始化失败");
+    // 初始化失败写在对话框里：对话框本身变成本间的主行动（点它重试）
+    const failed = await screen.findByRole("button", { name: "重试初始化：地窟入口" });
+    expect(failed).toHaveTextContent("初始化失败");
+    expect(failed).toHaveClass("event-narrative--failed");
 
     // 自动初始化只发一次；失败后不自动重试
     expect(initSpy).toHaveBeenCalledTimes(1);
 
-    // 标题行没有第二颗 ↻：初始化三态全在场景卡上（失败也没有兜底的那颗）
-    expect(screen.getAllByRole("button", { name: /重试初始化/ })).toHaveLength(1);
+    // 客户端的状态守卫：初始化没成功之前，对话框只给「重试初始化」，
+    // 生成奖励 / 成员奖励都还没放出来（服务端其实不拦，顺序纯粹由这里守）
+    expect(screen.queryByRole("button", { name: "生成奖励：地窟入口" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^获取奖励：/ })).not.toBeInTheDocument();
 
-    // 奖励已与初始化解耦：初始化失败也不拦「生成奖励」（服务端只要求非战斗房间）
-    expect(await screen.findByRole("button", { name: "生成奖励" })).toBeEnabled();
-
-    // 非战斗房间无完成态：「结束开局准备」始终可用；页面上没有解释性提示行
-    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).toBeInTheDocument();
+    // 非战斗房间无完成态：去向选项始终可用；页面上没有解释性提示行
+    expect(choice("结束开局准备（回到地图）")).toBeInTheDocument();
     expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
 
-    // 点场景卡重试（本间唯一的重试入口）
-    fireEvent.click(stageCard);
+    // 点对话框重试（本间唯一的重试入口）
+    fireEvent.click(failed);
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(2));
 
     // 再点一次依旧重试（不套一次性 guard）
-    fireEvent.click(stageCard);
+    fireEvent.click(failed);
     await waitFor(() => expect(initSpy).toHaveBeenCalledTimes(3));
   });
 
-  it("初始化完成后：场景卡上是环境叙述，点卡看全文；右侧「回到地图」卡就是本间的下一步", async () => {
+  it("初始化完成后：对话框里是环境叙述，生成奖励之后同一个框变成「查看场景」", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
     await waitForInit();
 
-    // 初始化中之后：卡面换成环境叙述（超出三行在卡上省略，全文在浮窗里）
-    const stage = screen.getByRole("region", { name: "场景描述" });
-    const card = within(stage).getByRole("button", { name: "查看场景：地窟入口" });
-    expect(card).toHaveTextContent(/地窟入口 的环境叙述/);
+    // 初始化完成、奖励还没生成：对话框换成初始化写进来的环境叙述，动作词是「生成奖励」
+    const boxBefore = box("生成奖励");
+    expect(boxBefore).toHaveTextContent(/开场叙事/);
+    await generateSpoils();
 
-    // 点卡 → 场景信息浮窗：完整叙述 + 场景内角色；点角色即换成角色浮窗（同类切换不叠层）
-    fireEvent.click(card);
+    // 同一个框翻到下一态：点开是全文 + 场景内角色
+    const narrative = box("查看场景");
+    expect(narrative).toHaveTextContent(/开场叙事/);
+    fireEvent.click(narrative);
     const dialog = await screen.findByRole("dialog", { name: "场景信息" });
     expect(await within(dialog).findByText(/石壁渗水/)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "无名" }));
     expect(await screen.findByRole("dialog", { name: "角色信息" })).toBeInTheDocument();
     expect(screen.queryByRole("dialog", { name: "场景信息" })).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "关闭" }));
-
-    // 「回到地图」卡：「结束本间」的唯一入口（更显眼、更好点）
-    fireEvent.click(within(stage).getByRole("button", { name: "结束开局准备（回到地图）" }));
-    expect(await screen.findByRole("heading", { name: "地图" })).toBeInTheDocument();
   });
 
-  it("队伍区没有可见标题（卡上有名字就够），玩家卡片标「玩家」，不再有「3 选 1」提示", async () => {
+  it("进入开场房间自动初始化一次；标题行始终没有本间的主行动（都在对话框上）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    // 这一块留着无障碍名，但没有可见标题（卡上有名字，「队伍」是废话）
-    expect(await screen.findByRole("region", { name: "队伍" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "队伍" })).not.toBeInTheDocument();
-    // 玩家徽章叫「玩家」，不叫「你」
-    expect(await screen.findByText("玩家")).toBeInTheDocument();
-    expect(screen.queryByText("你")).not.toBeInTheDocument();
-    // 旧的奖励提示句已删掉
-    expect(screen.queryByText(/3 选 1/)).not.toBeInTheDocument();
-  });
-
-  it("进入开场房间自动初始化一次；标题行始终没有本间的主行动（都在正文卡片上）", async () => {
-    server.use(instantTasks());
-    enterMockDungeon("副本.荒废地窟");
-    renderOpening();
-
-    // 初始化中：标题行也没有 ↻（运行中状态写在场景卡上）
+    // 初始化中：对话框是主行动但不可点（同一件事只留这一个入口），标题行也没有 ↻
+    expect(await screen.findByRole("button", { name: "初始化中：地窟入口" })).toBeDisabled();
     expect(screen.queryByRole("button", { name: /初始化开场/ })).not.toBeInTheDocument();
 
-    // 初始化完成后：标题行也没有 →，结束本间只剩正文右侧那张卡
+    // 初始化完成后：标题行也没有 →，去向只剩选项清单里那一个
     await waitForInit();
     expect(screen.queryByRole("button", { name: "结束开局准备" })).not.toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).toBeInTheDocument();
+    expect(choice("结束开局准备（回到地图）")).toBeInTheDocument();
   });
 
-  it("生成奖励：不摊在页面上，角色卡那颗按钮从「生成奖励」变成「获取奖励」，弹窗里竖排 3 张候选", async () => {
+  it("选项顺序：奖励在前，去向永远是最后一个", async () => {
+    server.use(instantTasks());
+    addMockRosterMember("角色.坏运气");
+    enterMockDungeon("副本.荒废地窟");
+    renderOpening();
+    await generateSpoils();
+
+    const labels = within(roomBody())
+      .getAllByRole("button")
+      .map((button) => button.getAttribute("aria-label"));
+    expect(labels.at(-1)).toBe("结束开局准备（回到地图）");
+    // 奖励按成员各一个（玩家 + 名单里的同伴），排在去向之前
+    expect(labels).toContain(`获取奖励：${displayName("角色.无名")}`);
+    expect(labels).toContain(`获取奖励：${displayName("角色.坏运气")}`);
+  });
+
+  it("生成奖励：页面上只多出选项，弹窗里竖排 3 张候选", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
-
     await generateSpoils();
 
-    // 奖励不在页面上展开，只在卡上留一个按钮
-    expect(screen.getByRole("button", { name: "获取奖励" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
+    // 候选卡不在页面上展开：每个成员一个选项，点开才是浮窗
+    expect(roomBody()).not.toHaveTextContent("烈焰符");
+    expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
     expect(within(dialog).getByRole("button", { name: "挑选 烈焰符" })).toBeInTheDocument();
     expect(within(dialog).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
-
-    // 生成后按钮不再是「生成奖励」（同一个按钮进了下一态）
-    expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
   });
 
   it("领卡：领走的那张进牌组，候选保留并标记已领取（不能再生成）", async () => {
@@ -407,17 +421,27 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
     await generateSpoils();
-    expect(await screen.findByText("卡组 9")).toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
     fireEvent.click(within(dialog).getByRole("button", { name: "挑选 烈焰符" }));
 
-    // 牌组 +1；候选仍在（供回看），但「挑选」按钮消失
-    expect(await screen.findByText("卡组 10")).toBeInTheDocument();
+    // 候选仍在（供回看），但「挑选」按钮消失
+    expect(
+      await within(dialog).findByText("（已领取，以下为本次候选，仅供参考）"),
+    ).toBeInTheDocument();
     expect(within(dialog).queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
-    expect(within(dialog).getByText("（已领取，以下为本次候选，仅供参考）")).toBeInTheDocument();
-    // 组件保留作为守卫：生成按钮不再回来
+    fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
+
+    // 选项从「获取奖励」变「查看奖励」（同一件事已经做过）；「生成奖励」不再回来
+    expect(
+      await screen.findByRole("button", { name: `查看奖励：${displayName("角色.无名")}` }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
+
+    // 牌组里多了一张（9 → 10）
+    fireEvent.click(screen.getByRole("button", { name: "牌组" }));
+    const list = await screen.findByRole("dialog", { name: "牌组一览" });
+    expect(within(list).getByRole("button", { name: /无名.*10 张/ })).toBeInTheDocument();
   });
 
   it("领卡是按成员各自算的：给坏运气领卡不影响玩家的奖励", async () => {
@@ -426,9 +450,6 @@ describe("副本房间 · 开场房间", () => {
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
     await generateSpoils();
-
-    // 两个人各有一颗奖励按钮（三态共用同一个位置）
-    expect(screen.getAllByRole("button", { name: /奖励/ })).toHaveLength(2);
 
     const qiuzhi = await openSpoils("角色.坏运气");
     fireEvent.click(within(qiuzhi).getByRole("button", { name: "挑选 冰墙" }));
@@ -444,65 +465,34 @@ describe("副本房间 · 开场房间", () => {
     expect(within(player).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
   });
 
-  it("角色卡片：整卡可点开角色信息（副本里不提供时装入口）", async () => {
-    server.use(instantTasks());
-    enterMockDungeon("副本.荒废地窟");
-    renderOpening();
-
-    fireEvent.click(await screen.findByRole("button", { name: "查看角色：无名" }));
-
-    const dialog = await screen.findByRole("dialog", { name: "角色信息" });
-    await within(dialog).findByText("属性");
-    // 副本进行中家园接口会被拒，所以隐藏时装区
-    expect(within(dialog).queryByRole("heading", { name: "时装" })).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole("button", { name: /时装/ })).not.toBeInTheDocument();
-  });
-
-  it("奖励按钮是同一颗的三态：生成奖励 → 获取奖励 → 查看奖励（生成是整队一次）", async () => {
+  it("奖励的态：对话框「生成奖励 → 查看场景」，成员「获取奖励 → 查看奖励」（生成是整队一次）", async () => {
     server.use(instantTasks());
     addMockRosterMember("角色.坏运气");
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
 
-    // 一态：两张卡各有一颗「生成奖励」
+    // 还没生成：生成奖励长在对话框上（整队一次，不按人分），清单里一个奖励选项都没有
     await waitForInit();
-    expect(screen.getAllByRole("button", { name: "生成奖励" })).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: /^获取奖励：/ })).not.toBeInTheDocument();
 
-    // 点**一个人的**「生成奖励」= 整队一次生成：两张卡一起进第二态
-    fireEvent.click(spoilsButton("角色.无名"));
-    expect(await screen.findAllByRole("button", { name: "获取奖励" })).toHaveLength(2);
+    // 点它 = 整队一次生成：对话框翻成「查看场景」，每个成员各出现一个「获取奖励」
+    fireEvent.click(box("生成奖励"));
+    expect(
+      await screen.findByRole("button", { name: `获取奖励：${displayName("角色.坏运气")}` }),
+    ).toBeInTheDocument();
+    expect(choice(`获取奖励：${displayName("角色.无名")}`)).toBeInTheDocument();
+    expect(box("查看场景")).toBeInTheDocument();
 
     // 二态：获取奖励 → 领走一张
     const dialog = await openSpoils("角色.坏运气");
     fireEvent.click(within(dialog).getByRole("button", { name: "挑选 烈焰符" }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "关闭" }));
 
-    // 三态：领过的那个人变成「查看奖励」；没领的那个人还在「获取奖励」（领取是按成员各自的）
-    expect(await screen.findAllByRole("button", { name: "查看奖励" })).toHaveLength(1);
-    expect(screen.getAllByRole("button", { name: "获取奖励" })).toHaveLength(1);
-  });
-
-  it("角色卡上不再有「查看牌组」；HP 走右下心形角徽、卡组另起一行", async () => {
-    server.use(instantTasks());
-    enterMockDungeon("副本.荒废地窟");
-    renderOpening();
-
-    // HP 只在右下那枚心形角徽里（只显当前值，全长 12/15 挂在悬停说明上）；
-    // attack / defense / speed 与战斗名单同一口径，不在卡上（在角色信息浮窗里看）
-    const hp = await waitFor(() => {
-      const chip = document.querySelector(".actor-card .combatant-chip--hp");
-      if (!(chip instanceof HTMLElement)) {
-        throw new Error("角色卡上还没有右下那枚 HP 角徽");
-      }
-      return chip;
-    });
-    expect(hp).toHaveTextContent("12");
-    expect(hp).toHaveAttribute("title", "HP 12/15");
-    expect(screen.queryByText(/attack 3/)).not.toBeInTheDocument();
-    // 卡上只留「卡组 N」这行状态，卡底那颗按钮就是奖励入口
-    expect(await screen.findByText("卡组 9")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "查看牌组" })).not.toBeInTheDocument();
-    // 同一份数据仍然看得到：入口上提到标题行（一级名单 → 二级卡面，分开用例覆盖）
-    expect(screen.getByRole("button", { name: "牌组" })).toBeInTheDocument();
+    // 三态：领过的那个人变「查看奖励」；没领的那个人还在「获取奖励」
+    expect(
+      await screen.findByRole("button", { name: `查看奖励：${displayName("角色.坏运气")}` }),
+    ).toBeInTheDocument();
+    expect(choice(`获取奖励：${displayName("角色.无名")}`)).toBeInTheDocument();
   });
 
   it("叙事入口只有一份，在「副本操作」菜单里（开场房间体内不再渲染）", async () => {
@@ -523,7 +513,7 @@ describe("副本房间 · 开场房间", () => {
     renderOpening();
     await waitForInit();
 
-    fireEvent.click(screen.getByRole("button", { name: "结束开局准备（回到地图）" }));
+    fireEvent.click(choice("结束开局准备（回到地图）"));
 
     // 落点是地图（房间之间那一站）：房间页框架不再有可见标题，只有地图面板自己的「地图」标题；
     // 房间那一行标「已完成」，动作搬到下一间那一行。
@@ -533,40 +523,43 @@ describe("副本房间 · 开场房间", () => {
     expect(screen.queryByRole("button", { name: "进入房间" })).not.toBeInTheDocument();
   });
 
-  it("未领的奖励只提示不阻止：「!」长在那张卡的按钮上，后果写在 title 里（惩罚是设计要的）", async () => {
+  it("未领的奖励只提示不阻止：「!」长在那个选项上，后果写在 title 里（惩罚是设计要的）", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
     await generateSpoils();
 
-    // 提醒不另占一行页面提示，而是做在按钮上（提醒色 + 「!」，可看到的文案仍是动作名）
-    const reward = screen.getByRole("button", { name: "获取奖励" });
-    expect(reward).toHaveClass("button--pending");
-    expect(reward).toHaveAttribute("title", "还有候选卡未领：结束本间后就无法再领取了。");
-    // 同一件事也做到「回到地图」卡上（结束本间的唯一入口）：一按就永久失去，所以它也变提醒色
-    const finish = screen.getByRole("button", { name: "结束开局准备（回到地图）" });
-    expect(finish).toHaveClass("stage-next--warn");
+    // 提醒不另占一行页面提示，而是做在选项上（提醒色 + 「!」，可看到的文案仍是动作名）
+    const reward = choice(`获取奖励：${displayName("角色.无名")}`);
+    expect(reward).toHaveClass("event-choice--warn");
+    expect(reward).toHaveAttribute(
+      "title",
+      `获取奖励：${displayName("角色.无名")} —— 还有候选卡未领：结束本间后就无法再领取了。`,
+    );
+    // 同一件事也做到去向选项上（结束本间的唯一入口）：一按就永久失去，所以它也变提醒色
+    const finish = choice("结束开局准备（回到地图）");
+    expect(finish).toHaveClass("event-choice--warn");
     expect(finish).toHaveAttribute(
       "title",
-      "结束开局准备（回到地图）—— 还有候选卡未领，结束本间后就无法再领取了。",
+      "结束开局准备（回到地图） —— 还有候选卡未领，结束本间后就无法再领取了。",
     );
-    // 结束动作照旧可用（不套二次确认）
-    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).toBeEnabled();
+    // 去向照旧可用（不套二次确认）
+    expect(finish).toBeEnabled();
   });
 
-  it("奖励都领完之后：卡上的「!」与「回到地图」卡的提醒色一起消失", async () => {
+  it("奖励都领完之后：奖励选项上的「!」与去向选项的提醒色一起消失", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderOpening();
     await generateSpoils();
     const dialog = await openSpoils("角色.无名");
     fireEvent.click(within(dialog).getByRole("button", { name: "挑选 烈焰符" }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: "关闭" }));
 
-    expect(await screen.findByRole("button", { name: "查看奖励" })).not.toHaveClass(
-      "button--pending",
-    );
-    expect(screen.getByRole("button", { name: "结束开局准备（回到地图）" })).not.toHaveClass(
-      "stage-next--warn",
-    );
+    const claimed = await screen.findByRole("button", {
+      name: `查看奖励：${displayName("角色.无名")}`,
+    });
+    expect(claimed).not.toHaveClass("event-choice--warn");
+    expect(choice("结束开局准备（回到地图）")).not.toHaveClass("event-choice--warn");
   });
 });

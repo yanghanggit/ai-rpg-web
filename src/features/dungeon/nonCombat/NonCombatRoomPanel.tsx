@@ -1,14 +1,15 @@
 import { useState } from "react";
 import type { Schemas } from "../../../api/types";
+import { displayName } from "../../../components/displayName";
+import { readAssetUrl } from "../../assets/readAssetUrl";
+import { useAssetsUrlPrefix } from "../../assets/useAssetsUrlPrefix";
 import { firstEntity } from "../../entities/ecs";
 import ActorInfoDialog from "../../identity/ActorInfoDialog";
 import { readStageInfo } from "../../stage/readStageInfo";
 import StageInfoDialog from "../../stage/StageInfoDialog";
 import { stageNarrativeBody } from "../../stage/stageNarrativeBody";
 import { useStageEntity } from "../../stage/useStageEntity";
-import ActorCard from "../ActorCard";
-import StageCard, { type StageCardState } from "../StageCard";
-import type { DungeonParty, DungeonPartyMember } from "../useDungeonParty";
+import type { DungeonParty } from "../useDungeonParty";
 import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
 import type { OpeningInit } from "./useOpeningInit";
@@ -17,16 +18,54 @@ import type { SpoilsActions } from "./useSpoilsActions";
 /** 非战斗房间（当前仅 `opening`；`combat` 之外的类型都落在这里）。 */
 export type NonCombatRoom = Exclude<Schemas["DungeonRoomResponse"]["room"], Schemas["CombatRoom"]>;
 
+/** 对话框的三态：进行中 / 初始化失败 / 就绪（就绪时它同时是本间的主行动：生成奖励 → 查看全文）。 */
+type NarrativeState = "running" | "failed" | "ready";
+
+/** 对话框此刻点下去会发生什么：客户端的状态守卫（初始化 → 生成奖励 → 查看全文）。 */
+type BoxAction = "running" | "retry" | "generate" | "view";
+
+const BOX_LABELS: Record<BoxAction, { aria: string; visible: string }> = {
+  running: { aria: "初始化中", visible: "初始化中…" },
+  retry: { aria: "重试初始化", visible: "重试初始化" },
+  generate: { aria: "生成奖励", visible: "生成奖励" },
+  view: { aria: "查看场景", visible: "查看场景" },
+};
+
+const BOX_HINTS: Record<BoxAction, string> = {
+  running: "正在初始化开场…",
+  retry: "初始化没成功：点这里重试",
+  generate: "为队伍每人生成候选牌（候选牌在浮窗里挑）",
+  view: "点这里看完整的场景信息（全文在浮窗里）",
+};
+
+/** 一个对话选项：动作名 + 会发生什么（与《杀戮尖塔》的事件选项同一套读法）。 */
+interface EventChoice {
+  key: string;
+  title: string;
+  effect: string;
+  /** 无障碍名与悬停说明。 */
+  label: string;
+  hint: string;
+  /** 提醒色：再做这一步就会失去什么。 */
+  warn?: boolean;
+  /** 「!」：这里还有东西等你拿。 */
+  mark?: boolean;
+  disabled?: boolean;
+  onActivate: () => void;
+}
+
 /**
- * 非战斗房间的房间主体——**奖励入口属于这一层**（与服务端「非战斗房间」守卫一致），
- * 与具体房间类型（开场房 / 未来的其它非战斗房）无关。
+ * 非战斗房间的正文：**一大张背景 + 一个对话框 + 一串对话选项**。
  *
- * 三块：横置的场景卡（开场房有初始化三态：进行中 → 失败可点重试 → 就绪可点看全文；就绪与否看
- * 叙事是否生成）、右侧「结束本间」卡（非战斗房间无完成态，随时可离开）、下面一排竖置的角色卡
- * （整卡开角色信息，卡底按钮是奖励入口，三态：生成奖励 → 获取奖励 → 查看奖励）。
+ * 不再有角色卡：队伍只以「奖励选项」的形式出现（每人一个选项，点开才是奖励浮窗），
+ * 最后一个选项永远是本间的去向（结束本间 → 回地图 / 离开副本）。
  *
- * 开场专属的部分（`opening-init` 的三态、自动初始化）只在 `room.type === "opening"` 时生效；
- * 其它非战斗房只展示叙事 + 奖励 + 结束本间。
+ * **对话框就是本间的主行动**：一个按钮顺着 初始化（进行中 → 失败可重试）→ 生成奖励 →
+ * 查看场景（全文 / 场景内角色）走。顺序由客户端的状态守卫排，服务端不参与（它本来也不拦：
+ * 不生成奖励直接结束本间 / 推进都允许）。
+ *
+ * 归页面持有的数据 / 动作（初始化、奖励、队伍、去向）都从 props 进来，这一层只负责排版与措辞；
+ * 奖励浮窗内部（候选卡、领取记录）仍是原来的 `SpoilsDialog`。
  */
 export default function NonCombatRoomPanel({
   userName,
@@ -45,15 +84,17 @@ export default function NonCombatRoomPanel({
   openingInit: OpeningInit;
   /** 奖励（生成 / 领卡）——非战斗房通用。 */
   spoils: SpoilsActions;
-  /** 本间所有动作合并的忙状态（初始化 + 奖励），界面一次只放一个。 */
+  /** 本间所有动作合并的忙状态（初始化 + 奖励）。 */
   busy: boolean;
-  /** 本次副本固化的队伍与奖励（页面取一次传下来）：角色卡的内容。 */
+  /** 本次副本固化的队伍与奖励（页面取一次传下来）：奖励选项按成员排。 */
   party: DungeonParty;
-  /** 本间的结束动作（回地图 / 离开副本），这张卡是它在本屏的唯一入口。 */
+  /** 本间的去向（回地图 / 离开副本），这张选项是它在本屏的唯一入口。 */
   finish: { caption: string; hint: string; onActivate: () => void };
 }) {
   const isOpening = room.type === "opening";
   const stage = useStageEntity(userName, gameName, room.stage.name);
+  const assetsUrlPrefix = useAssetsUrlPrefix();
+  const illustration = readAssetUrl(room.stage.assets, "illustration", assetsUrlPrefix);
 
   const [isStageOpen, setIsStageOpen] = useState(false);
   const [spoilsMember, setSpoilsMember] = useState<string | null>(null);
@@ -64,115 +105,158 @@ export default function NonCombatRoomPanel({
 
   const spoilsOf = party.party.find((member) => member.name === spoilsMember)?.spoils ?? null;
 
-  // 未领奖励在结束本间后永久失去，所以「结束本间」与角色卡按钮用同一判据变提醒色
+  // 未领奖励在结束本间后永久失去，所以「结束本间」与奖励选项用同一判据变提醒色
   const unclaimed = party.party.some(hasUnclaimedRewards);
+
+  // 奖励是**整队一次**生成的（服务端一次给全队挂 SpoilsComponent），所以看「有没有人有」就够了。
+  const spoilsGenerated = party.party.some((member) => member.spoils !== null);
 
   // 开场房：初始化失败 → 失败；无叙事 → 进行中；有叙事 → 就绪。
   // 其它非战斗房不跑初始化：有叙事即就绪，否则进行中。
-  const stageState: StageCardState = isOpening
-    ? openingInit.error !== null
-      ? "failed"
-      : narrative === null
-        ? "running"
-        : "ready"
-    : narrative === null
+  const narrativeState: NarrativeState =
+    isOpening && openingInit.error !== null ? "failed" : narrative === null ? "running" : "ready";
+
+  // 对话框就是本间的主行动：同一个按钮顺着 初始化 → 生成奖励 → 查看全文 走，
+  // 所以顺序不靠服务端守卫（服务端本来也不拦：不生成奖励直接结束/推进也允许）。
+  const boxAction: BoxAction =
+    narrativeState === "running"
       ? "running"
-      : "ready";
-  const stageBody =
-    stageState === "failed"
+      : narrativeState === "failed"
+        ? "retry"
+        : spoilsGenerated
+          ? "view"
+          : "generate";
+
+  const boxBody =
+    narrativeState === "failed"
       ? `初始化失败：${openingInit.error}`
-      : stageState === "running"
+      : narrative === null
         ? "进行中…"
         : stageNarrativeBody(narrative, stage);
+
+  function activateBox(): void {
+    switch (boxAction) {
+      case "retry":
+        openingInit.start();
+        return;
+      case "generate":
+        spoils.spoils.start();
+        return;
+      case "view":
+        setIsStageOpen(true);
+        return;
+      case "running":
+        return;
+    }
+  }
 
   // 开场房叫「结束开局准备」，其它非战斗房叫「结束本间」
   const finishLabel = isOpening ? "结束开局准备" : "结束本间";
 
-  /** 角色卡按钮的文案：生成奖励 → 获取奖励 → 查看奖励。 */
-  function spoilsLabel(member: DungeonPartyMember): string {
-    if (member.spoils === null) {
-      return spoils.spoils.isBusy ? "生成中…" : "生成奖励";
+  /** 选项清单：奖励类在前，去向永远是最后一个。 */
+  const choices: EventChoice[] = [];
+
+  // 「生成奖励」在对话框上（本间的主行动）；生成之后才按成员各给一个选项
+  // （领取 / 回看是按成员各自算的）。
+  if (spoilsGenerated) {
+    for (const member of party.party) {
+      const pending = hasUnclaimedRewards(member);
+      const claimedCount = member.spoils?.claimedCards.length ?? 0;
+      const candidates = member.spoils?.candidateCards.length ?? 0;
+      choices.push({
+        key: `spoils:${member.name}`,
+        title: claimedCount > 0 ? "查看奖励" : "获取奖励",
+        effect: [
+          displayName(member.name),
+          `候选 ${candidates} 张`,
+          claimedCount > 0 ? `已领 ${claimedCount} 张` : null,
+        ]
+          .filter((part) => part !== null)
+          .join(" · "),
+        label: `${claimedCount > 0 ? "查看奖励" : "获取奖励"}：${displayName(member.name)}`,
+        hint: pending
+          ? "还有候选卡未领：结束本间后就无法再领取了。"
+          : "本成员的奖励（已领取的也可以回看）",
+        mark: pending,
+        warn: pending,
+        onActivate: () => setSpoilsMember(member.name),
+      });
     }
-    return member.spoils.claimedCards.length > 0 ? "查看奖励" : "获取奖励";
   }
+
+  choices.push({
+    key: "finish",
+    title: finishLabel,
+    effect: finish.caption,
+    label: `${finishLabel}（${finish.caption}）`,
+    hint: unclaimed ? "还有候选卡未领，结束本间后就无法再领取了。" : finish.hint,
+    warn: unclaimed,
+    onActivate: finish.onActivate,
+  });
 
   return (
     <>
-      <section className="stage-row" aria-label="场景描述">
-        <StageCard
-          state={stageState}
-          name={room.stage.name}
-          body={stageBody}
-          onActivate={
-            stageState === "failed" ? () => openingInit.start() : () => setIsStageOpen(true)
-          }
-        />
+      <section className="event-screen" aria-label="房间正文">
+        {illustration === null ? (
+          <div className="event-backdrop event-backdrop--empty" aria-hidden="true" />
+        ) : (
+          <img className="event-backdrop" src={illustration} alt="" aria-hidden="true" />
+        )}
 
-        {/* 本间结束动作的唯一入口（非战斗房间无完成态，随时可离开） */}
-        <button
-          type="button"
-          className={unclaimed ? "stage-next stage-next--warn" : "stage-next"}
-          aria-label={`${finishLabel}（${finish.caption}）`}
-          title={`${finishLabel}（${finish.caption}）—— ${
-            unclaimed ? "还有候选卡未领，结束本间后就无法再领取了。" : finish.hint
-          }`}
-          onClick={finish.onActivate}
-        >
-          <span className="stage-next-arrow" aria-hidden="true">
-            →
-          </span>
-          <span className="stage-next-caption">{finish.caption}</span>
-        </button>
+        <div className="event-stage">
+          <button
+            type="button"
+            className={`event-narrative event-narrative--${narrativeState}`}
+            aria-label={`${BOX_LABELS[boxAction].aria}：${displayName(room.stage.name)}`}
+            title={BOX_HINTS[boxAction]}
+            // 初始化中 / 生成奖励进行中：没有可点的东西（忙状态不叠第二次请求）
+            disabled={boxAction === "running" || spoils.spoils.isBusy}
+            onClick={activateBox}
+          >
+            <span className="event-narrative-label">场景描述</span>
+            <span className="event-narrative-body">{boxBody}</span>
+            {/* 进行中不给动作词：这一帧没什么可点的，写上去只是重复一次"在跑" */}
+            {boxAction === "running" ? null : (
+              <span className="event-narrative-action">
+                {boxAction === "generate" && spoils.spoils.isBusy
+                  ? "生成中…"
+                  : BOX_LABELS[boxAction].visible}{" "}
+                →
+              </span>
+            )}
+          </button>
 
-        {/* 初始化失败已写在场景卡里，这里只说生成奖励那一支；领卡失败在奖励浮窗内显示 */}
-        {spoils.spoils.error ? <p className="error">生成奖励失败：{spoils.spoils.error}</p> : null}
-      </section>
+          {party.isPending ? <p className="event-note">加载队伍…</p> : null}
+          {party.isError ? (
+            <p className="event-note event-note--error">无法获取队伍状态：{String(party.error)}</p>
+          ) : null}
+          {/* 初始化失败写在对话框里，这里只说生成奖励那一支；领卡失败在奖励浮窗内显示 */}
+          {spoils.spoils.error ? (
+            <p className="event-note event-note--error">生成奖励失败：{spoils.spoils.error}</p>
+          ) : null}
 
-      <section className="party-section" aria-label="队伍">
-        {party.isPending ? <p className="muted">加载中…</p> : null}
-        {party.isError ? <p className="error">无法获取队伍状态：{String(party.error)}</p> : null}
-
-        <div className="cards cards--party">
-          {party.party.map((member) => (
-            <ActorCard
-              key={member.name}
-              name={member.name}
-              badge={member.player ? "玩家" : undefined}
-              stats={member.stats}
-              extra={`卡组 ${member.deck.length}`}
-              onOpenInfo={() => setInfoActor(member.name)}
-            >
-              {/* 卡上唯一一颗按钮 = 本成员奖励入口；「生成奖励」是整队一次的动作 */}
-              {member.spoils === null ? (
+          <ul className="event-choices">
+            {choices.map((choice) => (
+              <li key={choice.key}>
                 <button
                   type="button"
-                  disabled={busy}
-                  title="一次为整队生成奖励（点任何一张卡上的它都一样）"
-                  onClick={() => spoils.spoils.start()}
+                  className={`event-choice${choice.warn === true ? " event-choice--warn" : ""}`}
+                  aria-label={choice.label}
+                  title={`${choice.label} —— ${choice.hint}`}
+                  disabled={choice.disabled === true}
+                  onClick={choice.onActivate}
                 >
-                  {spoilsLabel(member)}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className={hasUnclaimedRewards(member) ? "button--pending" : undefined}
-                  title={
-                    hasUnclaimedRewards(member)
-                      ? "还有候选卡未领：结束本间后就无法再领取了。"
-                      : "本成员的奖励（已领取的也可以回看）"
-                  }
-                  onClick={() => setSpoilsMember(member.name)}
-                >
-                  {spoilsLabel(member)}
-                  {hasUnclaimedRewards(member) ? (
+                  <span className="event-choice-title">{choice.title}</span>
+                  <span className="event-choice-effect">{choice.effect}</span>
+                  {choice.mark === true ? (
                     <span className="button-mark" aria-hidden="true">
                       !
                     </span>
                   ) : null}
                 </button>
-              )}
-            </ActorCard>
-          ))}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
