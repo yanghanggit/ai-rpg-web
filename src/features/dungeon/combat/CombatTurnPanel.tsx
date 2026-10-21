@@ -45,6 +45,52 @@ function PileButton({
 }
 
 /**
+ * 名单上的两个只读浮窗（角色信息 / 该角色的手牌）：面板的三个分支共用。
+ */
+function RosterDialogs({
+  userName,
+  gameName,
+  infoActor,
+  handActor,
+  handOwner,
+  onCloseInfo,
+  onCloseHand,
+}: {
+  userName: string;
+  gameName: string;
+  infoActor: string | null;
+  handActor: string | null;
+  handOwner: Combatant | null;
+  onCloseInfo: () => void;
+  onCloseHand: () => void;
+}) {
+  return (
+    <>
+      {infoActor === null ? null : (
+        <ActorInfoDialog
+          userName={userName}
+          gameName={gameName}
+          actorName={infoActor}
+          costumeEnabled={false}
+          onClose={onCloseInfo}
+        />
+      )}
+
+      {handActor === null ? null : (
+        <CardListDialog
+          title="手牌"
+          actorName={handActor}
+          cards={handOwner?.hand ?? []}
+          emptyText="（手牌为空）"
+          owner={handActor}
+          onClose={onCloseHand}
+        />
+      )}
+    </>
+  );
+}
+
+/**
  * 「已选」下面那一行：目标的说法。自身牌写`自己`（名单不用再点），还没选就写`未选择`
  * ——那句「点上方角色选择目标」不再出现（名单进入选目标态时会自己亮，"在哪点"不需要用字说）。
  * `spread` 补一句「随机命中」：它选中的集合与 `all` 相同，差别只在落点。
@@ -85,7 +131,8 @@ function readPlayState(
 }
 
 /**
- * 行动面板：参战者横滑名单 + 行动区三栏（资源 / 手牌 / 过牌与牌堆）+ 出牌交互，我方与怪物同一版面。
+ * 行动面板：**上半部（名单）我方 / 怪物共用，下半部不同**——我方是牌堆 / 手牌 / 能量那一套，
+ * 怪物只有一颗「怪物行动」（服务端替它决策，见 `useCombatActions.advance`）；怪物信息点名单卡看。
  *
  * 出牌 = 两次选择 + 一次确认；中间那条常驻三块并写明「出牌」为什么灰着。回合之间（`roundStart`）
  * 只是一瞬：名单照旧，行动区写「准备下一回合…」（自动抓牌由 `CombatRoomPanel` 发，失败才给重试）。
@@ -161,46 +208,75 @@ export default function CombatTurnPanel({
           </div>
         </section>
 
-        {infoActor === null ? null : (
-          <ActorInfoDialog
-            userName={userName}
-            gameName={gameName}
-            actorName={infoActor}
-            costumeEnabled={false}
-            onClose={() => setInfoActor(null)}
-          />
-        )}
-
-        {handActor === null ? null : (
-          <CardListDialog
-            title="手牌"
-            actorName={handActor}
-            cards={handOwner?.hand ?? []}
-            emptyText="（手牌为空）"
-            owner={handActor}
-            onClose={() => setHandActor(null)}
-          />
-        )}
+        <RosterDialogs
+          userName={userName}
+          gameName={gameName}
+          infoActor={infoActor}
+          handActor={handActor}
+          handOwner={handOwner}
+          onCloseInfo={() => setInfoActor(null)}
+          onCloseHand={() => setHandActor(null)}
+        />
       </>
     );
   }
 
   const actionError =
-    actions.play.error ??
-    actions.advance.error ??
-    actions.pass.error ??
-    actions.use.error ??
-    actions.gear.error;
+    actions.play.error ?? actions.pass.error ?? actions.use.error ?? actions.gear.error;
 
   if (current === null) {
     return <p className="error">找不到当前行动角色：{currentActor ?? "（无）"}</p>;
   }
 
   const isMonster = current.faction === "monster";
+
+  // 怪物由服务端决策：下半部只留一颗执行按钮（手牌 / 能量 / 牌堆是我方"操作"那一套，怪物不需要）
+  if (isMonster) {
+    return (
+      <>
+        <section className="combat-turn" aria-label="回合行动">
+          <CombatActionRoster
+            combatants={combatants}
+            currentActor={currentActor}
+            pending={combatPending}
+            order={latest?.action_order ?? []}
+            completed={latest?.completed_actors ?? []}
+            onOpenInfo={(name) => setInfoActor(name)}
+            onOpenHand={(name) => setHandActor(name)}
+          />
+          <div className="combat-monster-turn">
+            <button
+              type="button"
+              className="combat-start"
+              title="怪物由服务端决策出牌；点一下推进它这一手"
+              disabled={actions.isBusy}
+              onClick={() => actions.advance.start(current.name)}
+            >
+              {actions.advance.isBusy ? "执行中…" : "怪物行动"}
+            </button>
+            {actions.advance.error ? (
+              <p className="error">怪物行动失败：{actions.advance.error}</p>
+            ) : null}
+          </div>
+        </section>
+
+        <RosterDialogs
+          userName={userName}
+          gameName={gameName}
+          infoActor={infoActor}
+          handActor={handActor}
+          handOwner={handOwner}
+          onCloseInfo={() => setInfoActor(null)}
+          onCloseHand={() => setHandActor(null)}
+        />
+      </>
+    );
+  }
+
   const actor = current;
   const selected = current.hand.find((card) => card.uuid === selectedUuid) ?? null;
-  // 选中非自身牌时，名单进入「选目标」态；怪物手牌不可选
-  const picking = !isMonster && selected !== null && selected.target_type !== "self";
+  // 选中非自身牌时，名单进入「选目标」态
+  const picking = selected !== null && selected.target_type !== "self";
   const targets =
     selected === null ? [] : readTargetNames(selected, targetName, actor.name, combatants);
   // 不可出牌（`playable === false`）/ 本回合能量不够 / 还差一个目标：都只灰掉「出牌」
@@ -262,9 +338,7 @@ export default function CombatTurnPanel({
           {/* 中间：出牌状态条 + 手牌横滑 */}
           <div className="combat-hand">
             <div className="combat-hand-bar">
-              {isMonster ? (
-                <p className="muted combat-hand-note">怪物手牌由 AI 自动打出。</p>
-              ) : selected === null ? (
+              {selected === null ? (
                 <p className="muted combat-hand-note">点一张手牌开始出牌。</p>
               ) : (
                 <>
@@ -329,28 +403,17 @@ export default function CombatTurnPanel({
                     selected={card.uuid === selectedUuid}
                     owner={current.name}
                     selectAriaLabel={
-                      isMonster
-                        ? `查看手牌：${card.name}`
-                        : card.uuid === selectedUuid
-                          ? `取消选中：${card.name}`
-                          : `选中手牌：${card.name}`
+                      card.uuid === selectedUuid
+                        ? `取消选中：${card.name}`
+                        : `选中手牌：${card.name}`
                     }
-                    // 怪物手牌只读：不给 onSelect 就整卡不可点
-                    {...(isMonster
-                      ? {}
-                      : {
-                          onSelect: () => {
-                            const wasSelected = selectedUuid === card.uuid;
-                            setSelectedUuid(wasSelected ? null : card.uuid);
-                            setTargetName(
-                              wasSelected
-                                ? null
-                                : card.target_type === "self"
-                                  ? current.name
-                                  : null,
-                            );
-                          },
-                        })}
+                    onSelect={() => {
+                      const wasSelected = selectedUuid === card.uuid;
+                      setSelectedUuid(wasSelected ? null : card.uuid);
+                      setTargetName(
+                        wasSelected ? null : card.target_type === "self" ? current.name : null,
+                      );
+                    }}
                   />
                 ))}
               </ul>
@@ -368,19 +431,15 @@ export default function CombatTurnPanel({
               <button
                 type="button"
                 className="combat-pass"
-                aria-label={isMonster ? "推进怪物回合" : "过牌（结束回合）"}
-                title={isMonster ? "推进怪物回合" : "过牌（结束回合）"}
+                aria-label="过牌（结束回合）"
+                title="过牌（结束回合）"
                 disabled={actions.isBusy}
-                onClick={() =>
-                  isMonster ? actions.advance.start(current.name) : actions.pass.start(current.name)
-                }
+                onClick={() => actions.pass.start(current.name)}
               >
                 <span className="combat-pass-orb" aria-hidden="true">
                   »
                 </span>
-                <span className="res-label">
-                  {(isMonster ? actions.advance.isBusy : actions.pass.isBusy) ? "PASS…" : "PASS"}
-                </span>
+                <span className="res-label">{actions.pass.isBusy ? "PASS…" : "PASS"}</span>
               </button>
             </li>
           </ul>
@@ -390,26 +449,15 @@ export default function CombatTurnPanel({
       </section>
 
       {/* 名单卡上的两个只读浮窗：角色信息 / 该角色手牌 */}
-      {infoActor === null ? null : (
-        <ActorInfoDialog
-          userName={userName}
-          gameName={gameName}
-          actorName={infoActor}
-          costumeEnabled={false}
-          onClose={() => setInfoActor(null)}
-        />
-      )}
-
-      {handActor === null ? null : (
-        <CardListDialog
-          title="手牌"
-          actorName={handActor}
-          cards={handOwner?.hand ?? []}
-          emptyText="（手牌为空）"
-          owner={handActor}
-          onClose={() => setHandActor(null)}
-        />
-      )}
+      <RosterDialogs
+        userName={userName}
+        gameName={gameName}
+        infoActor={infoActor}
+        handActor={handActor}
+        handOwner={handOwner}
+        onCloseInfo={() => setInfoActor(null)}
+        onCloseHand={() => setHandActor(null)}
+      />
 
       {/* 牌堆浮窗：与牌组 / 手牌共用 `CardListDialog` */}
       {pile === null ? null : (

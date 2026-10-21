@@ -1295,7 +1295,7 @@ li.dungeon-room--current {
   font-weight: 600;
 }
 
-/* 大动作按钮：进房「开始!」与回合之间「开始新回合」共用（两处都是整屏唯一的主行动） */
+/* 大动作按钮：进房的「开始!」、怪物的「怪物行动」、结算的「收取战利品」共用（都是本屏主行动） */
 .combat-start {
   min-width: 14rem;
   min-height: 3rem;
@@ -1306,8 +1306,9 @@ li.dungeon-room--current {
   font-weight: 600;
 }
 
-/* 回合之间：名单照旧，行动区三栏收成一颗「开始新回合」（与进房那一屏同一颗按钮） */
-.combat-round-start {
+/* 回合之间：名单照旧，行动区只剩一句「准备下一回合…」（抓牌由客户端自动发） */
+.combat-round-start,
+.combat-monster-turn {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2163,6 +2164,17 @@ ul.combat-action-roster {
   line-height: 1;
 }
 
+/* 能量（左上）：圆徽，与卡牌的费用同一枚（都是"这一手能花多少"）；配色也一致 */
+.combatant-chip--energy {
+  top: 0.05rem;
+  bottom: auto;
+  left: 0.05rem;
+}
+
+.combatant-chip--energy .combatant-chip-bg {
+  fill: var(--warn);
+}
+
 /* 总格挡（左下）：盾形 */
 .combatant-chip--block {
   left: 0.05rem;
@@ -2406,7 +2418,7 @@ ul.combat-hand-list .card-tile--selected .card-tile-frame {
   min-height: var(--card-short);
 }
 
-/* 没选牌 / 怪物回合时的说明句：居中一句话，不动用卡状按钮 */
+/* 没选牌时的说明句：居中一句话，不动用卡状按钮 */
 .combat-hand-note {
   text-align: center;
 }

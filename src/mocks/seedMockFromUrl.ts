@@ -116,7 +116,7 @@ const SEEDS: Record<string, (context: SeedContext) => void> = {
     drawMockCards();
   },
   // ONGOING 且轮到某个**怪物**行动（队伍与怪物交错，所以玩家过牌一次后就是怪物）：
-  // 手牌只读、右列是「推进怪物回合」。用来看名单上穿插的怪物格与怪物手牌。
+  // 下半部只有「怪物行动」一颗按钮。用来看名单上穿插的怪物格、以及怪物回合的版面。
   "combat:monster": () => {
     fillParty();
     enterMockDungeon(DUNGEON);

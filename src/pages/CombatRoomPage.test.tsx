@@ -66,8 +66,9 @@ describe("副本房间 · 战斗房间", () => {
     // HP 只显当前值，全长挂在悬停说明上
     expect(monsterCard.querySelector(".combatant-chip--hp")).toHaveAttribute("title", "HP 9/9");
     expect(monsterCard.querySelector(".combatant-role")).toHaveTextContent("怪物");
-    // 进房那一屏**没有词条区**（立绘区吃满剩余高度），攻 / 防 / 速也不在卡上
+    // 进房那一屏**没有词条区**（立绘区吃满剩余高度），攻 / 防 / 速也不在卡上；也没有能量徽
     expect(monsterCard.querySelector(".combatant-keywords")).toBeNull();
+    expect(monsterCard.querySelector(".combatant-chip--energy")).toBeNull();
     expect(screen.queryByText(/attack 3/)).not.toBeInTheDocument();
 
     // 开打后：名单卡同一副牌面，只是多出词条区
@@ -78,7 +79,9 @@ describe("副本房间 · 战斗房间", () => {
     if (!(youCard instanceof HTMLElement)) {
       throw new Error("名单里没有玩家那张卡");
     }
-    // 左下总格挡（盾形）/ 右下 HP（心形，只显当前值）/ 正下定性
+    // 左上能量（圆徽，与手牌的费用同一造型，读 `RoundStatsComponent`）/ 左下总格挡（盾）/ 右下 HP（心）
+    expect(youCard.querySelector(".combatant-chip--energy")).toHaveTextContent("3");
+    expect(youCard.querySelector(".combatant-chip--energy")).toHaveAttribute("title", "能量");
     expect(youCard.querySelector(".combatant-chip--block")).toHaveTextContent("6");
     expect(youCard.querySelector(".combatant-chip--hp")).toHaveTextContent("12");
     expect(youCard.querySelector(".combatant-role")).toHaveTextContent("玩家");
@@ -535,25 +538,28 @@ describe("副本房间 · 战斗房间", () => {
     expect(within(deck).getByRole("list")).toHaveClass("card-tiles--deck");
   });
 
-  it("长牌堆：轮到怪物时它的抽牌堆（10 张）也是同一个浮窗、同样把牌都留着", async () => {
+  it("轮到怪物：下半部只有一颗「怪物行动」，我方那套牌堆 / 手牌 / 能量都不出现", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
 
-    // 队伍里只有玩家：过牌 → 石像鬼 → 腐沼巨蜥（等行动者真的换了再点下一颗）
     fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
     await waitFor(() => expect(within(currentCombatant()).getByText("石像鬼")).toBeInTheDocument());
-    fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
-    await waitFor(() =>
-      expect(within(currentCombatant()).getByText("腐沼巨蜥")).toBeInTheDocument(),
-    );
 
-    // 15 张抓走 5 张（`MOCK_DRAW_PER_TURN`）→ 抽牌堆剩 10 张，四行
-    fireEvent.click(screen.getByRole("button", { name: "查看抽牌堆（10 张）" }));
-    const draw = await screen.findByRole("dialog", { name: "抽牌堆" });
-    expect(within(draw).getByText("腐沼巨蜥 · 共 10 张")).toBeInTheDocument();
-    expect(within(draw).getAllByRole("listitem")).toHaveLength(10);
-    expect(within(draw).getByRole("list")).toHaveClass("card-tiles--deck");
+    // 上半部（名单）与我方一致：当前行动仍在名单上标出来
+    expect(screen.getByRole("list", { name: "参战者" })).toBeInTheDocument();
+    // 下半部不一样：只有一颗执行按钮，服务端替它决策
+    const act = screen.getByRole("button", { name: "怪物行动" });
+    expect(act).toHaveClass("combat-start");
+    expect(act.closest(".combat-monster-turn")).not.toBeNull();
+    // 我方那套操作区整块不出现（怪物没有"手牌 / 能量 / 牌堆"可操作）
+    expect(screen.queryByRole("list", { name: "手牌" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "行动者资源" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("list", { name: "牌堆" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "过牌（结束回合）" })).not.toBeInTheDocument();
+    // 基本信息照样能拿：点名单卡看角色信息，词条行看它的手牌
+    expect(screen.getByRole("button", { name: "查看角色：石像鬼" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "查看手牌：石像鬼" })).toBeInTheDocument();
   });
 
   it("三个牌堆都是按钮：点开是这一摞的卡牌列表（与手牌 / 牌组同一个浮窗）", async () => {
@@ -630,12 +636,12 @@ describe("副本房间 · 战斗房间", () => {
 
     // 依次推完剩下两只怪物：等行动者真的换了再点下一颗，避免点到忙碌中的按钮
     for (const name of ["腐沼巨蜥", "提线木偶"]) {
-      fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+      fireEvent.click(screen.getByRole("button", { name: "怪物行动" }));
       await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
     }
 
     // 最后一只推完 → 全员行动完：客户端自动抓牌开第 2 回合，不停在"回合之间"、更没有按钮
-    fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+    fireEvent.click(screen.getByRole("button", { name: "怪物行动" }));
 
     // 第 2 回合的第一个人又是玩家：动作区换成玩家的「过牌」（手牌也是这时才重新抓的）
     expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
@@ -664,10 +670,10 @@ describe("副本房间 · 战斗房间", () => {
     );
 
     for (const name of ["腐沼巨蜥", "提线木偶"]) {
-      fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+      fireEvent.click(screen.getByRole("button", { name: "怪物行动" }));
       await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
     }
-    fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+    fireEvent.click(screen.getByRole("button", { name: "怪物行动" }));
 
     // 自动抓牌失败：不静默卡住，给一行原因 + 一颗重试
     expect(await screen.findByText(/开始新回合失败/)).toBeInTheDocument();

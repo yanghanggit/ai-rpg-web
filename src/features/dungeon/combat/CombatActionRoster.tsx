@@ -137,7 +137,8 @@ export default function CombatActionRoster({
                 </button>
               </div>
 
-              {/* 左下总格挡（盾形底）/ 右下 HP（心形底，只显当前值）：与 `ActorCard` 同一份图形 */}
+              {/* 左上能量（圆徽，与手牌的费用同一枚）/ 左下总格挡（盾）/ 右下 HP（心） */}
+              <ActorChip kind="energy" value={combatant.energy} title="能量" />
               <ActorChip kind="block" value={combatant.block} title="总格挡" />
               <ActorChip
                 kind="hp"
