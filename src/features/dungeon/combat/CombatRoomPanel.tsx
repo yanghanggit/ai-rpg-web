@@ -69,6 +69,7 @@ export default function CombatRoomPanel({
           userName={userName}
           gameName={gameName}
           combat={room.combat}
+          combatants={scene.combatants}
           loot={scene.loot}
         />
       ) : (

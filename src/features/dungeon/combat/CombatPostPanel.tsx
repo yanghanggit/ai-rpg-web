@@ -2,11 +2,13 @@ import { useState } from "react";
 import { describeApiError } from "../../../api/describeApiError";
 import type { Schemas } from "../../../api/types";
 import type { Item } from "../../items/types";
+import CombatField from "./CombatField";
 import { COMBAT_RESULT } from "./combatPhase";
 import LootDialog from "./LootDialog";
+import type { Combatant } from "./readCombat";
 import { useCollectLoot } from "./useCollectLoot";
 
-/** 胜负 → 结语与配色。 */
+/** 胜负 → 中间的结语与配色。 */
 function resultLabel(result: number): { text: string; className: string } {
   if (result === COMBAT_RESULT.WIN) {
     return { text: "🏆 战斗胜利！", className: "ok" };
@@ -18,21 +20,22 @@ function resultLabel(result: number): { text: string; className: string } {
 }
 
 /**
- * 战斗结算（`COMPLETE / POST_COMBAT`）。
+ * 战斗结算（`COMPLETE / POST_COMBAT`）：与进房那一屏同一套上下阵，中间放结语与收取入口。
  *
- * 只留「现在该做什么」：一行胜负 +（有战利品时）收取入口。查阅型信息（参战者 / 全部回合）
- * 在 ⚙「战斗信息」里。收取是两步：入口先摊开 `LootDialog`，真正收取在浮窗里点「收取全部」，
- * 收下进背包；没战利品时入口不出现。结束动作不在这里，在标题行那颗 →。
+ * 战死的人卡上挂「已战死」。查阅型信息（全部回合）在 ⚙「战斗信息」里。收取是两步：入口摊开
+ * `LootDialog`，真正收取在浮窗里点「收取全部」；没战利品时入口不出现。结束动作在标题行。
  */
 export default function CombatPostPanel({
   userName,
   gameName,
   combat,
+  combatants,
   loot,
 }: {
   userName: string;
   gameName: string;
   combat: Schemas["Combat"];
+  combatants: Combatant[];
   loot: Item[];
 }) {
   const collect = useCollectLoot(userName, gameName);
@@ -42,13 +45,13 @@ export default function CombatPostPanel({
 
   return (
     <>
-      <p className={result.className}>{result.text}</p>
+      <CombatField userName={userName} gameName={gameName} label="战斗结算" combatants={combatants}>
+        <p className={`combat-result ${result.className}`}>{result.text}</p>
 
-      {loot.length === 0 ? null : (
-        <div className="toolbar">
+        {loot.length === 0 ? null : (
           <button
             type="button"
-            className="button--pending"
+            className="combat-start button--pending"
             // 后果放在 title 里：不再为它单占一行页面提示
             title="结束本间后就无法再收了。"
             onClick={() => setIsLootOpen(true)}
@@ -58,8 +61,8 @@ export default function CombatPostPanel({
               !
             </span>
           </button>
-        </div>
-      )}
+        )}
+      </CombatField>
 
       {isLootOpen ? (
         <LootDialog

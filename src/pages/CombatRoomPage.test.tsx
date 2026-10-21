@@ -110,7 +110,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(enemies.compareDocumentPosition(start) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(start.compareDocumentPosition(party) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(start).toHaveClass("combat-start");
-    expect(start.closest(".combat-init-start")).not.toBeNull();
+    expect(start.closest(".combat-field-center")).not.toBeNull();
 
     // 上下两排共用同一套排法（一个类，居中 + 横滑都写在它上面；实际几何 jsdom 量不到）
     expect(enemies).toHaveClass("cards", "cards--party");
@@ -681,16 +681,32 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.queryByText(/开始新回合失败/)).not.toBeInTheDocument();
   });
 
-  it("结算：只留胜负与收取按钮（查阅型信息收进标题行菜单）", async () => {
+  it("结算：与进房那一屏同一套上下阵——敌人 / 中间结语与收取 / 我方", async () => {
     // 直接预置结算态，不必把整场战斗打一遍
     enterMockDungeon("副本.荒废地窟");
     advanceMockDungeon();
     prepareMockPostCombat();
     renderCombat();
 
-    expect(await screen.findByText("🏆 战斗胜利！")).toBeInTheDocument();
+    const result = await screen.findByText("🏆 战斗胜利！");
+    expect(result).toHaveClass("combat-result");
     // 参战者快照要等 details 回来，战利品按钮才会出现；用 find 等它
-    expect(await screen.findByRole("button", { name: "收取战利品（1）" })).toBeEnabled();
+    const collect = await screen.findByRole("button", { name: "收取战利品（1）" });
+    expect(collect).toBeEnabled();
+
+    // 从上到下：敌人 → 结语 → 收取 → 我方（与进房那一屏同一条中线）
+    const enemies = screen.getByRole("region", { name: "敌人" });
+    const party = screen.getByRole("region", { name: "队伍" });
+    expect(enemies.compareDocumentPosition(result) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(result.compareDocumentPosition(collect) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(collect.compareDocumentPosition(party) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // 战果就在卡上：三只怪全挂「已战死」并压暗，我方一个没死
+    expect(await within(enemies).findAllByText("已战死")).toHaveLength(3);
+    expect(within(party).queryByText("已战死")).not.toBeInTheDocument();
+    expect(within(enemies).getAllByText("怪物")[0]?.closest("article")).toHaveClass(
+      "combatant-card--dead",
+    );
     // 参战者 / 本回合记录 / 战利品清单不再常驻结算页（改在 ⚙「战斗信息」等处查）
     expect(screen.queryByRole("heading", { name: "战利品" })).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "参战者" })).not.toBeInTheDocument();
@@ -729,8 +745,19 @@ describe("副本房间 · 战斗房间", () => {
     renderCombat();
 
     expect(await screen.findByText("💀 战斗失败。")).toBeInTheDocument();
-    // 战败没有战利品：收取按钮不出现，页面只剩那一行胜负
+    // 战败没有战利品：收取按钮不出现，中间只剩那一行胜负
     expect(screen.queryByRole("button", { name: /收取战利品/ })).not.toBeInTheDocument();
+    // 卡面同样读得出战果：我方每个人都挂「已战死」，敌方一个没死
+    const party = await screen.findByRole("region", { name: "队伍" });
+    await waitFor(() => expect(screen.getAllByText("已战死").length).toBeGreaterThan(0));
+    const partyCards = [...party.querySelectorAll("article.combatant-card")];
+    expect(partyCards.length).toBeGreaterThan(0);
+    for (const card of partyCards) {
+      expect(card).toHaveClass("combatant-card--dead");
+    }
+    expect(
+      within(screen.getByRole("region", { name: "敌人" })).queryByText("已战死"),
+    ).not.toBeInTheDocument();
     // 打输了没有「下一间」：结束本间就是直接离开副本回家园
     const finish = await screen.findByRole("button", { name: "结束本次战斗" });
     expect(finish).toHaveAttribute("title", expect.stringContaining("离开副本"));

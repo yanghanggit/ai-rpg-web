@@ -4,7 +4,7 @@ import { displayName } from "../../components/displayName";
 import ActorChip from "./ActorChip";
 
 /**
- * 竖置的角色卡（dungeon 内唯一实现，开场房与战斗开局共用）。
+ * 竖置的角色卡（dungeon 内唯一实现，开场房、战斗开局与结算共用）。
  *
  * 不给 `children` 时立绘区吃掉内框剩余高度（准备屏要的是面积）。卡上没有词条区，攻 / 防 / 速
  * 与总格挡也不在这张卡上（还没抓牌，只有 HP 说得通）。给 `onOpenInfo` 时整卡可点。
@@ -14,6 +14,7 @@ export default function ActorCard({
   badge,
   stats,
   extra,
+  dead = false,
   onOpenInfo,
   children,
 }: {
@@ -25,6 +26,8 @@ export default function ActorCard({
   stats: Schemas["CharacterStats"] | null;
   /** 名字横幅下的一行状态（如「卡组 9」）；不给就不占行。 */
   extra?: string;
+  /** 已战死：名字横幅挂「已战死」并把整卡压暗（结算页用）。 */
+  dead?: boolean;
   /** 有则**整卡可点**（开角色信息浮窗）；没有就整卡不可点，名字是静态文本。 */
   onOpenInfo?: () => void;
   /** 卡内动作区（如奖励按钮）；不给就不渲染，立绘区顺势长大。 */
@@ -34,6 +37,9 @@ export default function ActorCard({
   if (onOpenInfo !== undefined) {
     classes.push("actor-card--open");
   }
+  if (dead) {
+    classes.push("combatant-card--dead");
+  }
 
   return (
     <article className={classes.join(" ")}>
@@ -42,8 +48,13 @@ export default function ActorCard({
         {/* 立绘区（先空着）：没有词条区、没有动作区时，它就是整张卡最大的一块 */}
         <span className="combatant-art" aria-hidden="true" />
 
-        {/* 名字横幅：与名单卡 / 手牌同一套（纯文本居中） */}
-        <span className="combatant-name">{displayName(name)}</span>
+        {/* 名字横幅：与名单卡 / 手牌同一套（纯文本居中；战死时挂一枚状态） */}
+        <span className="combatant-name">
+          {displayName(name)}
+          {dead ? (
+            <span className="combatant-name-state combatant-name-state--dead">已战死</span>
+          ) : null}
+        </span>
 
         {extra === undefined ? null : <p className="actor-card-extra">{extra}</p>}
 

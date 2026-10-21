@@ -1267,22 +1267,32 @@ li.dungeon-room--current {
 /* 战斗开始前那一屏：左边 3 敌 / 3 我 的卡阵（中间一条分隔线——一局战斗最多 3v3），
    右边一条与卡阵**同高**的场景栏（叙述在上、大「开始」在下）。
    窄了就把场景栏挤到下一行（`flex-wrap`），不会把卡压矮。 */
-/* 进房那一屏（phase `init`）：上排敌人 / 中间「开始」/ 下排我方，纵向一列。
+/* 战斗的上下阵（进房那一屏 / 结算共用）：上排敌人 / 中间这一段动作 / 下排我方，纵向一列。
    两侧卡阵的排法与战斗名单同一套（见下面 `.cards--party`），这里只管顺序与间距。 */
-.combat-init {
+.combat-field {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
   margin-top: 1.5rem;
 }
 
-.combat-init .cards {
+.combat-field .cards {
   margin: 0;
 }
 
-.combat-init-start {
+/* 中间那段：结语 + 唯一那颗按钮（进房是「开始」，结算是「收取战利品」） */
+.combat-field-center {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 结算的结语：中间那段的标题（胜负各带一色，见 `.ok` / `.error`） */
+.combat-result {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
 }
 
 /* 大动作按钮：进房「开始!」与回合之间「开始新回合」共用（两处都是整屏唯一的主行动） */
@@ -2026,6 +2036,11 @@ ul.combat-action-roster {
   opacity: 0.55;
 }
 
+/* 战死（结算页）：与「已行动」同一种压暗，名字横幅另挂一枚红字状态 */
+.combatant-card--dead {
+  opacity: 0.55;
+}
+
 /* 已选中的目标（“出列”的卡）：整张卡**下移**（与手牌选中时的上移成对）+ 一圈特殊色描边。
    选目标态不再给所有卡上色（ALL / SPREAD 会让整排都黄，等于没标），只标真正出列的那些。 */
 .combatant-card--target {
@@ -2078,6 +2093,11 @@ ul.combat-action-roster {
 .combatant-name-state--current {
   border-color: var(--ok);
   color: var(--ok);
+}
+
+.combatant-name-state--dead {
+  border-color: var(--err);
+  color: var(--err);
 }
 
 /* 词条区：手牌 / 被动 / 塞牌。占内框下半（与立绘大约各半），点它看该角色手牌 */
