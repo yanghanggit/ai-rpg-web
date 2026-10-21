@@ -65,7 +65,7 @@ interface EventChoice {
  * 不生成奖励直接结束本间 / 推进都允许）。
  *
  * 归页面持有的数据 / 动作（初始化、奖励、队伍、去向）都从 props 进来，这一层只负责排版与措辞；
- * 奖励浮窗内部（候选卡、领取记录）仍是原来的 `SpoilsDialog`。
+ * 点奖励选项打开 `SpoilsDialog`（一人一窗：一级是奖励名字列表，点名字才看卡面细节）。
  */
 export default function NonCombatRoomPanel({
   userName,

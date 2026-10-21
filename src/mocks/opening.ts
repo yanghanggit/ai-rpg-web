@@ -148,7 +148,7 @@ export function pickMockSpoilsCard(
  * 领走某成员候选里的**第一张**（没有该成员 / 没有候选时什么都不做）。
  *
  * 只服务 dev 种子（`?seed=opening:claimed`）——把「已领取」这一态也变成一条深链，
- * 免得为了看第三态先手点「生成奖励 → 挑选」。
+ * 免得为了看第三态先手点「生成奖励 → 拾取」。
  */
 export function claimFirstMockSpoilsCard(actorName: string): boolean {
   const first = spoils.get(actorName)?.candidateCards[0];

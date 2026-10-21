@@ -412,8 +412,12 @@ describe("副本房间 · 开场房间（事件屏）", () => {
     expect(screen.queryByRole("button", { name: "生成奖励" })).not.toBeInTheDocument();
 
     const dialog = await openSpoils("角色.无名");
-    expect(within(dialog).getByRole("button", { name: "挑选 烈焰符" })).toBeInTheDocument();
-    expect(within(dialog).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
+    // 一级是名字列表：一行一条，名字（看细节）+ 类型徽标 + 行尾「拾取」
+    expect(within(dialog).getByRole("button", { name: "拾取 烈焰符" })).toBeInTheDocument();
+    expect(within(dialog).getAllByRole("button", { name: /^拾取 / })).toHaveLength(3);
+    expect(within(dialog).getAllByText("卡牌")).toHaveLength(3);
+    // 候选卡面不再铺在浮窗里：详情要点头名字那一行
+    expect(within(dialog).queryByText(/本段命中后更容易击穿格挡/)).not.toBeInTheDocument();
   });
 
   it("领卡：领走的那张进牌组，候选保留并标记已领取（不能再生成）", async () => {
@@ -423,13 +427,15 @@ describe("副本房间 · 开场房间（事件屏）", () => {
     await generateSpoils();
 
     const dialog = await openSpoils("角色.无名");
-    fireEvent.click(within(dialog).getByRole("button", { name: "挑选 烈焰符" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "拾取 烈焰符" }));
 
-    // 候选仍在（供回看），但「挑选」按钮消失
+    // 候选仍在（供回看），但「拾取」按钮消失、已领取另起一段
+    expect(await within(dialog).findByText("已领取 1 张")).toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: /^拾取 / })).not.toBeInTheDocument();
+    // 候选行不会被写成「已领取」：那一段是候选，行里不再重复状态
     expect(
-      await within(dialog).findByText("（已领取，以下为本次候选，仅供参考）"),
-    ).toBeInTheDocument();
-    expect(within(dialog).queryByRole("button", { name: /^挑选 / })).not.toBeInTheDocument();
+      within(dialog).queryByText("已领取", { selector: ".action-meta" }),
+    ).not.toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
 
     // 选项从「获取奖励」变「查看奖励」（同一件事已经做过）；「生成奖励」不再回来
@@ -452,17 +458,15 @@ describe("副本房间 · 开场房间（事件屏）", () => {
     await generateSpoils();
 
     const qiuzhi = await openSpoils("角色.坏运气");
-    fireEvent.click(within(qiuzhi).getByRole("button", { name: "挑选 冰墙" }));
+    fireEvent.click(within(qiuzhi).getByRole("button", { name: "拾取 冰墙" }));
 
     // 坏运气已领取（候选保留、按钮消失）
-    expect(
-      await within(qiuzhi).findByText("（已领取，以下为本次候选，仅供参考）"),
-    ).toBeInTheDocument();
+    expect(await within(qiuzhi).findByText("已领取 1 张")).toBeInTheDocument();
     fireEvent.click(within(qiuzhi).getByRole("button", { name: "关闭" }));
 
     // 玩家那边还是 3 张待挑
     const player = await openSpoils("角色.无名");
-    expect(within(player).getAllByRole("button", { name: /^挑选 / })).toHaveLength(3);
+    expect(within(player).getAllByRole("button", { name: /^拾取 / })).toHaveLength(3);
   });
 
   it("奖励的态：对话框「生成奖励 → 查看场景」，成员「获取奖励 → 查看奖励」（生成是整队一次）", async () => {
@@ -485,7 +489,7 @@ describe("副本房间 · 开场房间（事件屏）", () => {
 
     // 二态：获取奖励 → 领走一张
     const dialog = await openSpoils("角色.坏运气");
-    fireEvent.click(within(dialog).getByRole("button", { name: "挑选 烈焰符" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "拾取 烈焰符" }));
     fireEvent.click(await within(dialog).findByRole("button", { name: "关闭" }));
 
     // 三态：领过的那个人变「查看奖励」；没领的那个人还在「获取奖励」
@@ -553,7 +557,7 @@ describe("副本房间 · 开场房间（事件屏）", () => {
     renderOpening();
     await generateSpoils();
     const dialog = await openSpoils("角色.无名");
-    fireEvent.click(within(dialog).getByRole("button", { name: "挑选 烈焰符" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "拾取 烈焰符" }));
     fireEvent.click(await within(dialog).findByRole("button", { name: "关闭" }));
 
     const claimed = await screen.findByRole("button", {

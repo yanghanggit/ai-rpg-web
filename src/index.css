@@ -476,6 +476,24 @@ ul.action-list li > button:first-child:hover:not(:disabled) {
   font-weight: 600;
 }
 
+/* 奖励浮窗的一级名单：一行一份奖励（名字 + 类型徽标 + 行尾「拾取」）。
+   行形状照抄「副本操作」的 `action-list`（左侧撑满的按钮 = 名字），只是名字旁边多一枚徽标。 */
+ul.spoils-list > li {
+  padding: 0.15rem 0;
+}
+
+.spoils-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 行尾「拾取」：比默认按钮小一号，免得把行撑高（一屏要放得下好几条候选） */
+.spoils-pick {
+  padding: 0.25rem 0.8rem;
+  font-size: 0.9rem;
+}
+
 /* 牌组浏览的一级名单：整行是一颗按钮（名字 + 玩家徽标在左、张数在右） */
 .deck-row {
   display: flex;
@@ -1387,13 +1405,6 @@ ul.card-tiles {
   list-style: none;
 }
 
-/* 奖励浮窗里竖排：一次只看一个成员的候选，纵向逐张读比并排更好。
-   卡宽固定为一张竖牌的足迹（`--card-short`）并居中——不拉满整行，牌面才不会被摊平。 */
-ul.card-tiles--stack {
-  grid-template-columns: var(--card-short);
-  justify-content: center;
-}
-
 /* 卡牌：与参战者卡（`.combatant-card`）同一套「外框 + 内框 + 角徽」语言。
    `<li>` 只做纵向容器；外框 / 内框 / 角徽都在 `.card-tile-frame` 里。 */
 .card-tile {
@@ -1738,7 +1749,7 @@ ul.card-tiles--deck > .card-tile {
   cursor: pointer;
 }
 
-/* 卡内动作按钮（如奖励的「挑选」）抬到「整卡可点」那层之上 */
+/* 卡内动作按钮（如战利品浮窗的「收取」）抬到「整卡可点」那层之上 */
 .card-tile .card-actions {
   position: relative;
   z-index: 1;
