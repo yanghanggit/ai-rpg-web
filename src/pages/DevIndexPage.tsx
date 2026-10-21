@@ -57,7 +57,7 @@ const sections: DevSection[] = [
     title: "副本 · 战斗房间",
     links: [
       { to: `${ROOM}?seed=combat:init`, label: "战斗房间 · 初始化中（还没开始）" },
-      { to: `${ROOM}?seed=combat:round_start`, label: "战斗房间 · 初始化完成（等待抓牌）" },
+      { to: `${ROOM}?seed=combat:round_end`, label: "战斗房间 · 回合之间（开始新回合）" },
       { to: `${ROOM}?seed=combat:turn`, label: "战斗房间 · 玩家出牌" },
       { to: `${ROOM}?seed=combat:monster`, label: "战斗房间 · 怪物出牌" },
       { to: `${ROOM}?seed=combat:post`, label: "战斗房间 · 结算（战斗胜利）" },

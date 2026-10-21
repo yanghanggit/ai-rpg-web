@@ -71,10 +71,12 @@ describe("seedMockFromUrl", () => {
     expect(readMockCombat().rounds).toHaveLength(0);
   });
 
-  it("combat:round_start → ONGOING 且没有回合", () => {
-    seedMockFromUrl(`${BASE}?seed=combat:round_start`);
-    expect(readMockCombat().state).toBe(2);
-    expect(readMockCombat().rounds).toHaveLength(0);
+  it("combat:round_end → ONGOING 且第 1 回合已打满（回合之间）", () => {
+    seedMockFromUrl(`${BASE}?seed=combat:round_end`);
+    const combat = readMockCombat();
+    expect(combat.state).toBe(2);
+    expect(combat.rounds).toHaveLength(1);
+    expect(combat.rounds[0]?.is_completed).toBe(true);
   });
 
   it("combat:turn → ONGOING 且回合已抓牌、手牌含多段命中", () => {

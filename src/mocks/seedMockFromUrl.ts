@@ -8,6 +8,7 @@
 
 import { endedRoomKey, markRoomEnded } from "../features/dungeon/endedRooms";
 import {
+  completeMockRound,
   drawMockCards,
   initMockCombat,
   passMockTurn,
@@ -94,12 +95,15 @@ const SEEDS: Record<string, (context: SeedContext) => void> = {
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
   },
-  // ONGOING 且无回合：等待「抓牌 / 开启新回合」
-  "combat:round_start": () => {
+  // ONGOING 且第 1 回合已打满：回合之间那一屏（行动面板的子状态，只有「开始新回合」）
+  "combat:round_end": () => {
     fillParty();
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
     initMockCombat();
+    setMockDrawPile(PLAYER, turnHandFixture);
+    drawMockCards();
+    completeMockRound();
   },
   // ONGOING 且回合已抓牌：轮到某个角色行动。手牌换成 `turnHandFixture`——**必含多段命中**，
   // 兼顾目标类型 / 词缀 / 可传递，所以「多段」不再单开一个种子。

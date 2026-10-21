@@ -13,8 +13,8 @@ describe("deriveCombatPhase", () => {
     expect(deriveCombatPhase(combatFixture({ state: COMBAT_STATE.POST_COMBAT }))).toBe("post");
   });
 
-  it("ONGOING 且尚无回合 → round_start（需抓牌）", () => {
-    expect(deriveCombatPhase(combatFixture({ state: COMBAT_STATE.ONGOING }))).toBe("round_start");
+  it("ONGOING 但一回合都还没开 → init（进房那一屏，自动初始化已落地也还是它）", () => {
+    expect(deriveCombatPhase(combatFixture({ state: COMBAT_STATE.ONGOING }))).toBe("init");
   });
 
   it("ONGOING 且最新回合尚未抓牌 → round_start", () => {

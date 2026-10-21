@@ -8,11 +8,11 @@ import { useCombatActions } from "./useCombatActions";
 import { useCombatScene } from "./useCombatScene";
 
 /**
- * 战斗房间的房间主体：按 `combat.state` 派生 phase，渲染对应 Panel。
+ * 战斗房间的房间主体：按 `combat.rounds` / `state` 派生 phase，渲染对应 Panel。
  *
- * 共享的参战者快照（`useCombatScene`）与 job 动作（`useCombatActions`）只在这一层持有，Panel 不重复
- * 取数；只有某阶段用的动作（如结算的 `useCollectLoot`）跟着那个 Panel 走。动作成功后失效刷新 →
- * `room` 重取 → phase 重新派生，自动切 Panel。结束动作不在这里，由页面挂在标题行。
+ * 只有三块屏：进房那一屏（`init`，一次）、行动面板（`turn`，以及它的子状态 `round_start`）、
+ * 结算（`post`）。共享的参战者快照（`useCombatScene`）与 job 动作（`useCombatActions`）只在
+ * 这一层持有，Panel 不重复取数；动作成功后失效刷新 → `room` 重取 → phase 重新派生。
  */
 export default function CombatRoomPanel({
   userName,
@@ -36,13 +36,12 @@ export default function CombatRoomPanel({
         <p className="error">无法获取参战者：{describeApiError(scene.error)}</p>
       ) : null}
 
-      {phase === "turn" ? (
-        <CombatTurnPanel
+      {phase === "init" ? (
+        <CombatSetupPanel
           userName={userName}
           gameName={gameName}
           combat={room.combat}
           combatants={scene.combatants}
-          currentActor={currentActor}
           combatPending={scene.isPending}
           actions={actions}
         />
@@ -54,12 +53,13 @@ export default function CombatRoomPanel({
           loot={scene.loot}
         />
       ) : (
-        <CombatSetupPanel
+        <CombatTurnPanel
           userName={userName}
           gameName={gameName}
-          stageName={room.stage.name}
           combat={room.combat}
           combatants={scene.combatants}
+          currentActor={currentActor}
+          roundStart={phase === "round_start"}
           combatPending={scene.isPending}
           actions={actions}
         />

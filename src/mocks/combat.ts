@@ -249,8 +249,19 @@ export function drawMockCards(): { ok: boolean; message: string } {
     if (actor === undefined) {
       continue;
     }
+    // 回合结束时手牌进弃牌堆（对齐后端），再抓 `MOCK_DRAW_PER_TURN` 张
+    actor.discard.push(...actor.hand);
     actor.hand = [];
     for (let i = 0; i < MOCK_DRAW_PER_TURN; i += 1) {
+      // 抽牌堆空了就把弃牌堆洗回来（后端 `_draw_from_pile` 同一条规则；mock 不追求随机，
+      // 直接按弃牌堆原序回填，测试才好断言）
+      if (actor.draw.length === 0) {
+        if (actor.discard.length === 0) {
+          break;
+        }
+        actor.draw = actor.discard;
+        actor.discard = [];
+      }
       const card = actor.draw.shift();
       if (card !== undefined) {
         actor.hand.push(card);
@@ -426,6 +437,32 @@ export function advanceMockMonsterTurn(): { ok: boolean; message: string } {
         ? `${actor} 回合推进完成；本回合结束`
         : `${actor} 回合推进完成；轮到下一个角色：${next}`,
   };
+}
+
+/**
+ * 把当前回合直接推到「全员已行动」：dev 种子专用（看回合之间那一屏）。
+ *
+ * 与真流程同一条推进（`passMockTurn` / `advanceMockMonsterTurn`），只是替玩家把剩下的过牌点完。
+ */
+export function completeMockRound(): boolean {
+  for (let guard = 0; guard < 32; guard += 1) {
+    const round = latestRound();
+    if (round === undefined) {
+      return false;
+    }
+    if (round.is_completed) {
+      return true;
+    }
+    const actor = round.current_actor;
+    if (actor === null || actor === undefined) {
+      return false;
+    }
+    const result = monsterActor(actor) === undefined ? passMockTurn() : advanceMockMonsterTurn();
+    if (!result.ok) {
+      return false;
+    }
+  }
+  return false;
 }
 
 /** 撤退：战斗以失败结束（对应后端 `retreat`）。 */

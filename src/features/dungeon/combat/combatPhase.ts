@@ -14,7 +14,10 @@ export const COMBAT_STATE = {
   POST_COMBAT: 4,
 } as const;
 
-/** 战斗房间的四个阶段。 */
+/**
+ * 战斗房间的四个阶段。`init` 是进房那一屏（一回合都还没开，只出现一次），`round_start` 是
+ * **回合之间**（上一回合已结束 / 新回合还没抓牌）——后者是行动面板的子状态，不换屏。
+ */
 export type CombatPhase = "init" | "round_start" | "turn" | "post";
 
 /** 与后端 `CombatResult` 对应；`state` 说进行到哪步，`result` 说谁赢了。 */
@@ -39,16 +42,21 @@ export const COMBAT_RESULT_LABELS: Record<number, string> = {
   [COMBAT_RESULT.LOSE]: "失败",
 };
 
-/** 由战斗状态派生当前 phase。 */
+/**
+ * 由战斗状态派生当前 phase。
+ *
+ * 判据是**有没有回合**而不是 `state`：`state` 在进房后马上变成 ONGOING（初始化任务一落地），
+ * 但「一回合都还没开」仍是进房那一屏。回合只增不减，所以 `init` 一场战斗只出现一次。
+ */
 export function deriveCombatPhase(combat: Combat): CombatPhase {
   if (combat.state === COMBAT_STATE.COMPLETE || combat.state === COMBAT_STATE.POST_COMBAT) {
     return "post";
   }
-  // NONE / INITIALIZATION：还没开打，等待初始化
-  if (combat.state !== COMBAT_STATE.ONGOING) {
+  // NONE / INITIALIZATION / 已初始化但还没抓过牌：进房那一屏
+  if (combat.rounds.length === 0) {
     return "init";
   }
-  // 无回合、尚未抓牌、回合已结束、无行动角色 → round_start
+  // 尚未抓牌、回合已结束、无行动角色 → 回合之间
   const latest = combat.rounds.at(-1);
   if (
     latest === undefined ||

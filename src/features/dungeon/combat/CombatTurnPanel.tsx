@@ -85,10 +85,10 @@ function readPlayState(
 }
 
 /**
- * 行动面板：参战者横滑名单 + 行动区三栏（当前行动者资源 / 手牌 / 过牌与牌堆）+ 出牌交互。
+ * 行动面板：参战者横滑名单 + 行动区三栏（资源 / 手牌 / 过牌与牌堆）+ 出牌交互，我方与怪物同一版面。
  *
- * 出牌 = 两次选择 + 一次确认：点手牌选中、点名单角色选目标（自身牌自动指向自己），中间那条
- * 常驻三块（选中信息 / 出牌 / 取消）并写明「出牌」为什么灰着。我方与怪物共用同一版面。
+ * 出牌 = 两次选择 + 一次确认；中间那条常驻三块并写明「出牌」为什么灰着。回合之间（`roundStart`）
+ * 是同一版面去掉三栏，只留名单 + 一颗「开始新回合」——战斗一旦开始就不再换屏（见 `CombatRoomPanel`）。
  */
 export default function CombatTurnPanel({
   userName,
@@ -96,6 +96,7 @@ export default function CombatTurnPanel({
   combat,
   combatants,
   currentActor,
+  roundStart,
   combatPending,
   actions,
 }: {
@@ -104,6 +105,8 @@ export default function CombatTurnPanel({
   combat: Schemas["Combat"];
   combatants: Combatant[];
   currentActor: string | null;
+  /** 回合之间（上一回合已结束 / 新回合还没抓牌）：只给「开始新回合」，没有行动者。 */
+  roundStart: boolean;
   combatPending: boolean;
   actions: CombatActions;
 }) {
@@ -123,6 +126,60 @@ export default function CombatTurnPanel({
 
   const latest = combat.rounds.at(-1) ?? null;
   const current = combatants.find((combatant) => combatant.name === currentActor) ?? null;
+  const handOwner = combatants.find((combatant) => combatant.name === handActor) ?? null;
+
+  // 回合之间没有行动者：名单照旧（能点开角色信息 / 手牌），行动区换成一颗「开始新回合」
+  if (roundStart) {
+    return (
+      <>
+        <section className="combat-turn" aria-label="回合行动">
+          <CombatActionRoster
+            combatants={combatants}
+            currentActor={null}
+            pending={combatPending}
+            picking={false}
+            targets={[]}
+            onOpenInfo={(name) => setInfoActor(name)}
+            onOpenHand={(name) => setHandActor(name)}
+          />
+          <div className="combat-round-start">
+            <button
+              type="button"
+              className="combat-start"
+              disabled={actions.isBusy}
+              onClick={() => actions.draw.start()}
+            >
+              {actions.isBusy ? "准备中…" : "开始新回合"}
+            </button>
+            {actions.draw.error ? (
+              <p className="error">开始新回合失败：{actions.draw.error}</p>
+            ) : null}
+          </div>
+        </section>
+
+        {infoActor === null ? null : (
+          <ActorInfoDialog
+            userName={userName}
+            gameName={gameName}
+            actorName={infoActor}
+            costumeEnabled={false}
+            onClose={() => setInfoActor(null)}
+          />
+        )}
+
+        {handActor === null ? null : (
+          <CardListDialog
+            title="手牌"
+            actorName={handActor}
+            cards={handOwner?.hand ?? []}
+            emptyText="（手牌为空）"
+            owner={handActor}
+            onClose={() => setHandActor(null)}
+          />
+        )}
+      </>
+    );
+  }
 
   const actionError =
     actions.play.error ??
@@ -145,7 +202,6 @@ export default function CombatTurnPanel({
   // 不可出牌（`playable === false`）/ 本回合能量不够 / 还差一个目标：都只灰掉「出牌」
   const unplayable = selected !== null && !selected.playable;
   const playState = readPlayState(selected, actor.energy, targets);
-  const handOwner = combatants.find((combatant) => combatant.name === handActor) ?? null;
 
   /** 出一张牌：自身牌自动指向自己，其余用名单里点中的目标。 */
   function play(card: Card, target: string | null) {

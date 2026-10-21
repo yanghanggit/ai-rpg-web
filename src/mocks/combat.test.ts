@@ -4,6 +4,7 @@ import type { Entity } from "../features/entities/ecs";
 import {
   advanceMockMonsterTurn,
   collectMockLoot,
+  completeMockRound,
   drawMockCards,
   equipMockGear,
   initMockCombat,
@@ -93,6 +94,18 @@ describe("初始化 / 抓牌", () => {
     expect(round?.action_order).toEqual([PLAYER, MONSTER_1, MONSTER_2, MONSTER_3]);
     // 同一回合不能重复抓牌
     expect(drawMockCards().ok).toBe(false);
+  });
+
+  it("第 2 回合：上一回合手牌进弃牌堆，抽牌堆空了洗回（不出现空手牌）", () => {
+    enterCombat();
+    initMockCombat();
+    drawMockCards();
+    expect(completeMockRound()).toBe(true);
+
+    expect(drawMockCards()).toMatchObject({ ok: true });
+    const hand = componentData(actorEntity(PLAYER), COMPONENT.Hand)?.cards ?? [];
+    expect(hand).toHaveLength(5);
+    expect(readMockCombat().rounds).toHaveLength(2);
   });
 });
 
