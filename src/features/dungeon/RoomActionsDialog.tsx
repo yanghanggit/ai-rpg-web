@@ -16,7 +16,7 @@ export default function RoomActionsDialog({
   onClose,
 }: {
   exitBusy: boolean;
-  /** 战斗房的「状态 · 第 N 回合 · 结果」摘要；非战斗房为 `null`（那一行不出现）。 */
+  /** 战斗房的「状态 · 第 N 回合 · 结果」摘要；开场房为 `null`（那一行不出现）。 */
   combatSummary: string | null;
   narrative: { seen: number; total: number; unread: number };
   onOpenNarrative: () => void;

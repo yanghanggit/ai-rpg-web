@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { HttpResponse, http } from "msw";
 import { describe, expect, it } from "vitest";
 import { prepareMockPostCombat } from "../mocks/combat";
-import { advanceMockDungeon, enterMockDungeon } from "../mocks/dungeons";
+import { advanceMockDungeon, enterMockDungeon, makeMockEntryRoomCombat } from "../mocks/dungeons";
 import { api } from "../mocks/handlers";
 import { server } from "../mocks/node";
 import { instantTasks, renderMap } from "../test/RoomHarness";
@@ -129,5 +129,26 @@ describe("副本地图 · 状态与前进", () => {
     // 房间页的战斗准备屏（地图上不会出现它）
     expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "地图" })).not.toBeInTheDocument();
+  });
+  it("第一间就是战斗房：地图不出现，整页直接送进战斗（不依赖开场房存在）", async () => {
+    server.use(instantTasks());
+    enterMockDungeon("副本.荒废地窟");
+    expect(makeMockEntryRoomCombat()).toBe(true);
+    renderMapPage();
+
+    // 队伍已经在那间房里、战斗还没打完 → 地图自己让位，落到战斗房；进房自动 init 后「开始!」在
+    expect(await screen.findByRole("button", { name: "开始!" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "地图" })).not.toBeInTheDocument();
+  });
+
+  it("第一间是战斗房且已打完：地图回来，动作落在下一间", async () => {
+    enterMockDungeon("副本.荒废地窟");
+    expect(makeMockEntryRoomCombat()).toBe(true);
+    prepareMockPostCombat();
+    renderMapPage();
+
+    // 打完才能站在地图上；本间标「已完成」，动作搬到下一间（原来的开场房）
+    expect(await screen.findByRole("button", { name: /前往下一间/ })).toBeInTheDocument();
+    await waitFor(() => expect(roomRow("地窟深处")).toHaveTextContent("已完成"));
   });
 });

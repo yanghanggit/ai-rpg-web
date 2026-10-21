@@ -1,7 +1,7 @@
 /**
  * 开场初始化动作：`opening-init`（叙事 + 环境）。**仅开场房间使用**。
  *
- * 管道内部按消息标记幂等，可重复调用。**只允许一个实例**：由非战斗房页面持有，只在开场房间下发起。
+ * 管道内部按消息标记幂等，可重复调用。**只允许一个实例**：由开场房页面持有并只在开场房发起。
  */
 import type { QueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../../api/client";

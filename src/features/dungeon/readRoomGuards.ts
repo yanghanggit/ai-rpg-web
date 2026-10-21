@@ -5,7 +5,7 @@ import { COMBAT_RESULT, COMBAT_STATE } from "./combat/combatPhase";
  * 本房间自身的状态判据（纯函数）：`done` 干活儿干完了没有，`defeated` 打输了没有。
  * 能不能推进 / 离开副本由服务端判，这里不做镜像。
  *
- * 战斗房间的 `done` 来自服务端（`combat.state === POST_COMBAT`）；非战斗房间没有这个字段，
+ * 战斗房间的 `done` 来自服务端（`combat.state === POST_COMBAT`）；开场房没有这个字段，
  * 由调用方把客户端记账传进来（`endedRooms.ts`）。
  */
 export function readRoomGuards(

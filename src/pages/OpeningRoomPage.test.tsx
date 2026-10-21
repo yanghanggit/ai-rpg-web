@@ -12,7 +12,7 @@ import { instantTasks, renderRoom } from "../test/RoomHarness";
 import DungeonRoomRoute from "./DungeonRoomRoute";
 
 /**
- * `NonCombatRoomPage` 的测试。
+ * `OpeningRoomPage` 的测试。
  *
  * 房间页需要一个**已解析的** `room`，所以统一从路由挂载 `<DungeonRoomRoute/>`（`?seed` 深链与这里无关）。
  * 开场房是**事件屏**（背景 + 对话框 + 一列选项），所以断言落在「对话框三态 / 选项清单 / 奖励浮窗」上。
@@ -331,7 +331,7 @@ describe("副本房间 · 开场房间（事件屏）", () => {
     expect(screen.queryByRole("button", { name: "生成奖励：地窟入口" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /^获取奖励：/ })).not.toBeInTheDocument();
 
-    // 非战斗房间无完成态：去向选项始终可用；页面上没有解释性提示行
+    // 开场房无完成态：去向选项始终可用；页面上没有解释性提示行
     expect(choice("结束开局准备（回到地图）")).toBeInTheDocument();
     expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
 

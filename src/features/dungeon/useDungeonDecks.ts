@@ -14,8 +14,8 @@ import { useDungeonParty } from "./useDungeonParty";
 
 const DETAILS_PATH = "/api/entities/v1/{user_name}/{game_name}/details";
 
-/** 当前房间（用来取本间怪物）；判别联合沿用生成物。 */
-type DungeonRoom = Schemas["OpeningRoom"] | Schemas["CombatRoom"];
+/** 当前房间（用来取本间怪物）；判别联合直接用生成物（`opening` / `combat`）。 */
+type DungeonRoom = Schemas["DungeonRoomResponse"]["room"];
 
 /** 怪物在「牌组一览」里的形状：名字 + 牌组（不需要属性 / 奖励）。 */
 export interface DungeonMonster {

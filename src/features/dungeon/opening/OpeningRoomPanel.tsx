@@ -14,7 +14,7 @@ import { hasUnclaimedRewards } from "./hasUnclaimedRewards";
 import SpoilsDialog from "./SpoilsDialog";
 import type { OpeningInit } from "./useOpeningInit";
 import type { SpoilsActions } from "./useSpoilsActions";
-export type NonCombatRoom = Exclude<Schemas["DungeonRoomResponse"]["room"], Schemas["CombatRoom"]>;
+export type OpeningRoom = Schemas["OpeningRoom"];
 
 /** 对话框的三态：进行中 / 初始化失败 / 就绪（就绪时它同时是本间的主行动：生成奖励 → 查看全文）。 */
 type NarrativeState = "running" | "failed" | "ready";
@@ -53,13 +53,13 @@ interface EventChoice {
 }
 
 /**
- * 非战斗房间的正文：**一大张背景 + 一个对话框 + 一串对话选项**（没有角色卡）。
+ * 开场房的正文：**一大张背景 + 一个对话框 + 一串对话选项**（没有角色卡）。
  *
  * 对话框就是本间的主行动：初始化 → 生成奖励 → 查看场景，动作词写在框里右下角，顺序只由
  * 客户端状态守卫排。选项一列、去向永远最后一个，队伍只以「奖励选项」出现（每人一个 → `SpoilsDialog`）。
  * 数据 / 动作都从 props 进来，这一层只排版与措辞。
  */
-export default function NonCombatRoomPanel({
+export default function OpeningRoomPanel({
   userName,
   gameName,
   room,
@@ -71,10 +71,10 @@ export default function NonCombatRoomPanel({
 }: {
   userName: string;
   gameName: string;
-  room: NonCombatRoom;
-  /** 开场初始化（仅开场房使用；其它非战斗房忽略）。 */
+  room: OpeningRoom;
+  /** 开场初始化（页面持有的唯一实例）。 */
   openingInit: OpeningInit;
-  /** 奖励（生成 / 领卡）——非战斗房通用。 */
+  /** 奖励（生成 / 领卡）：服务端按「当前是非战斗房间」判定，客户端目前只有开场房这一个使用者。 */
   spoils: SpoilsActions;
   /** 本间所有动作合并的忙状态（初始化 + 奖励）。 */
   busy: boolean;
@@ -83,7 +83,6 @@ export default function NonCombatRoomPanel({
   /** 本间的去向（回地图 / 离开副本），这张选项是它在本屏的唯一入口。 */
   finish: { caption: string; hint: string; onActivate: () => void };
 }) {
-  const isOpening = room.type === "opening";
   const stage = useStageEntity(userName, gameName, room.stage.name);
   const assetsUrlPrefix = useAssetsUrlPrefix();
   const illustration = readAssetUrl(room.stage.assets, "illustration", assetsUrlPrefix);
@@ -103,10 +102,9 @@ export default function NonCombatRoomPanel({
   // 奖励是**整队一次**生成的（服务端一次给全队挂 SpoilsComponent），所以看「有没有人有」就够了。
   const spoilsGenerated = party.party.some((member) => member.spoils !== null);
 
-  // 开场房：初始化失败 → 失败；无叙事 → 进行中；有叙事 → 就绪。
-  // 其它非战斗房不跑初始化：有叙事即就绪，否则进行中。
+  // 初始化失败 → 失败；无叙事 → 进行中；有叙事 → 就绪。
   const narrativeState: NarrativeState =
-    isOpening && openingInit.error !== null ? "failed" : narrative === null ? "running" : "ready";
+    openingInit.error !== null ? "failed" : narrative === null ? "running" : "ready";
 
   // 对话框就是本间的主行动：同一个按钮顺着 初始化 → 生成奖励 → 查看全文 走，
   // 所以顺序不靠服务端守卫（服务端本来也不拦：不生成奖励直接结束/推进也允许）。
@@ -142,8 +140,7 @@ export default function NonCombatRoomPanel({
     }
   }
 
-  // 开场房叫「结束开局准备」，其它非战斗房叫「结束本间」
-  const finishLabel = isOpening ? "结束开局准备" : "结束本间";
+  const finishLabel = "结束开局准备";
 
   /** 选项清单：奖励类在前，去向永远是最后一个。 */
   const choices: EventChoice[] = [];

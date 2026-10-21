@@ -34,7 +34,7 @@ export default function DeckBrowserDialog({
   userName: string;
   gameName: string;
   /** 当前房间（用来取本间怪物）；不在房间里时为 `null`，只列我方。 */
-  room: Schemas["OpeningRoom"] | Schemas["CombatRoom"] | null;
+  room: Schemas["DungeonRoomResponse"]["room"] | null;
   onClose: () => void;
 }) {
   const decks = useDungeonDecks(userName, gameName, room);

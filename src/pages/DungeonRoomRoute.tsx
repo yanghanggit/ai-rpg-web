@@ -1,14 +1,14 @@
 import { useParams } from "react-router";
 import DungeonRunGate from "../features/dungeon/DungeonRunGate";
 import CombatRoomPage from "./CombatRoomPage";
-import NonCombatRoomPage from "./NonCombatRoomPage";
+import OpeningRoomPage from "./OpeningRoomPage";
 
 /**
  * 副本房间（`/dungeon/room`）：URL 入口 + 按服务端字段 `room.type` 分发。
  *
- * 取当前房间的守卫在 `DungeonRunGate`（与地图路由共用），本层只分发：`combat` 去 `CombatRoomPage`，
- * **其余（非战斗房间）一律去 `NonCombatRoomPage`**。所以将来多出任何非战斗房间都自动走同一页、
- * 自带奖励入口，无需再改这里。房间类型是服务端派生状态、不加路由。
+ * 取当前房间的守卫在 `DungeonRunGate`（与地图路由共用），本层只分发：`opening` 去 `OpeningRoomPage`、
+ * `combat` 去 `CombatRoomPage`。**没有「其它」这一支**：服务端将来加房间类型时这里直接报错，不把
+ * 新类型静默塞进开场房。房间类型是服务端派生状态、不加路由。
  */
 export default function DungeonRoomRoute() {
   const { userName, gameName } = useParams();
@@ -24,13 +24,21 @@ export default function DungeonRoomRoute() {
 
   return (
     <DungeonRunGate userName={userName} gameName={gameName}>
-      {(room) =>
-        room.type === "combat" ? (
-          <CombatRoomPage userName={userName} gameName={gameName} room={room} />
-        ) : (
-          <NonCombatRoomPage userName={userName} gameName={gameName} room={room} />
-        )
-      }
+      {(room) => {
+        if (room.type === "opening") {
+          return <OpeningRoomPage userName={userName} gameName={gameName} room={room} />;
+        }
+        if (room.type === "combat") {
+          return <CombatRoomPage userName={userName} gameName={gameName} room={room} />;
+        }
+        // 判别联合已穷尽；这一支只会在服务端新增房间类型时走到（`room` 此时是 `never`）
+        const unknown = room as { type: string };
+        return (
+          <main className="page page--wide">
+            <p className="error">还不支持的房间类型：{unknown.type}</p>
+          </main>
+        );
+      }}
     </DungeonRunGate>
   );
 }

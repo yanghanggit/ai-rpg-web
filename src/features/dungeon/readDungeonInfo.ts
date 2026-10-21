@@ -25,8 +25,8 @@ function formatCreatedAt(value: string | undefined): string | null {
 /**
  * 房间类型（判别字段 `room.type`）→ 界面说法。未知类型显示原值：不猜。
  *
- * `opening` 不是「探索」这类打法描述：`OpeningRoom` 是副本开场（非战斗叙事场景），
- * 而且 `enter_dungeon` 固定传送到 `rooms[0]`，所以它意味着「进入副本后的起点」。
+ * `opening` 不是「探索」这类打法描述：`OpeningRoom` 是副本开场（进入副本后的起点），
+ * 而且 `enter_dungeon` 固定传送到 `rooms[0]`。
  * 这个映射只写在这里，浮窗与确认框都从这里取，不各写一份。
  */
 export const ROOM_TYPE_LABELS: Record<string, string> = {

@@ -123,6 +123,26 @@ export function enterMockDungeon(name: string): { ok: true } | { ok: false; erro
 }
 
 /**
+ * 开发调试 / 测试用：把进行中副本的**第一间**换成战斗房（原来的第 1 间挪到后面）。
+ *
+ * 正式服务器不会生成这种副本（`enter_dungeon` 固定落到 `rooms[0]`，生成器把开场房排在第一位），
+ * 这里只用来验证**客户端不依赖「第一间是开场房」**：进房、自动初始化、开打都照常。
+ * 调用前先 `enterMockDungeon`（队伍在那一步固化）。
+ */
+export function makeMockEntryRoomCombat(): boolean {
+  const dungeon = runningDungeon();
+  const combatRoom = dungeon?.rooms.find((room) => room.type === "combat");
+  if (dungeon === undefined || combatRoom === undefined) {
+    return false;
+  }
+  dungeon.rooms = [combatRoom, ...dungeon.rooms.filter((room) => room !== combatRoom)];
+  runningRoomIndex = 0;
+  // 与进入副本走同一条安置逻辑：队伍搬进场景、怪物上阵、战斗复位为 INITIALIZATION
+  syncMockRoomPlacement();
+  return true;
+}
+
+/**
  * 退出副本的前置（对应 `dungeon_exit_action.py` 阶段 1 的三条检查），拒绝原因与后端同话。
  *
  * **这套判断只在 mock 里写一遍**，客户端不做（点下去由服务端拦、原因原样显示）。mock 要是"来者
