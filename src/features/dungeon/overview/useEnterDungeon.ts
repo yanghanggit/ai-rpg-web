@@ -7,6 +7,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { client, unwrap } from "../../../api/client";
 import { invalidateHomeState } from "../../home/invalidateHomeState";
+import { clearEndedRooms } from "../endedRooms";
 import { invalidateDungeons } from "../invalidateDungeons";
 
 export function useEnterDungeon(userName: string, gameName: string) {
@@ -20,6 +21,8 @@ export function useEnterDungeon(userName: string, gameName: string) {
         }),
       ),
     onSuccess: () => {
+      // 新一局开始：上一局记下的「本间已结束」要清掉，否则同名关卡（第 1 间总是同一间）开局就被跳过
+      clearEndedRooms();
       invalidateHomeState(queryClient, userName, gameName);
       invalidateDungeons(queryClient);
     },

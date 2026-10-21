@@ -6,6 +6,7 @@ import DungeonRoomList, { type DungeonRoomRow } from "../DungeonRoomList";
 import { readDungeonInfo } from "../readDungeonInfo";
 import { readRoomGuards } from "../readRoomGuards";
 import { useDungeonRun } from "../useDungeonRun";
+import { useRoomEnded } from "../useRoomEnded";
 import { useAdvanceStage } from "./useAdvanceStage";
 
 /**
@@ -13,6 +14,8 @@ import { useAdvanceStage } from "./useAdvanceStage";
  *
  * 目标行 = 刚进副本时是本间、本间已结束后是下一间，动作按钮就长在那一行；没有可前往的房间
  * （通关 / 打输）时不留按钮，只给一句指路。战斗未结束时整页转发回房间，见 `DungeonMapPage`。
+ *
+ * 本间结束过没有：战斗房看服务端 `combat.state`，开场房看客户端记账（`useRoomEnded`）。
  */
 export default function DungeonMapPanel({
   userName,
@@ -28,7 +31,8 @@ export default function DungeonMapPanel({
   const run = useDungeonRun(userName, gameName);
   const advance = useAdvanceStage(userName, gameName);
 
-  const guards = readRoomGuards(room);
+  const { ended } = useRoomEnded(userName, gameName, room.stage.name);
+  const guards = readRoomGuards(room, ended);
   const dungeon = run.data?.dungeon ?? null;
   // 房间表来自 `/state`：拿到之前不知道目标是谁，整块动作先不出现
   const info = dungeon === null ? null : readDungeonInfo(dungeon);

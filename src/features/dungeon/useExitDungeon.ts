@@ -5,6 +5,7 @@
 import { client, unwrap } from "../../api/client";
 import { useJobAction } from "../../api/useJobAction";
 import { invalidateHomeState } from "../home/invalidateHomeState";
+import { clearEndedRooms } from "./endedRooms";
 import { invalidateDungeons } from "./invalidateDungeons";
 
 export function useExitDungeon(userName: string, gameName: string) {
@@ -16,6 +17,8 @@ export function useExitDungeon(userName: string, gameName: string) {
         }),
       ),
     onCompleted: (queryClient) => {
+      // 本局结束：客户端记下的「本间已结束」一并清掉，下一局从零开始
+      clearEndedRooms();
       // 副本已被拆掉，队伍已被送回家园
       invalidateDungeons(queryClient);
       invalidateHomeState(queryClient, userName, gameName);

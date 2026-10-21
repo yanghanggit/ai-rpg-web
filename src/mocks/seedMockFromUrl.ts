@@ -9,6 +9,8 @@
  *
  * 「表达状态」用**阶段名**（`combat:turn`）而不是原始字段（`state=2`）：前者是意图，后者是实现细节。
  */
+
+import { endedRoomKey, markRoomEnded } from "../features/dungeon/endedRooms";
 import {
   drawMockCards,
   initMockCombat,
@@ -17,7 +19,7 @@ import {
   prepareMockPostCombat,
   setMockDrawPile,
 } from "./combat";
-import { advanceMockDungeon, enterMockDungeon } from "./dungeons";
+import { advanceMockDungeon, enterMockDungeon, readMockDungeonRoom } from "./dungeons";
 import { blueprintFixture, turnHandFixture } from "./fixtures";
 import { claimFirstMockSpoilsCard, failNextMockOpeningInit, generateMockSpoils } from "./opening";
 import { addMockRosterMember } from "./roster";
@@ -32,8 +34,20 @@ function fillParty(): void {
   addMockRosterMember("角色.麻雀");
 }
 
+/** 种子上下文：会话（`/game/:user/:game/...`）。客户端记账（「本间已结束」）按会话作 key。 */
+interface SeedContext {
+  userName: string;
+  gameName: string;
+}
+
+/** 从深链路径里读出会话（路由表见 `App.tsx`：`/game/:userName/:gameName/...`）。 */
+function readSession(url: string): SeedContext {
+  const [, , userName = "", gameName = ""] = new URL(url).pathname.split("/");
+  return { userName, gameName };
+}
+
 /** token → 「造出该阶段」的一串 mock 调用（每个 token 覆盖一个 `deriveCombatPhase` 分支）。 */
-const SEEDS: Record<string, () => void> = {
+const SEEDS: Record<string, (context: SeedContext) => void> = {
   // OPENING：刚进入副本的开场房间（房间侧无状态位；叙事由场景实体给）
   "opening:fresh": () => {
     enterMockDungeon(DUNGEON);
@@ -57,6 +71,14 @@ const SEEDS: Record<string, () => void> = {
     enterMockDungeon(DUNGEON);
     generateMockSpoils();
     claimFirstMockSpoilsCard("角色.无名");
+  },
+  // OPENING：本间已结束（客户端自己记的账）→ 地图上那一行「已完成」、动作搬到下一间
+  "opening:ended": ({ userName, gameName }) => {
+    enterMockDungeon(DUNGEON);
+    const room = readMockDungeonRoom();
+    if (room !== null) {
+      markRoomEnded(endedRoomKey(userName, gameName, room.stage.name));
+    }
   },
   // OPENING：队伍里有同伴（用于看 / 调试「牌组」浏览：一级名单里有三个角色）
   "party:full": () => {
@@ -128,5 +150,5 @@ export function seedMockFromUrl(url: string = window.location.href): void {
     console.warn(`[mock] 未知 seed：${token}（可用：${Object.keys(SEEDS).join("、")}）`);
     return;
   }
-  setup();
+  setup(readSession(url));
 }

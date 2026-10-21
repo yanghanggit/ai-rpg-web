@@ -1,5 +1,6 @@
 import "@testing-library/jest-dom/vitest";
 import { afterAll, afterEach, beforeAll } from "vitest";
+import { clearEndedRooms } from "../features/dungeon/endedRooms";
 import { resetUnreadBaselines } from "../features/session/unreadBaselines";
 import { resetMockCombatState } from "../mocks/combat";
 import { resetMockDungeons } from "../mocks/dungeons";
@@ -29,7 +30,8 @@ afterEach(() => {
   resetMockDungeons();
   resetMockOpening();
   resetMockCombatState();
-  // 叙事未读基线是模块级状态，不随组件卸载消失，测试之间必须显式复位
+  // 叙事未读基线 / 副本内的「本间已结束」都是模块级状态，不随组件卸载消失，测试之间必须显式复位
   resetUnreadBaselines();
+  clearEndedRooms();
 });
 afterAll(() => server.close());

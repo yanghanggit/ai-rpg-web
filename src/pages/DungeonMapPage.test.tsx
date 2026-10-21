@@ -32,7 +32,7 @@ function roomRow(stageName: string): HTMLElement {
 }
 
 describe("副本地图 · 状态与前进", () => {
-  it("刚进入副本：开场房间无完成态，动作直接落在下一间那一行", async () => {
+  it("刚进入副本：动作落在本间那一行（进入房间），开场房不会被当成已完成", async () => {
     enterMockDungeon("副本.荒废地窟");
     renderMapPage();
 
@@ -50,21 +50,30 @@ describe("副本地图 · 状态与前进", () => {
     expect(screen.getByText("地窟深处")).toBeInTheDocument();
     expect(screen.getByText(/hp 9/)).toBeInTheDocument();
 
-    // 非战斗房间没有“完成”状态：本行直接标「已完成」，动作整行搬到下一间（不再有「进入房间」）
+    // 开场房在服务端没有完成态，客户端也还没记下它结束：本行就是目标行（按钮在本行）
     const first = roomRow("地窟入口");
     const second = roomRow("地窟深处");
-    expect(first).toHaveTextContent("已完成");
-    expect(within(first).queryByRole("button")).not.toBeInTheDocument();
-    expect(within(second).getByRole("button", { name: "前往下一间" })).toBeEnabled();
+    expect(first).toHaveTextContent("你在这里");
+    expect(within(first).getByRole("button", { name: "进入房间" })).toHaveAttribute(
+      "title",
+      "进入房间：地窟入口",
+    );
+    // 下一间自己不带按钮：不能跳过没绕过的本间直接推进
+    expect(within(second).queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByText("已完成")).not.toBeInTheDocument();
 
     // 页面上没有解释性提示行（也不预判「离开副本」能不能点）
     expect(screen.queryByText(/才能结束本间或离开副本/)).not.toBeInTheDocument();
   });
 
-  it("两间之间：已结束那一行标「已完成」，按钮搬到下一间那一行，一步推进并进入下一间", async () => {
+  it("进入本间 → 结束开局准备 → 回地图：本行「已完成」，按钮搬到下一间，一步推进并进入战斗房", async () => {
     server.use(instantTasks());
     enterMockDungeon("副本.荒废地窟");
     renderMapPage();
+
+    // 开场房可以从地图进（构造真实路径：地图 → 房间 → 地图），不再靠后端状态位
+    fireEvent.click(await screen.findByRole("button", { name: "进入房间" }));
+    fireEvent.click(await screen.findByRole("button", { name: "结束开局准备（回到地图）" }));
 
     // 本间已结束 → 本行是「已完成」，动作整行搬到下一间（不再另开工具栏、也没有确认框）
     await screen.findByText("已完成");
@@ -94,6 +103,9 @@ describe("副本地图 · 状态与前进", () => {
     enterMockDungeon("副本.荒废地窟");
     renderMapPage();
 
+    // 先走完本间（开场房）才能到推进那一步
+    fireEvent.click(await screen.findByRole("button", { name: "进入房间" }));
+    fireEvent.click(await screen.findByRole("button", { name: "结束开局准备（回到地图）" }));
     fireEvent.click(await screen.findByRole("button", { name: "前往下一间" }));
 
     expect(await screen.findByText(/副本已全部通关/)).toBeInTheDocument();

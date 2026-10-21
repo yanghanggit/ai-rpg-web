@@ -35,10 +35,9 @@ const MAX_FETCH_CONTENT_CHARS = 30_000;
 
 const NAMESPACE = {
   name: "deepseek",
-  description:
-    "DeepSeek 自研搜索引擎：实时网页搜索（Search）与网页正文抓取（Fetch）。",
+  description: "DeepSeek 自研搜索引擎：实时网页搜索（Search）与网页正文抓取（Fetch）。",
   instructions:
-    "Search 支持 site:、-site:、-、-\"...\"、\"...\"、lang:、after:、before: 等搜索语法；" +
+    'Search 支持 site:、-site:、-、-"..."、"..."、lang:、after:、before: 等搜索语法；' +
     "需要完整网页内容时，先搜索拿到 URL，再调用 deepseek_fetch。",
 } as const;
 
@@ -325,7 +324,7 @@ const searchParameters = Type.Object({
     minLength: 1,
     maxLength: 128,
     description:
-      "Search query, 1-128 characters. May combine operators such as site:, -site:, -, \"...\", " +
+      'Search query, 1-128 characters. May combine operators such as site:, -site:, -, "...", ' +
       "lang:, after:, before:.",
   }),
   count: Type.Optional(
@@ -346,7 +345,7 @@ const searchParameters = Type.Object({
   localization: Type.Optional(
     Type.String({
       description:
-        "IP address used to prefer localized search results (e.g. \"1.2.3.4\"). Usually omit.",
+        'IP address used to prefer localized search results (e.g. "1.2.3.4"). Usually omit.',
     }),
   ),
   need_content: Type.Optional(

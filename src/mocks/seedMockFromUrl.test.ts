@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { endedRoomKey, isRoomEnded } from "../features/dungeon/endedRooms";
 import { readMockCombat, readMockCombatLoot, readMockHand } from "./combat";
 import { readMockDungeonRoom } from "./dungeons";
 import {
@@ -52,6 +53,15 @@ describe("seedMockFromUrl", () => {
     seedMockFromUrl(`${BASE}?seed=opening:claimed`);
     expect(readMockDungeonRoom()?.type).toBe("opening");
     expect(readMockClaimedCount("角色.无名")).toBe(1);
+  });
+
+  it("opening:ended → 开场房间且客户端已记下本间结束（地图把按钮搬到下一间）", () => {
+    seedMockFromUrl(`${BASE}?seed=opening:ended`);
+    const room = readMockDungeonRoom();
+    expect(room?.type).toBe("opening");
+    expect(
+      room === null ? false : isRoomEnded(endedRoomKey("webdev", "Game1", room.stage.name)),
+    ).toBe(true);
   });
 
   it("combat:init → 战斗房间处于 INITIALIZATION", () => {

@@ -10,13 +10,14 @@ import { readRoomFinish } from "../features/dungeon/readRoomFinish";
 import { useDungeonParty } from "../features/dungeon/useDungeonParty";
 import { useDungeonRun } from "../features/dungeon/useDungeonRun";
 import { useExitDungeon } from "../features/dungeon/useExitDungeon";
+import { useRoomEnded } from "../features/dungeon/useRoomEnded";
 
 /**
  * 非战斗房间整页（`room.type !== "combat"`，当前即 `opening`）：共用 `RoomScaffold`，正文交给
  * `NonCombatRoomPanel`。**奖励入口在这一层之下，与具体房间类型无关**（服务端语义也是「非战斗房间」）。
  *
  * 本间的数据与动作由页面持有（奖励 / 开场初始化各一个实例、队伍取一次往下传）。**自动初始化只对
- * 开场房间发起**（管道幂等），其它非战斗房不跑。
+ * 开场房间发起**（管道幂等），其它非战斗房不跑。「结束本间」同时记下客户端账（`endedRooms`）。
  */
 export default function NonCombatRoomPage({
   userName,
@@ -33,6 +34,7 @@ export default function NonCombatRoomPage({
   const spoils = useSpoilsActions(userName, gameName);
   const openingInit = useOpeningInit(userName, gameName);
   const party = useDungeonParty(userName, gameName);
+  const { markEnded } = useRoomEnded(userName, gameName, room.stage.name);
 
   const isOpening = room.type === "opening";
 
@@ -56,7 +58,15 @@ export default function NonCombatRoomPage({
   const finishPlan = readRoomFinish(run.data, false);
   const finish = {
     ...finishPlan,
-    onActivate: finishPlan.leavesRun ? () => exit.start() : toMap,
+    onActivate: () => {
+      // 先记账再走：地图据此把本行标成「已完成」、把按钮搬到下一间
+      markEnded();
+      if (finishPlan.leavesRun) {
+        exit.start();
+      } else {
+        toMap();
+      }
+    },
   };
 
   return (

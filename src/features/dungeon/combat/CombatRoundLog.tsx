@@ -2,10 +2,12 @@ import type { Schemas } from "../../../api/types";
 
 /** 操作类型 → 界面说法（与后端 `RoundEntryKind` 对应）。 */
 const ENTRY_KIND_LABELS: Record<Schemas["RoundEntry"]["kind"], string> = {
-  cards: "出牌",
+  cards: "出牌结算",
   consumable: "消耗品",
   gear: "装备",
   artifact: "神器",
+  autonomous: "自主运行",
+  failed: "结算未完成",
 };
 
 /**

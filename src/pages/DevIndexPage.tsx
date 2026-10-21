@@ -34,8 +34,9 @@ const sections: DevSection[] = [
     title: "副本 · 总览与地图",
     links: [
       { to: `${GAME}/dungeon`, label: "副本总览 DungeonOverviewPage" },
-      { to: `${MAP}?seed=opening:fresh`, label: "地图 · 刚进入副本（还没进第 1 间）" },
-      { to: `${MAP}?seed=party:full`, label: "地图 · 下一个房间前（队伍带同伴）" },
+      { to: `${MAP}?seed=opening:fresh`, label: "地图 · 刚进入副本（第 1 间待进入）" },
+      { to: `${MAP}?seed=opening:ended`, label: "地图 · 第 1 间已结束（按钮在下一间）" },
+      { to: `${MAP}?seed=party:full`, label: "地图 · 刚进入副本（队伍带同伴）" },
     ],
   },
   {

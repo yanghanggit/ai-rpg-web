@@ -8,8 +8,15 @@ import { readRoomGuards } from "./readRoomGuards";
  * "能不能推进 / 能不能离开副本"不在这里——那是服务端接口自己的前置检查。
  */
 describe("readRoomGuards", () => {
-  it("开场房间：非战斗房间没有完成态 → 随时可离开", () => {
+  it("开场房间：客户端还没记下本间结束 → 还没进过（地图给「进入房间」）", () => {
     const guards = readRoomGuards(openingRoomFixture());
+
+    expect(guards.done).toBe(false);
+    expect(guards.defeated).toBe(false);
+  });
+
+  it("开场房间：客户端记下本间结束 → 本间结束（地图把按钮搬到下一间）", () => {
+    const guards = readRoomGuards(openingRoomFixture(), true);
 
     expect(guards.done).toBe(true);
     expect(guards.defeated).toBe(false);
