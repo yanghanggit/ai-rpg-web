@@ -440,7 +440,7 @@ export function advanceMockMonsterTurn(): { ok: boolean; message: string } {
 }
 
 /**
- * 把当前回合直接推到「全员已行动」：dev 种子专用（看回合之间那一屏）。
+ * 把当前回合直接推到「全员已行动」：dev 种子专用（进页面后客户端会自动接下一回合）。
  *
  * 与真流程同一条推进（`passMockTurn` / `advanceMockMonsterTurn`），只是替玩家把剩下的过牌点完。
  */

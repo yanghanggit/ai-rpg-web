@@ -95,7 +95,7 @@ const SEEDS: Record<string, (context: SeedContext) => void> = {
     enterMockDungeon(DUNGEON);
     advanceMockDungeon();
   },
-  // ONGOING 且第 1 回合已打满：回合之间那一屏（行动面板的子状态，只有「开始新回合」）
+  // 第 1 回合已打满：进这页时客户端会自动抓牌接上第 2 回合（dev 下看"回合自动接上"）
   "combat:round_end": () => {
     fillParty();
     enterMockDungeon(DUNGEON);

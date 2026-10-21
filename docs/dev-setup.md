@@ -121,6 +121,6 @@ pnpm screenshot /game/webdev/Game1/dungeon --mock
    - **开场房的环境叙述也由初始化生成**（`./stages` 的 `markMockStageNarrative`），
      所以 `?seed=opening:fresh` 能看到"初始化中 → 叙述出现"的真实顺序；
    - **战斗的跨回合与真后端同规则**（`./combat` 的 `drawMockCards`）：回合结束时手牌进弃牌堆，
-     抽牌堆空了把弃牌堆洗回来——所以回合之间那颗「开始新回合」点下去不会拿到空手牌；
+     抽牌堆空了把弃牌堆洗回来——所以自动接上的第 2 回合不会拿到空手牌；
    - 页面右上角会显示橙色 `MOCK 模式` 徽标，避免误以为在连真实后端。
 3. **开发索引**：`/dev` 列出常用深链，点一下就到（例：`http://localhost:5173/dev`）。

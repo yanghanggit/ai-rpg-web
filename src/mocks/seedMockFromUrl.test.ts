@@ -71,7 +71,7 @@ describe("seedMockFromUrl", () => {
     expect(readMockCombat().rounds).toHaveLength(0);
   });
 
-  it("combat:round_end → ONGOING 且第 1 回合已打满（回合之间）", () => {
+  it("combat:round_end → ONGOING 且第 1 回合已打满（页面会自动接第 2 回合）", () => {
     seedMockFromUrl(`${BASE}?seed=combat:round_end`);
     const combat = readMockCombat();
     expect(combat.state).toBe(2);

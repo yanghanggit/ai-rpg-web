@@ -16,7 +16,7 @@ export const COMBAT_STATE = {
 
 /**
  * 战斗房间的四个阶段。`init` 是进房那一屏（一回合都还没开，只出现一次），`round_start` 是
- * **回合之间**（上一回合已结束 / 新回合还没抓牌）——后者是行动面板的子状态，不换屏。
+ * **回合之间**（上一回合已结束 / 新回合还没抓牌）——后者由客户端自动抓牌接上，只是一瞬。
  */
 export type CombatPhase = "init" | "round_start" | "turn" | "post";
 

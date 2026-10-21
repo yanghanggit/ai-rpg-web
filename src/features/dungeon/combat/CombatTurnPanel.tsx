@@ -88,7 +88,7 @@ function readPlayState(
  * 行动面板：参战者横滑名单 + 行动区三栏（资源 / 手牌 / 过牌与牌堆）+ 出牌交互，我方与怪物同一版面。
  *
  * 出牌 = 两次选择 + 一次确认；中间那条常驻三块并写明「出牌」为什么灰着。回合之间（`roundStart`）
- * 是同一版面去掉三栏，只留名单 + 一颗「开始新回合」——战斗一旦开始就不再换屏（见 `CombatRoomPanel`）。
+ * 只是一瞬：名单照旧，行动区写「准备下一回合…」（自动抓牌由 `CombatRoomPanel` 发，失败才给重试）。
  */
 export default function CombatTurnPanel({
   userName,
@@ -105,7 +105,7 @@ export default function CombatTurnPanel({
   combat: Schemas["Combat"];
   combatants: Combatant[];
   currentActor: string | null;
-  /** 回合之间（上一回合已结束 / 新回合还没抓牌）：只给「开始新回合」，没有行动者。 */
+  /** 回合之间（上一回合已结束 / 新回合还没抓牌）：自动抓牌途中，没有行动者。 */
   roundStart: boolean;
   combatPending: boolean;
   actions: CombatActions;
@@ -128,7 +128,7 @@ export default function CombatTurnPanel({
   const current = combatants.find((combatant) => combatant.name === currentActor) ?? null;
   const handOwner = combatants.find((combatant) => combatant.name === handActor) ?? null;
 
-  // 回合之间没有行动者：名单照旧（能点开角色信息 / 手牌），行动区换成一颗「开始新回合」
+  // 回合之间没有行动者：名单照旧（能点开角色信息 / 手牌），行动区只剩一句「准备下一回合…」
   if (roundStart) {
     return (
       <>
@@ -143,17 +143,21 @@ export default function CombatTurnPanel({
             onOpenHand={(name) => setHandActor(name)}
           />
           <div className="combat-round-start">
-            <button
-              type="button"
-              className="combat-start"
-              disabled={actions.isBusy}
-              onClick={() => actions.draw.start()}
-            >
-              {actions.isBusy ? "准备中…" : "开始新回合"}
-            </button>
             {actions.draw.error ? (
-              <p className="error">开始新回合失败：{actions.draw.error}</p>
-            ) : null}
+              <>
+                <p className="error">开始新回合失败：{actions.draw.error}</p>
+                <button
+                  type="button"
+                  className="combat-start"
+                  disabled={actions.isBusy}
+                  onClick={() => actions.draw.start()}
+                >
+                  重试
+                </button>
+              </>
+            ) : (
+              <p className="muted">准备下一回合…</p>
+            )}
           </div>
         </section>
 

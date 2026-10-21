@@ -619,7 +619,7 @@ describe("副本房间 · 战斗房间", () => {
     expect(screen.getByText(/（随机命中）/)).toBeInTheDocument();
   });
 
-  it("过牌推进到怪物；三只怪物推完后回到开始新回合", async () => {
+  it("过牌推进到怪物；全员行动完后自动开下一回合，玩家直接接着出牌", async () => {
     server.use(instantTasks());
     renderCombatRoom();
     fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
@@ -634,12 +634,51 @@ describe("副本房间 · 战斗房间", () => {
       await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
     }
 
-    // 最后一只推完 → 全员行动完，停在同一个行动面板里（只换一颗按钮），不回进房那一屏
+    // 最后一只推完 → 全员行动完：客户端自动抓牌开第 2 回合，不停在"回合之间"、更没有按钮
     fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
-    expect(await screen.findByRole("button", { name: "开始新回合" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "回合行动" })).toBeInTheDocument();
-    expect(screen.getByRole("list", { name: "参战者" })).toBeInTheDocument();
+
+    // 第 2 回合的第一个人又是玩家：动作区换成玩家的「过牌」（手牌也是这时才重新抓的）
+    expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
+    expect(screen.getByRole("list", { name: "手牌" })).toBeInTheDocument();
+    expect(within(currentCombatant()).getByText("无名")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "开始新回合" })).not.toBeInTheDocument();
+    expect(screen.queryByText("准备下一回合…")).not.toBeInTheDocument();
+    // 仍停在行动面板（没有回到进房那一屏）
     expect(screen.queryByRole("region", { name: "对阵" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "回合行动" })).toBeInTheDocument();
+  });
+
+  it("自动开新回合失败：停在原地给「重试」，恢复后直接接上", async () => {
+    server.use(instantTasks());
+    renderCombatRoom();
+    fireEvent.click(await screen.findByRole("button", { name: "开始!" }));
+    fireEvent.click(await screen.findByRole("button", { name: "过牌（结束回合）" }));
+    await waitFor(() => expect(within(currentCombatant()).getByText("石像鬼")).toBeInTheDocument());
+
+    // 从这一刻起抓牌一律失败（第 1 回合已经开好了，只影响自动接上的那一回合）
+    server.use(
+      http.post(
+        api("/api/dungeon/combat/draw_cards/v1/"),
+        () => new HttpResponse(null, { status: 500 }),
+      ),
+    );
+
+    for (const name of ["腐沼巨蜥", "提线木偶"]) {
+      fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+      await waitFor(() => expect(within(currentCombatant()).getByText(name)).toBeInTheDocument());
+    }
+    fireEvent.click(screen.getByRole("button", { name: "推进怪物回合" }));
+
+    // 自动抓牌失败：不静默卡住，给一行原因 + 一颗重试
+    expect(await screen.findByText(/开始新回合失败/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "重试" })).toBeInTheDocument();
+
+    // 服务恢复后点重试：直接接上第 2 回合，仍是玩家先手
+    server.resetHandlers();
+    server.use(instantTasks());
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
+    expect(await screen.findByRole("button", { name: "过牌（结束回合）" })).toBeInTheDocument();
+    expect(screen.queryByText(/开始新回合失败/)).not.toBeInTheDocument();
   });
 
   it("结算：只留胜负与收取按钮（查阅型信息收进标题行菜单）", async () => {
